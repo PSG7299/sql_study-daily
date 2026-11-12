@@ -16,7 +16,30 @@
    "why": "The anchor row is month 1 with the full principal; each recursive step subtracts that month's principal part (EMI minus interest at rate/1200) to get the next opening balance. The last month pays whatever is left plus its interest, so rounding differences do not leave a few rupees outstanding. Due dates use ADD_MONTHS from first_due so a 31st does not drift to the 28th forever after February.",
    "tip": "Recursive WITH needs a column list, an anchor, a recursive member that references the CTE once, and a stop condition; I keep the stop condition on a counter so it can never loop.",
    "simple": "A loan schedule is like a staircase. Each month you start with what you owe, pay some interest and some of the loan, and what is left becomes next month's starting point. A recursive WITH builds one step, then uses it to build the next step, until the loan is paid off.",
-   "remember": "Recursive WITH = build the next row from the row before."
+   "remember": "Recursive WITH = build the next row from the row before.",
+   "data": [
+    {
+     "name": "LOAN",
+     "cols": [
+      "loan_id",
+      "principal",
+      "annual_rate",
+      "tenure_months",
+      "emi",
+      "first_due"
+     ],
+     "rows": [
+      [
+       "7001",
+       "300000",
+       "12",
+       "3",
+       "102006.64",
+       "05-01-2026"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "f20261112-2",
@@ -33,7 +56,62 @@
    "why": "ROLLUP(region, sector) would produce region subtotals and no sector totals, so GROUPING SETS is the precise tool. GROUPING_ID builds a bit pattern (region = 2, sector = 1), giving 0 for detail, 2 for sector totals and 3 for the grand total. Checking GROUPING() before NVL means a legacy loan with NULL sector shows 'Unclassified' while the subtotal row shows 'ALL'.",
    "tip": "ROLLUP and CUBE are shortcuts for fixed sets of groupings; when a report format needs a specific mix I write GROUPING SETS and label rows with GROUPING_ID.",
    "simple": "The report needs some lines by sector and region, some totals by sector, and one grand total, but not every possible mix. GROUPING SETS lets you list exactly which totals you want, like picking only the dishes you want from a menu instead of the full buffet.",
-   "remember": "GROUPING SETS = choose exactly which totals you want."
+   "remember": "GROUPING SETS = choose exactly which totals you want.",
+   "data": [
+    {
+     "name": "ADVANCES",
+     "cols": [
+      "loan_id",
+      "region",
+      "sector",
+      "npa_flag",
+      "outstanding",
+      "asof_date"
+     ],
+     "rows": [
+      [
+       "1",
+       "West",
+       "MSME",
+       "N",
+       "800000",
+       "31-03-2026"
+      ],
+      [
+       "2",
+       "West",
+       "MSME",
+       "Y",
+       "200000",
+       "31-03-2026"
+      ],
+      [
+       "3",
+       "South",
+       "MSME",
+       "N",
+       "500000",
+       "31-03-2026"
+      ],
+      [
+       "4",
+       "South",
+       "Retail",
+       "Y",
+       "100000",
+       "31-03-2026"
+      ],
+      [
+       "5",
+       "West",
+       "NULL",
+       "N",
+       "50000",
+       "31-03-2026"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "f20261112-3",
@@ -50,7 +128,46 @@
    "why": "User values never become part of the SQL text, they are passed through USING, so nothing typed can change the statement and injection is impossible. There are at most 8 distinct SQL texts, so Oracle parses each once and reuses its plan instead of hard-parsing (building a fresh plan, which is CPU-heavy) for every search. Each text only has the predicates that apply, so the optimizer can use an index on branch_code when that filter is given.",
    "tip": "With dynamic SQL I bind values and only concatenate structure I control; the '1 = 1 OR :x IS NULL' trick keeps the USING list fixed while each filter combination still gets its own good plan.",
    "simple": "A search screen where the user fills only some boxes. You build the SQL with only the filters they filled. But you never paste what they typed into the SQL; you pass it separately, like putting a letter in an envelope instead of writing on the outside. That keeps it safe from hackers and fast.",
-   "remember": "Build the shape, pass the values separately with binds."
+   "remember": "Build the shape, pass the values separately with binds.",
+   "data": [
+    {
+     "name": "AML_ALERT",
+     "cols": [
+      "alert_id",
+      "cust_id",
+      "branch_code",
+      "alert_amt",
+      "alert_dt",
+      "status"
+     ],
+     "rows": [
+      [
+       "1",
+       "11",
+       "PUN01",
+       "1500000",
+       "02-11-2026",
+       "OPEN"
+      ],
+      [
+       "2",
+       "12",
+       "MUM02",
+       "250000",
+       "05-11-2026",
+       "OPEN"
+      ],
+      [
+       "3",
+       "13",
+       "PUN01",
+       "900000",
+       "20-10-2026",
+       "CLOSED"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "f20261112-4",
@@ -67,11 +184,43 @@
    "why": "The calendar guarantees one row per day, and the outer join leaves rate NULL on non-business days. LAST_VALUE with IGNORE NULLS over all rows up to the current one picks the most recent non-NULL rate, and the October rows are only there so 1-Nov has something to look back to. The filter to November is applied outside the window, otherwise the October rows would be removed before the analytic function sees them.",
    "tip": "For carry-forward I use LAST_VALUE IGNORE NULLS with an explicit ROWS frame, and I filter after the window so the lookback rows are still visible to it.",
    "simple": "On holidays there is no new exchange rate, so you use the last one you had, like a scoreboard that keeps showing the last score until a new goal is scored. LAST_VALUE IGNORE NULLS looks back and picks the most recent rate that is not empty.",
-   "remember": "IGNORE NULLS = carry the last known value forward."
+   "remember": "IGNORE NULLS = carry the last known value forward.",
+   "data": [
+    {
+     "name": "FX_RATE",
+     "cols": [
+      "rate_date",
+      "ccy",
+      "rate"
+     ],
+     "rows": [
+      [
+       "30-10-2026",
+       "USD",
+       "84.1"
+      ],
+      [
+       "30-10-2026",
+       "EUR",
+       "91.2"
+      ],
+      [
+       "02-11-2026",
+       "USD",
+       "84.25"
+      ],
+      [
+       "03-11-2026",
+       "USD",
+       "84.3"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "f20261112-5",
-   "lvl": "C",
+   "lvl": "M",
    "kind": "sql",
    "concept": "Month-end date arithmetic",
    "domain": "Cards",
@@ -84,11 +233,50 @@
    "why": "Chaining ADD_MONTHS loses the original day (30-Jan to 28-Feb to 31-Mar), and even a single ADD_MONTHS turns 28-Feb into 31-Mar because of Oracle's last-day rule. Starting from the first of the month, adding the day number minus one and capping with LAST_DAY gives 28-Feb, 30-Mar and 28-Mar exactly as the rule says. TRUNC removes the swipe time and the half-open range from 1-Mar to before 1-Apr catches the whole of 31-Mar.",
    "tip": "I always compute instalment dates from the original start date, never the previous due date, and I remember ADD_MONTHS maps a month-end to a month-end.",
    "simple": "A due date on the 30th is tricky because February has only 28 days. Start from the 1st of the month, move to the right day, and if the month is shorter, stop at its last day. Always count from the original date, not from last month's date, or the day keeps slipping.",
-   "remember": "Start from the 1st, add the day, cap at the month's last day."
+   "remember": "Start from the 1st, add the day, cap at the month's last day.",
+   "data": [
+    {
+     "name": "CARD_EMI",
+     "cols": [
+      "emi_plan_id",
+      "card_ref",
+      "purchase_dt",
+      "amount",
+      "tenure_months",
+      "emi_amt"
+     ],
+     "rows": [
+      [
+       "1",
+       "C-001",
+       "30-01-2026 21:14",
+       "30000",
+       "6",
+       "5000"
+      ],
+      [
+       "2",
+       "C-002",
+       "28-02-2026 10:05",
+       "12000",
+       "3",
+       "4000"
+      ],
+      [
+       "3",
+       "C-003",
+       "15-03-2026 18:40",
+       "9000",
+       "3",
+       "3000"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "f20261112-6",
-   "lvl": "C",
+   "lvl": "M",
    "kind": "sql",
    "concept": "NULL-safe mismatch with LNNVL",
    "domain": "UPI/Fraud",
@@ -101,7 +289,70 @@
    "why": "t.device_id <> d.reg_device_id is UNKNOWN when either side is NULL, and WHERE drops UNKNOWN rows, so the riskiest payments vanished. LNNVL(condition) returns TRUE when the condition is FALSE or UNKNOWN, which is exactly 'not a confirmed match'; the LEFT JOIN keeps customers with no CUSTOMER_DEVICE row. The equivalent long form is t.device_id IS NULL OR d.reg_device_id IS NULL OR t.device_id <> d.reg_device_id.",
    "tip": "Whenever I write <> on nullable columns I ask what NULL should mean, and for 'not a confirmed match' I use LNNVL or explicit IS NULL checks.",
    "simple": "If you do not know which phone a person registered, you cannot say the payment came from the right phone. Oracle treats 'not equal' with an unknown value as 'I don't know' and hides those rows. LNNVL says 'show me anything that is not a sure match', so the risky unknown ones stay in the list.",
-   "remember": "Unknown is not a match; LNNVL keeps the unknowns."
+   "remember": "Unknown is not a match; LNNVL keeps the unknowns.",
+   "data": [
+    {
+     "name": "UPI_TXN",
+     "cols": [
+      "txn_id",
+      "cust_id",
+      "device_id",
+      "amount",
+      "txn_ts"
+     ],
+     "rows": [
+      [
+       "1",
+       "11",
+       "DEV-A",
+       "25000",
+       "11-11-2026 10:00"
+      ],
+      [
+       "2",
+       "12",
+       "DEV-X",
+       "15000",
+       "11-11-2026 12:00"
+      ],
+      [
+       "3",
+       "13",
+       "NULL",
+       "40000",
+       "11-11-2026 13:00"
+      ],
+      [
+       "4",
+       "14",
+       "DEV-Q",
+       "12000",
+       "11-11-2026 14:00"
+      ]
+     ]
+    },
+    {
+     "name": "CUSTOMER_DEVICE",
+     "cols": [
+      "cust_id",
+      "reg_device_id"
+     ],
+     "rows": [
+      [
+       "11",
+       "DEV-A"
+      ],
+      [
+       "12",
+       "DEV-B"
+      ],
+      [
+       "13",
+       "DEV-C"
+      ]
+     ]
+    }
+   ]
   }
  ],
  "lessons": [

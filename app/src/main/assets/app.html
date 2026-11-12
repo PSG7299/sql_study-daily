@@ -57,6 +57,15 @@ h3{font-size:15px;margin:0}
 .chip{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--code-bg);color:var(--muted);border:1px solid var(--line)}
 .chip.adv{background:var(--brass-soft);color:var(--brass);border-color:transparent;font-weight:600}
 .chip.core{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:600}
+.chip.easy{background:var(--good-soft);color:var(--good);border-color:transparent;font-weight:600}
+.dtable{display:flex;flex-direction:column;gap:4px}
+.dtable .tname{font-family:var(--f-mono);font-size:13px;font-weight:700}
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table.grid{border-collapse:collapse;font-family:var(--f-mono);font-size:12.5px;width:100%}
+table.grid th{background:var(--accent-soft);color:var(--accent);text-align:left;padding:7px 9px;white-space:nowrap;font-weight:700}
+table.grid td{padding:6px 9px;border-top:1px solid var(--line);white-space:nowrap}
+table.grid td.null{color:var(--muted);font-style:italic}
+table.grid tr.empty td{color:var(--muted);font-style:italic}
 .chip.rev{background:var(--bad-soft);color:var(--bad);border-color:transparent;font-weight:600}
 .label{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .task{background:var(--accent-soft);border-left:3px solid var(--accent);padding:10px 12px;border-radius:8px;font-weight:600}
@@ -131,7 +140,11 @@ nav button.on{color:var(--accent)}
       <div class="chips" id="qChips"></div>
       <h2 id="qTitle"></h2>
       <div id="qScenario"></div>
-      <div><div class="label" style="margin-bottom:6px">Tables</div><pre id="qSchema"></pre></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="label">Tables (sample data)</div>
+        <div id="qData" style="display:flex;flex-direction:column;gap:12px"></div>
+        <details><summary>Column types</summary><pre id="qSchema" style="margin-top:8px"></pre></details>
+      </div>
       <div class="task" id="qTask"></div>
       <details id="qHintBox"><summary>Need a hint?</summary><div id="qHint" style="margin-top:6px"></div></details>
       <div id="answerBox">
@@ -220,7 +233,7 @@ nav button.on{color:var(--accent)}
   var $ = function(id){ return document.getElementById(id); };
   var A = window.Android || null;
   var KEY = "sqlsd_v2";
-  var PLAN = [{lvl:"A", label:"Advanced"},{lvl:"C", label:"Scenario"},{lvl:"A", label:"Advanced"},{lvl:"A", label:"Adv / PL/SQL", plsql:true}];
+  var PLAN = [{lvl:"E", label:"Easy"},{lvl:"M", label:"Medium"},{lvl:"A", label:"Advanced"},{lvl:"A", label:"Adv / PL/SQL", plsql:true}];
   var JOBS = [
     ["Naukri", "PL/SQL Developer · Pune", "https://www.naukri.com/pl-sql-developer-jobs-in-pune"],
     ["Naukri", "Oracle PL/SQL · Banking", "https://www.naukri.com/oracle-pl-sql-developer-banking-jobs"],
@@ -245,7 +258,7 @@ nav button.on{color:var(--accent)}
     [A ? A.bank() : '{"questions":[],"lessons":[]}', A ? A.feed() : '{"questions":[],"lessons":[]}'].forEach(function(txt){
       try {
         var b = JSON.parse(txt);
-        (b.questions||[]).forEach(function(q){ if (q && q.id && q.task && q.solution) merged[q.id] = q; });
+        (b.questions||[]).forEach(function(q){ if (q && q.id && q.task && q.solution) { if (q.lvl === "C") q.lvl = "M"; merged[q.id] = q; } });
         (b.lessons||[]).forEach(function(l){ if (l && l.id && l.concept) lessons[l.id] = l; });
       } catch(e) {}
     });
@@ -288,6 +301,21 @@ nav button.on{color:var(--accent)}
     try { A.setNext(q.title, teaser + (teaser.endsWith(".") ? "" : ".")); } catch(e) {}
   }
 
+  function levelChip(q){
+    if (q.lvl === "E") return '<span class="chip easy">Easy</span>';
+    if (q.lvl === "A") return '<span class="chip adv">Advanced</span>';
+    return '<span class="chip core">Medium</span>';
+  }
+  function dataHtml(q){
+    if (!q.data || !q.data.length) return '<pre>' + esc(q.schema) + '</pre>';
+    return q.data.map(function(t){
+      var head = '<tr>' + t.cols.map(function(c){ return '<th>' + esc(c) + '</th>'; }).join('') + '</tr>';
+      var body = t.rows.length ? t.rows.map(function(r){
+        return '<tr>' + r.map(function(v){ return v === "NULL" ? '<td class="null">NULL</td>' : '<td>' + esc(v) + '</td>'; }).join('') + '</tr>';
+      }).join('') : '<tr class="empty"><td colspan="' + t.cols.length + '">(empty table)</td></tr>';
+      return '<div class="dtable"><div class="tname">' + esc(t.name) + '</div><div class="tscroll"><table class="grid"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div></div>';
+    }).join('');
+  }
   var viewing = null;
   function todayDone(){
     var t = dkey();
@@ -326,7 +354,7 @@ nav button.on{color:var(--accent)}
     $("qCard").classList.remove("hidden"); $("emptyCard").classList.add("hidden");
     var q = byId[state.cur.id];
     var chips = [];
-    chips.push(q.lvl === "A" ? '<span class="chip adv">Advanced</span>' : '<span class="chip core">Scenario</span>');
+    chips.push(levelChip(q));
     if (q.kind === "plsql") chips.push('<span class="chip adv">PL/SQL</span>');
     if (state.cur.review) chips.push('<span class="chip rev">Review</span>');
     chips.push('<span class="chip">' + esc(q.concept) + '</span>');
@@ -335,6 +363,7 @@ nav button.on{color:var(--accent)}
     $("qTitle").textContent = q.title;
     $("qScenario").textContent = q.scenario;
     $("qSchema").textContent = q.schema;
+    $("qData").innerHTML = dataHtml(q);
     $("qTask").textContent = q.task;
     $("qHint").textContent = q.hint;
     $("qHintBox").open = false;
@@ -370,7 +399,7 @@ nav button.on{color:var(--accent)}
     $("btnBack").firstChild.textContent = todayCount() >= 4 ? "Back to bonus" : "Back to Q";
     $("backNo").textContent = todayCount() >= 4 ? "" : String(todayCount() + 1);
     var chips = [];
-    chips.push(q.lvl === "A" ? '<span class="chip adv">Advanced</span>' : '<span class="chip core">Scenario</span>');
+    chips.push(levelChip(q));
     if (q.kind === "plsql") chips.push('<span class="chip adv">PL/SQL</span>');
     chips.push('<span class="chip">' + esc(q.concept) + '</span>');
     chips.push('<span class="chip">' + esc(q.domain) + '</span>');
@@ -378,6 +407,7 @@ nav button.on{color:var(--accent)}
     $("qTitle").textContent = q.title;
     $("qScenario").textContent = q.scenario;
     $("qSchema").textContent = q.schema;
+    $("qData").innerHTML = dataHtml(q);
     $("qTask").textContent = q.task;
     $("qHint").textContent = q.hint;
     $("answerBox").classList.add("hidden");
@@ -418,7 +448,7 @@ nav button.on{color:var(--accent)}
     ensureCurrent();
     renderAll();
     window.scrollTo(0, 0);
-    if (A) A.toast(g === 2 ? "Nice. Next one is ready." : "Saved. It will come back for review.");
+    if (A) A.toast(g === 2 ? "Nice work. Next one is ready." : g === 1 ? "Good effort. You will see it again in 3 days." : "That is how learning works. It comes back tomorrow.");
   }
 
   function renderLearn(){

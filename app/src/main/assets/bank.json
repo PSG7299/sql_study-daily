@@ -17,7 +17,56 @@
    "why": "The window sums signed amounts from the first row up to the current row per account. ROWS (not the default RANGE) plus txn_id in the ORDER BY stops two transactions with the same timestamp from sharing one balance.",
    "tip": "I always add a tiebreaker to ORDER BY and state ROWS explicitly, because the default RANGE frame gives wrong balances when timestamps tie.",
    "simple": "Think of your bank passbook. After every entry there is a balance column. To get that number you add up every deposit and subtract every withdrawal from the first line down to this line. SUM() OVER does exactly that adding for each row. If two entries happen at the same second, you also sort by txn_id so each entry still gets its own balance.",
-   "remember": "Running balance = keep adding from the top, row by row (ROWS)."
+   "remember": "Running balance = keep adding from the top, row by row (ROWS).",
+   "data": [
+    {
+     "name": "TXN",
+     "cols": [
+      "txn_id",
+      "acct_id",
+      "txn_ts",
+      "dr_cr",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "101",
+       "01-03-2026 10:00",
+       "CR",
+       "5000"
+      ],
+      [
+       "2",
+       "101",
+       "02-03-2026 12:30",
+       "DR",
+       "2000"
+      ],
+      [
+       "3",
+       "101",
+       "02-03-2026 12:30",
+       "DR",
+       "4000"
+      ],
+      [
+       "4",
+       "101",
+       "05-03-2026 09:15",
+       "CR",
+       "3000"
+      ],
+      [
+       "5",
+       "102",
+       "01-03-2026 11:00",
+       "CR",
+       "800"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a02",
@@ -34,7 +83,54 @@
    "why": "Within one unbroken streak, each month moves forward by one and so does the row number, so month minus row number stays constant. A gap changes that value and starts a new group.",
    "tip": "This is the gaps-and-islands pattern; I use it for consecutive defaults, login streaks and missing sequence numbers.",
    "simple": "Imagine ticking a calendar for each month the EMI was missed. You want to find 3 or more ticks next to each other with no gap. A trick: number the missed months 1, 2, 3... and subtract that number from the month. If the months are back to back, the answer stays the same, so they fall in one group. A gap changes the answer and starts a new group.",
-   "remember": "Month minus counter stays the same while the streak lasts."
+   "remember": "Month minus counter stays the same while the streak lasts.",
+   "data": [
+    {
+     "name": "EMI_SCHEDULE",
+     "cols": [
+      "loan_id",
+      "due_month",
+      "status"
+     ],
+     "rows": [
+      [
+       "501",
+       "01-01-2026",
+       "PAID"
+      ],
+      [
+       "501",
+       "01-02-2026",
+       "MISSED"
+      ],
+      [
+       "501",
+       "01-03-2026",
+       "MISSED"
+      ],
+      [
+       "501",
+       "01-04-2026",
+       "MISSED"
+      ],
+      [
+       "501",
+       "01-05-2026",
+       "PAID"
+      ],
+      [
+       "502",
+       "01-02-2026",
+       "MISSED"
+      ],
+      [
+       "502",
+       "01-04-2026",
+       "MISSED"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a03",
@@ -51,11 +147,60 @@
    "why": "RANGE works on the ORDER BY value, so the frame holds every row whose timestamp is within the last 10 minutes, however many rows that is. ROWS could not express a time window.",
    "tip": "ROWS counts physical rows, RANGE works on values; for time-based velocity rules I use RANGE with an INTERVAL.",
    "simple": "Picture a 10-minute stopwatch that moves along with every swipe of a card. At each swipe you look back 10 minutes and count how many swipes you see. If you count 3 or more, it looks like someone is testing a stolen card. RANGE with INTERVAL '10' MINUTE is that stopwatch.",
-   "remember": "RANGE looks back by time, ROWS looks back by count."
+   "remember": "RANGE looks back by time, ROWS looks back by count.",
+   "data": [
+    {
+     "name": "CARD_TXN",
+     "cols": [
+      "txn_id",
+      "card_no",
+      "txn_ts",
+      "merchant_id",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "4111-XX-0001",
+       "10-03-2026 22:01",
+       "77",
+       "10"
+      ],
+      [
+       "2",
+       "4111-XX-0001",
+       "10-03-2026 22:04",
+       "78",
+       "20"
+      ],
+      [
+       "3",
+       "4111-XX-0001",
+       "10-03-2026 22:09",
+       "79",
+       "15"
+      ],
+      [
+       "4",
+       "4111-XX-0001",
+       "10-03-2026 23:30",
+       "80",
+       "4999"
+      ],
+      [
+       "5",
+       "5500-XX-0042",
+       "10-03-2026 22:05",
+       "12",
+       "650"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a04",
-   "lvl": "A",
+   "lvl": "M",
    "kind": "sql",
    "concept": "Top-N per group with ties",
    "domain": "Deposits",
@@ -68,11 +213,67 @@
    "why": "Analytic functions run after GROUP BY, so you can rank on SUM(balance) directly. DENSE_RANK keeps tied customers and leaves no gaps, so rank 3 always exists when there are 3 distinct totals.",
    "tip": "ROW_NUMBER drops ties, RANK leaves gaps, DENSE_RANK does neither; I pick based on what the business means by top 3.",
    "simple": "It is like a race where two runners finish at the same time. Both get a medal. First you add up each customer's money across all their accounts. Then you give ranks inside each branch. DENSE_RANK lets people who tie share the same rank, and the next rank is not skipped, so you never lose a 3rd place.",
-   "remember": "Ties share a rank: DENSE_RANK. No ties allowed: ROW_NUMBER."
+   "remember": "Ties share a rank: DENSE_RANK. No ties allowed: ROW_NUMBER.",
+   "data": [
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_id",
+      "cust_id",
+      "branch_id",
+      "balance",
+      "status"
+     ],
+     "rows": [
+      [
+       "1",
+       "11",
+       "10",
+       "900000",
+       "ACTIVE"
+      ],
+      [
+       "2",
+       "11",
+       "10",
+       "100000",
+       "ACTIVE"
+      ],
+      [
+       "3",
+       "12",
+       "10",
+       "1000000",
+       "ACTIVE"
+      ],
+      [
+       "4",
+       "13",
+       "10",
+       "750000",
+       "ACTIVE"
+      ],
+      [
+       "5",
+       "14",
+       "10",
+       "600000",
+       "ACTIVE"
+      ],
+      [
+       "6",
+       "15",
+       "10",
+       "5000000",
+       "CLOSED"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a05",
-   "lvl": "A",
+   "lvl": "M",
    "kind": "sql",
    "concept": "De-duplicate with ROW_NUMBER",
    "domain": "Payments",
@@ -85,7 +286,54 @@
    "why": "ROW_NUMBER gives 1 to the row you keep and 2, 3... to the copies. Deleting by ROWID is the fastest way to hit the exact physical rows.",
    "tip": "Before deleting in production I run the inner query as a SELECT, save the rows to a backup table, and then add a unique constraint on the UTR so it cannot happen again.",
    "simple": "Imagine the same payment slip was photocopied by mistake. You keep the first copy and throw away the rest. ROW_NUMBER gives the first copy number 1 and the copies 2, 3 and so on. Then you delete everything that is not number 1.",
-   "remember": "Number the copies, keep number 1, delete the rest."
+   "remember": "Number the copies, keep number 1, delete the rest.",
+   "data": [
+    {
+     "name": "UPI_TXN",
+     "cols": [
+      "id",
+      "utr_no",
+      "payer_vpa",
+      "payee_vpa",
+      "amount",
+      "created_ts"
+     ],
+     "rows": [
+      [
+       "1",
+       "UTR9001",
+       "ravi@okhdfc",
+       "shop@ybl",
+       "450",
+       "10-03-2026 10:00:01"
+      ],
+      [
+       "2",
+       "UTR9001",
+       "ravi@okhdfc",
+       "shop@ybl",
+       "450",
+       "10-03-2026 10:00:03"
+      ],
+      [
+       "3",
+       "UTR9002",
+       "neha@oksbi",
+       "rent@icici",
+       "15000",
+       "10-03-2026 11:20:00"
+      ],
+      [
+       "4",
+       "UTR9001",
+       "ravi@okhdfc",
+       "shop@ybl",
+       "450",
+       "10-03-2026 10:00:05"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a06",
@@ -102,7 +350,54 @@
    "why": "MERGE does the update and the insert in one pass. Aggregating in USING matters: if the source has two rows for one account, Oracle raises ORA-30926 (unable to get a stable set of rows).",
    "tip": "I make the MERGE source unique on the join key, otherwise ORA-30926 appears in production the first day an account has two staged rows.",
    "simple": "Think of a class attendance register. If a student's name is already in the register, you update their marks. If it is a new student, you add a new line. MERGE does both in one go. First add up each account's money for the day, so each account comes only once.",
-   "remember": "MERGE = update if it exists, insert if it is new."
+   "remember": "MERGE = update if it exists, insert if it is new.",
+   "data": [
+    {
+     "name": "STG_TXN",
+     "cols": [
+      "acct_id",
+      "amount"
+     ],
+     "rows": [
+      [
+       "101",
+       "5000"
+      ],
+      [
+       "101",
+       "-1200"
+      ],
+      [
+       "102",
+       "700"
+      ],
+      [
+       "103",
+       "2500"
+      ]
+     ]
+    },
+    {
+     "name": "ACCT_BALANCE",
+     "cols": [
+      "acct_id",
+      "balance",
+      "updated_on"
+     ],
+     "rows": [
+      [
+       "101",
+       "10000",
+       "09-03-2026"
+      ],
+      [
+       "102",
+       "300",
+       "09-03-2026"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a07",
@@ -119,11 +414,55 @@
    "why": "FULL OUTER JOIN returns matched rows plus unmatched rows from each side. The WHERE keeps only breaks. Check the key columns for NULL, not the amounts, because an amount could itself be NULL.",
    "tip": "This is the same source-versus-target pattern I used in data migration: count check, key check, then value check.",
    "simple": "You and a friend each made a list of how much money each branch has. Now you lay both lists side by side. Some branches are only on your list, some only on your friend's list, and some are on both but with different numbers. A FULL OUTER JOIN puts both lists side by side so you can spot all three problems.",
-   "remember": "FULL OUTER JOIN = show rows from both lists, matched or not."
+   "remember": "FULL OUTER JOIN = show rows from both lists, matched or not.",
+   "data": [
+    {
+     "name": "CBS_TOTAL",
+     "cols": [
+      "branch_id",
+      "total_amt"
+     ],
+     "rows": [
+      [
+       "1",
+       "500000"
+      ],
+      [
+       "2",
+       "320000"
+      ],
+      [
+       "3",
+       "150000"
+      ]
+     ]
+    },
+    {
+     "name": "GL_TOTAL",
+     "cols": [
+      "branch_id",
+      "total_amt"
+     ],
+     "rows": [
+      [
+       "1",
+       "500000"
+      ],
+      [
+       "2",
+       "318500"
+      ],
+      [
+       "4",
+       "90000"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a08",
-   "lvl": "A",
+   "lvl": "M",
    "kind": "sql",
    "concept": "LAG for period-over-period change",
    "domain": "Mutual funds",
@@ -136,7 +475,39 @@
    "why": "LAG returns NULL for the first row, and any arithmetic with NULL stays NULL, which gives the required empty first month. NULLIF turns a zero denominator into NULL instead of raising ORA-01476.",
    "tip": "LAG and LEAD replace a self-join, so the table is read once; that matters on large fact tables.",
    "simple": "Think of your school report card. Next to this year's marks you write last year's marks and see if you went up or down. LAG brings last month's number onto this month's row so you can compare. The first month has nothing before it, so it stays empty.",
-   "remember": "LAG = peek at the row before me."
+   "remember": "LAG = peek at the row before me.",
+   "data": [
+    {
+     "name": "FUND_AUM",
+     "cols": [
+      "fund_id",
+      "month_end",
+      "aum"
+     ],
+     "rows": [
+      [
+       "7",
+       "31-01-2026",
+       "1000000000"
+      ],
+      [
+       "7",
+       "28-02-2026",
+       "1100000000"
+      ],
+      [
+       "7",
+       "31-03-2026",
+       "1045000000"
+      ],
+      [
+       "8",
+       "31-03-2026",
+       "0"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a09",
@@ -153,11 +524,54 @@
    "why": "PRIOR marks the row already visited. PRIOR mgr_id = emp_id means: the next row is the one whose emp_id equals my manager id, so the walk goes up. NOCYCLE protects against bad data where two people report to each other.",
    "tip": "The side PRIOR sits on decides direction; I say it aloud as 'previous row's manager equals this row's id' to get it right.",
    "simple": "Picture a family tree, but at work. You start with one officer and ask 'who is your boss?', then 'who is your boss's boss?', until you reach the top. CONNECT BY keeps climbing like this. PRIOR tells it which way to climb: up to the boss or down to the team.",
-   "remember": "START WITH me, CONNECT BY my boss, PRIOR shows the direction."
+   "remember": "START WITH me, CONNECT BY my boss, PRIOR shows the direction.",
+   "data": [
+    {
+     "name": "EMPLOYEE",
+     "cols": [
+      "emp_id",
+      "emp_name",
+      "mgr_id",
+      "designation"
+     ],
+     "rows": [
+      [
+       "4107",
+       "Rahul",
+       "3002",
+       "Loan Officer"
+      ],
+      [
+       "3002",
+       "Priya",
+       "2001",
+       "Branch Manager"
+      ],
+      [
+       "2001",
+       "Anil",
+       "1001",
+       "Regional Head"
+      ],
+      [
+       "1001",
+       "Meera",
+       "NULL",
+       "Zonal Head"
+      ],
+      [
+       "4108",
+       "Sana",
+       "3002",
+       "Loan Officer"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a10",
-   "lvl": "A",
+   "lvl": "M",
    "kind": "sql",
    "concept": "PIVOT",
    "domain": "Payments",
@@ -170,7 +584,63 @@
    "why": "PIVOT groups by every column that is not in the aggregate or the FOR clause. The inline view leaves only branch_id, so you get one row per branch.",
    "tip": "If the Oracle version or tool does not support PIVOT, I write the same thing with COUNT(CASE WHEN channel = 'UPI' THEN 1 END).",
    "simple": "Imagine a long list that says 'Branch 1, UPI', 'Branch 1, NEFT', and so on. You want to turn it into a neat table with one row per branch and one column for each payment type. PIVOT turns those values into columns, like turning a list into a grid.",
-   "remember": "PIVOT turns row values into columns."
+   "remember": "PIVOT turns row values into columns.",
+   "data": [
+    {
+     "name": "PAYMENT",
+     "cols": [
+      "pay_id",
+      "branch_id",
+      "channel",
+      "amount",
+      "pay_date"
+     ],
+     "rows": [
+      [
+       "1",
+       "10",
+       "UPI",
+       "500",
+       "02-03-2026"
+      ],
+      [
+       "2",
+       "10",
+       "UPI",
+       "900",
+       "05-03-2026"
+      ],
+      [
+       "3",
+       "10",
+       "NEFT",
+       "25000",
+       "06-03-2026"
+      ],
+      [
+       "4",
+       "20",
+       "RTGS",
+       "500000",
+       "07-03-2026"
+      ],
+      [
+       "5",
+       "20",
+       "UPI",
+       "120",
+       "08-03-2026"
+      ],
+      [
+       "6",
+       "10",
+       "IMPS",
+       "3000",
+       "02-04-2026"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a11",
@@ -187,11 +657,60 @@
    "why": "ROLLUP(region, product) groups by (region, product), then (region), then (). GROUPING returns 1 on a subtotal row, which is safer than testing for NULL because the data itself may contain NULL products.",
    "tip": "I use GROUPING() rather than NVL to label subtotals, since real NULLs in the column would otherwise be mislabelled as totals.",
    "simple": "Think of a shopping bill. It lists each item, then a subtotal for each section, then a grand total at the bottom. ROLLUP adds those subtotal and grand total lines for you automatically. GROUPING() tells you which lines are totals so you can label them.",
-   "remember": "ROLLUP adds subtotals and a grand total."
+   "remember": "ROLLUP adds subtotals and a grand total.",
+   "data": [
+    {
+     "name": "LOAN",
+     "cols": [
+      "loan_id",
+      "region",
+      "product",
+      "disbursed_amt",
+      "disbursed_on"
+     ],
+     "rows": [
+      [
+       "1",
+       "West",
+       "Home",
+       "3000000",
+       "05-03-2026"
+      ],
+      [
+       "2",
+       "West",
+       "Car",
+       "800000",
+       "07-03-2026"
+      ],
+      [
+       "3",
+       "West",
+       "Home",
+       "2500000",
+       "09-03-2026"
+      ],
+      [
+       "4",
+       "South",
+       "Home",
+       "4000000",
+       "10-03-2026"
+      ],
+      [
+       "5",
+       "South",
+       "Gold",
+       "200000",
+       "12-03-2026"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a12",
-   "lvl": "A",
+   "lvl": "M",
    "kind": "sql",
    "concept": "KEEP (DENSE_RANK LAST)",
    "domain": "KYC",
@@ -204,7 +723,44 @@
    "why": "KEEP (DENSE_RANK LAST ORDER BY updated_on) restricts the aggregate to the rows with the latest date. MAX then just picks a value from those rows.",
    "tip": "KEEP FIRST/LAST gets 'the value from the latest row' in one pass; the alternative is ROW_NUMBER in a subquery, which I use when I need many columns.",
    "simple": "Imagine a pile of ID cards a customer showed over the years. You want the newest one and what type it was. KEEP DENSE_RANK LAST says: 'look only at the newest date, and take the document type from that row.'",
-   "remember": "KEEP LAST = take a value from the latest row."
+   "remember": "KEEP LAST = take a value from the latest row.",
+   "data": [
+    {
+     "name": "KYC_HISTORY",
+     "cols": [
+      "cust_id",
+      "updated_on",
+      "doc_type",
+      "verified_by"
+     ],
+     "rows": [
+      [
+       "11",
+       "10-01-2020",
+       "PAN",
+       "Amit"
+      ],
+      [
+       "11",
+       "15-06-2024",
+       "Aadhaar",
+       "Kiran"
+      ],
+      [
+       "12",
+       "01-02-2023",
+       "Passport",
+       "Amit"
+      ],
+      [
+       "12",
+       "01-02-2023",
+       "PAN",
+       "Amit"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a13",
@@ -221,7 +777,59 @@
    "why": "ROWS BETWEEN 6 PRECEDING AND CURRENT ROW is a 7-row sliding frame. Counting rows in the same frame tells you when the frame is full. The WINDOW clause (19c patch sets and later) avoids repeating the definition; on older versions repeat the OVER clause.",
    "tip": "Trading days are not calendar days, so I use ROWS here; RANGE with 6 days would silently shrink the window across weekends.",
    "simple": "To smooth out a stock's daily ups and downs, you take today's price and the 6 days before it, and find the average. Tomorrow you slide one day forward and do it again. That sliding window of 7 rows is a moving average. Until you have 7 days, there is not enough data, so it stays empty.",
-   "remember": "Moving average = a 7-day window that slides forward."
+   "remember": "Moving average = a 7-day window that slides forward.",
+   "data": [
+    {
+     "name": "DAILY_PRICE",
+     "cols": [
+      "symbol",
+      "trade_date",
+      "close_price"
+     ],
+     "rows": [
+      [
+       "INFY",
+       "02-03-2026",
+       "1500"
+      ],
+      [
+       "INFY",
+       "03-03-2026",
+       "1510"
+      ],
+      [
+       "INFY",
+       "04-03-2026",
+       "1490"
+      ],
+      [
+       "INFY",
+       "05-03-2026",
+       "1520"
+      ],
+      [
+       "INFY",
+       "06-03-2026",
+       "1530"
+      ],
+      [
+       "INFY",
+       "09-03-2026",
+       "1540"
+      ],
+      [
+       "INFY",
+       "10-03-2026",
+       "1550"
+      ],
+      [
+       "INFY",
+       "11-03-2026",
+       "1560"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a14",
@@ -238,11 +846,58 @@
    "why": "PATTERN works like a regular expression over rows. strt matches any row; down{3,} needs at least 3 following rows, each below its previous row. MEASURES picks what to report per match.",
    "tip": "For pattern-over-rows problems MATCH_RECOGNIZE is clearer than nested analytic functions; I can also explain the gaps-and-islands alternative if the team avoids it.",
    "simple": "You are looking for a pattern like 'down, down, down' in daily balances, the way you would look for a word in a sentence. MATCH_RECOGNIZE lets you describe the pattern (one start day, then 3 or more falling days) and Oracle finds every place it happens.",
-   "remember": "MATCH_RECOGNIZE = search for a pattern across rows."
+   "remember": "MATCH_RECOGNIZE = search for a pattern across rows.",
+   "data": [
+    {
+     "name": "DAILY_BAL",
+     "cols": [
+      "acct_id",
+      "bal_date",
+      "balance"
+     ],
+     "rows": [
+      [
+       "900",
+       "01-03-2026",
+       "500000"
+      ],
+      [
+       "900",
+       "02-03-2026",
+       "450000"
+      ],
+      [
+       "900",
+       "03-03-2026",
+       "420000"
+      ],
+      [
+       "900",
+       "04-03-2026",
+       "300000"
+      ],
+      [
+       "900",
+       "05-03-2026",
+       "310000"
+      ],
+      [
+       "901",
+       "01-03-2026",
+       "80000"
+      ],
+      [
+       "901",
+       "02-03-2026",
+       "70000"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a15",
-   "lvl": "A",
+   "lvl": "M",
    "kind": "sql",
    "concept": "LAG to detect reactivation",
    "domain": "Dormant accounts",
@@ -255,7 +910,44 @@
    "why": "LAG brings the previous transaction date onto the current row. ADD_MONTHS handles leap years correctly, which a fixed 730 days would not. First transactions have NULL prev_date and drop out naturally.",
    "tip": "I avoid hard-coded day counts for regulatory periods and use ADD_MONTHS so leap years do not create false positives.",
    "simple": "Think of a friend who has not texted you for 2 years and suddenly messages. That is unusual, so you check it. Here, for every transaction you look at the date of the previous one on the same account using LAG. If the gap is more than 24 months, you flag it.",
-   "remember": "LAG to get the last date, then measure the gap."
+   "remember": "LAG to get the last date, then measure the gap.",
+   "data": [
+    {
+     "name": "TXN",
+     "cols": [
+      "txn_id",
+      "acct_id",
+      "txn_date",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "301",
+       "10-01-2023",
+       "2000"
+      ],
+      [
+       "2",
+       "301",
+       "15-03-2026",
+       "90000"
+      ],
+      [
+       "3",
+       "302",
+       "01-02-2026",
+       "500"
+      ],
+      [
+       "4",
+       "302",
+       "20-02-2026",
+       "700"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a16",
@@ -272,7 +964,38 @@
    "why": "SUM() OVER () is the grand total; the ordered SUM is the running total. The filter keeps a customer when the share before them was still under 80%, so the one who crosses the line is included.",
    "tip": "An empty OVER () gives a grand total on every row without a join; that is the cheapest way to compute percent-of-total.",
    "simple": "Imagine a class where a few students have most of the marbles. You line them up from the most marbles to the least and keep a running total. You stop when the running total reaches 80% of all marbles. Those students hold most of the deposits.",
-   "remember": "Sort big to small, keep a running total, stop at 80%."
+   "remember": "Sort big to small, keep a running total, stop at 80%.",
+   "data": [
+    {
+     "name": "CUST_DEPOSIT",
+     "cols": [
+      "cust_id",
+      "total_deposit"
+     ],
+     "rows": [
+      [
+       "1",
+       "5000000"
+      ],
+      [
+       "2",
+       "3000000"
+      ],
+      [
+       "3",
+       "1000000"
+      ],
+      [
+       "4",
+       "600000"
+      ],
+      [
+       "5",
+       "400000"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "a17",
@@ -289,7 +1012,39 @@
    "why": "LEAD's third argument is the default when no next row exists, so the last balance runs to the end of the quarter. Rounding once after summing avoids losing paise on every row.",
    "tip": "With money I round once at the end, not per row, and I confirm the day-count basis (365 or actual) with the business before coding.",
    "simple": "A balance stays the same until it changes, like a light that stays on until someone flips the switch. LEAD tells you when the next change happens, so you know how many days each balance lasted. Then interest = balance × rate × days ÷ 365, and you add it all up.",
-   "remember": "LEAD = peek at the next row to find when this one ends."
+   "remember": "LEAD = peek at the next row to find when this one ends.",
+   "data": [
+    {
+     "name": "BAL_CHANGE",
+     "cols": [
+      "acct_id",
+      "eff_date",
+      "balance"
+     ],
+     "rows": [
+      [
+       "201",
+       "01-01-2026",
+       "100000"
+      ],
+      [
+       "201",
+       "11-02-2026",
+       "150000"
+      ],
+      [
+       "201",
+       "21-03-2026",
+       "120000"
+      ],
+      [
+       "202",
+       "01-01-2026",
+       "50000"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "p01",
@@ -306,7 +1061,56 @@
    "why": "BULK COLLECT and FORALL send rows to the SQL engine in batches, cutting context switches. LIMIT caps memory. SAVE EXCEPTIONS lets the batch finish and raises ORA-24381 once, with the failed positions in SQL%BULK_EXCEPTIONS. Exit on COUNT = 0, not %NOTFOUND, or the last partial batch is lost.",
    "tip": "I always use LIMIT with BULK COLLECT, and I exit on collection count, because %NOTFOUND is true on the final partial fetch.",
    "simple": "Doing 2 crore updates one by one is like carrying bricks one at a time. BULK COLLECT picks up 10,000 bricks in one trip, and FORALL puts them all down in one go. SAVE EXCEPTIONS means if one brick is broken, you note it down and keep going instead of stopping the whole job.",
-   "remember": "Fetch in batches, update in batches, log the bad ones and carry on."
+   "remember": "Fetch in batches, update in batches, log the bad ones and carry on.",
+   "data": [
+    {
+     "name": "INTEREST_DUE",
+     "cols": [
+      "acct_id",
+      "interest"
+     ],
+     "rows": [
+      [
+       "101",
+       "350.25"
+      ],
+      [
+       "102",
+       "1200"
+      ],
+      [
+       "999",
+       "80.5"
+      ]
+     ]
+    },
+    {
+     "name": "ACCT_BALANCE",
+     "cols": [
+      "acct_id",
+      "balance"
+     ],
+     "rows": [
+      [
+       "101",
+       "40000"
+      ],
+      [
+       "102",
+       "137000"
+      ]
+     ]
+    },
+    {
+     "name": "ERR_LOG",
+     "cols": [
+      "acct_id",
+      "err_code",
+      "logged_on"
+     ],
+     "rows": []
+    }
+   ]
   },
   {
    "id": "p02",
@@ -323,7 +1127,30 @@
    "why": "FOR UPDATE locks the rows, so the balance you checked cannot change before you update it (no lost update). Locking in acct_id order means two opposite transfers ask for locks in the same sequence, so they wait instead of deadlocking. Leaving COMMIT to the caller keeps the debit and credit in one transaction.",
    "tip": "Check-then-update without a lock is a race condition; I lock first, in a fixed order, and keep both legs in one transaction.",
    "simple": "Two people try to take money from the same piggy bank at the same moment, and the count goes wrong. FOR UPDATE is like putting your hand on the piggy bank so nobody else can touch it until you finish. Always grabbing the lower account number first stops two people from each holding one bank and waiting for the other forever.",
-   "remember": "Lock first, check, then update; always lock in the same order."
+   "remember": "Lock first, check, then update; always lock in the same order.",
+   "data": [
+    {
+     "name": "ACCT_BALANCE",
+     "cols": [
+      "acct_id",
+      "balance"
+     ],
+     "rows": [
+      [
+       "101",
+       "20000"
+      ],
+      [
+       "102",
+       "5000"
+      ],
+      [
+       "103",
+       "0"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "p03",
@@ -340,7 +1167,28 @@
    "why": "PRAGMA AUTONOMOUS_TRANSACTION starts a separate transaction, so its COMMIT saves only the log row and does not touch the caller's work. It must commit or roll back before returning, otherwise ORA-06519 is raised.",
    "tip": "I use autonomous transactions only for logging and auditing; using them to dodge a mutating-table error hides a design problem.",
    "simple": "Imagine you tear up a bad homework page, but you still want a note in your diary saying you tried. An autonomous transaction is like a separate diary: you write in it and save it, even if the main work is thrown away.",
-   "remember": "Autonomous transaction = a separate save that survives rollback."
+   "remember": "Autonomous transaction = a separate save that survives rollback.",
+   "data": [
+    {
+     "name": "AUDIT_LOG",
+     "cols": [
+      "log_id",
+      "event",
+      "details",
+      "logged_by",
+      "logged_on"
+     ],
+     "rows": [
+      [
+       "1",
+       "TRANSFER_FAIL",
+       "101 to 102, Rs 50000: insufficient funds",
+       "APP_USER",
+       "10-03-2026 14:02:11"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "p04",
@@ -357,11 +1205,42 @@
    "why": "A row-level trigger cannot read the table being changed. A compound trigger shares state between sections: the row section only remembers which account and day were touched, and the statement section, where the table is stable, runs the query. The error rolls back the whole statement.",
    "tip": "Mutating table means my row trigger is reading its own table; I move the read to the statement level with a compound trigger rather than hiding it with an autonomous transaction.",
    "simple": "A row trigger is not allowed to look at the table while it is still changing it, like trying to count people in a room while they are still walking in. A compound trigger notes down who came in during the row part, and does the counting at the end, when everyone has sat down.",
-   "remember": "Remember in the row part, check in the statement part."
+   "remember": "Remember in the row part, check in the statement part.",
+   "data": [
+    {
+     "name": "ATM_TXN",
+     "cols": [
+      "txn_id",
+      "acct_id",
+      "txn_date",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "101",
+       "10-03-2026 09:10",
+       "20000"
+      ],
+      [
+       "2",
+       "101",
+       "10-03-2026 13:45",
+       "20000"
+      ],
+      [
+       "3",
+       "102",
+       "10-03-2026 18:00",
+       "10000"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c01",
-   "lvl": "C",
+   "lvl": "M",
    "kind": "sql",
    "concept": "CASE buckets with aggregation",
    "domain": "Collections",
@@ -374,11 +1253,54 @@
    "why": "CASE stops at the first true branch, so the conditions can be written as simple upper limits. A separate sort column is needed because '90+' would not sort correctly as text.",
    "tip": "I TRUNC both dates so the time part does not push a loan into the wrong bucket around midnight.",
    "simple": "Think of sorting late library books into boxes: 1 to 30 days late, 31 to 60, 61 to 90, and more than 90. CASE decides which box each loan goes into. Then you count how many loans are in each box and how much money they owe.",
-   "remember": "CASE puts each row into a box; GROUP BY counts each box."
+   "remember": "CASE puts each row into a box; GROUP BY counts each box.",
+   "data": [
+    {
+     "name": "LOAN_DUE",
+     "cols": [
+      "loan_id",
+      "cust_id",
+      "due_date",
+      "outstanding_amt"
+     ],
+     "rows": [
+      [
+       "1",
+       "11",
+       "25-10-2026",
+       "12000"
+      ],
+      [
+       "2",
+       "12",
+       "01-09-2026",
+       "8000"
+      ],
+      [
+       "3",
+       "13",
+       "20-07-2026",
+       "15000"
+      ],
+      [
+       "4",
+       "14",
+       "05-11-2026",
+       "5000"
+      ],
+      [
+       "5",
+       "15",
+       "30-11-2026",
+       "7000"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c02",
-   "lvl": "C",
+   "lvl": "M",
    "kind": "sql",
    "concept": "NOT IN and NULL trap",
    "domain": "Cross-sell",
@@ -391,11 +1313,54 @@
    "why": "NOT IN expands to cust_id <> a AND cust_id <> b AND cust_id <> NULL. The last comparison is unknown, so the whole condition is never true and no row comes back. NOT EXISTS only tests whether a matching row exists, so NULLs do not matter.",
    "tip": "If the subquery column can be NULL, NOT IN silently returns nothing; I use NOT EXISTS by default.",
    "simple": "NULL means 'I don't know'. If you ask 'is this customer not 1, not 2, and not unknown?', the answer is 'I don't know', so Oracle returns nobody. NOT EXISTS just asks 'is there any loan for this customer?', and an unknown value does not confuse it.",
-   "remember": "If NULL can appear, use NOT EXISTS, not NOT IN."
+   "remember": "If NULL can appear, use NOT EXISTS, not NOT IN.",
+   "data": [
+    {
+     "name": "CUSTOMER",
+     "cols": [
+      "cust_id",
+      "cust_name"
+     ],
+     "rows": [
+      [
+       "11",
+       "Ravi"
+      ],
+      [
+       "12",
+       "Neha"
+      ],
+      [
+       "13",
+       "Arjun"
+      ]
+     ]
+    },
+    {
+     "name": "LOAN",
+     "cols": [
+      "loan_id",
+      "cust_id",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "11",
+       "500000"
+      ],
+      [
+       "2",
+       "NULL",
+       "200000"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c03",
-   "lvl": "C",
+   "lvl": "E",
    "kind": "sql",
    "concept": "Index-friendly date filter",
    "domain": "Reporting",
@@ -408,11 +1373,48 @@
    "why": "TRUNC(txn_ts) = DATE '2026-03-31' is correct but applies a function to the column, so the normal index cannot be used. BETWEEN 31-Mar and 31-Mar misses everything after midnight. A half-open range (>= start, < next day) is both correct and index-friendly.",
    "tip": "I write date filters as half-open ranges on the bare column so the index is usable and the last second of the day is not lost.",
    "simple": "A day runs from midnight to just before the next midnight. Instead of saying 'on 31 March', say 'from 31 March 00:00 up to but not including 1 April 00:00'. That catches every second of the day, and Oracle can still use its index, like using the alphabet tabs in a dictionary.",
-   "remember": "Use >= start and < next day; never wrap the column in a function."
+   "remember": "Use >= start and < next day; never wrap the column in a function.",
+   "data": [
+    {
+     "name": "TXN",
+     "cols": [
+      "txn_id",
+      "acct_id",
+      "txn_ts",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "101",
+       "30-03-2026 23:59:59",
+       "500"
+      ],
+      [
+       "2",
+       "101",
+       "31-03-2026 00:00:00",
+       "700"
+      ],
+      [
+       "3",
+       "102",
+       "31-03-2026 23:59:30",
+       "250"
+      ],
+      [
+       "4",
+       "102",
+       "01-04-2026 00:00:01",
+       "900"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c04",
-   "lvl": "C",
+   "lvl": "M",
    "kind": "sql",
    "concept": "Outer join with aggregation",
    "domain": "Dormancy",
@@ -425,11 +1427,65 @@
    "why": "LEFT JOIN keeps accounts without transactions; for them MAX(txn_date) is NULL, so NVL falls back to the opening date. The condition goes in HAVING because it uses an aggregate.",
    "tip": "Whenever the question says 'including those with none', I reach for an outer join and decide what NULL should mean.",
    "simple": "Some accounts never had a single transaction. A normal join would hide them, like a class photo that leaves out absent students. A LEFT JOIN keeps every account. If there is no transaction, use the opening date instead and check if it is older than 2 years.",
-   "remember": "LEFT JOIN keeps everyone, even those with nothing to match."
+   "remember": "LEFT JOIN keeps everyone, even those with nothing to match.",
+   "data": [
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_id",
+      "cust_id",
+      "opened_on",
+      "status"
+     ],
+     "rows": [
+      [
+       "1",
+       "11",
+       "01-01-2020",
+       "ACTIVE"
+      ],
+      [
+       "2",
+       "12",
+       "05-06-2021",
+       "ACTIVE"
+      ],
+      [
+       "3",
+       "13",
+       "10-10-2026",
+       "ACTIVE"
+      ]
+     ]
+    },
+    {
+     "name": "TXN",
+     "cols": [
+      "txn_id",
+      "acct_id",
+      "txn_date",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "1",
+       "01-03-2024",
+       "500"
+      ],
+      [
+       "2",
+       "1",
+       "02-04-2026",
+       "200"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c05",
-   "lvl": "C",
+   "lvl": "E",
    "kind": "sql",
    "concept": "HAVING with COUNT DISTINCT",
    "domain": "Customer engagement",
@@ -442,11 +1498,60 @@
    "why": "TRUNC(date, 'MM') maps every date to the first of its month. Counting distinct months per customer and requiring 3 means they were present in all three.",
    "tip": "For 'in every period' questions I count distinct periods in HAVING instead of joining the table to itself three times.",
    "simple": "You want customers who showed up in January, February and March, like a student who attended at least once every month. Turn each date into its month, count how many different months each customer has, and keep those with 3.",
-   "remember": "Count distinct months; 3 means present every month."
+   "remember": "Count distinct months; 3 means present every month.",
+   "data": [
+    {
+     "name": "CARD_TXN",
+     "cols": [
+      "txn_id",
+      "cust_id",
+      "txn_date",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "11",
+       "05-01-2026",
+       "900"
+      ],
+      [
+       "2",
+       "11",
+       "10-02-2026",
+       "1200"
+      ],
+      [
+       "3",
+       "11",
+       "20-03-2026",
+       "400"
+      ],
+      [
+       "4",
+       "12",
+       "06-01-2026",
+       "3000"
+      ],
+      [
+       "5",
+       "12",
+       "07-01-2026",
+       "500"
+      ],
+      [
+       "6",
+       "12",
+       "25-03-2026",
+       "800"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c06",
-   "lvl": "C",
+   "lvl": "E",
    "kind": "sql",
    "concept": "Set operators",
    "domain": "KYC compliance",
@@ -459,11 +1564,55 @@
    "why": "MINUS removes duplicates and treats NULLs as equal, which makes it handy for comparing key lists. UNION ALL joins the two lists without an unnecessary sort, since they cannot overlap.",
    "tip": "I use UNION ALL unless I really need duplicates removed, because UNION adds a sort.",
    "simple": "You have two lists of names. MINUS gives the names on the first list that are missing from the second, like checking who did not hand in homework. Do it both ways to catch missing records on either side.",
-   "remember": "A MINUS B = in A but not in B."
+   "remember": "A MINUS B = in A but not in B.",
+   "data": [
+    {
+     "name": "CUSTOMER",
+     "cols": [
+      "cust_id",
+      "status"
+     ],
+     "rows": [
+      [
+       "11",
+       "ACTIVE"
+      ],
+      [
+       "12",
+       "ACTIVE"
+      ],
+      [
+       "13",
+       "CLOSED"
+      ]
+     ]
+    },
+    {
+     "name": "KYC",
+     "cols": [
+      "cust_id",
+      "kyc_status"
+     ],
+     "rows": [
+      [
+       "11",
+       "VERIFIED"
+      ],
+      [
+       "13",
+       "VERIFIED"
+      ],
+      [
+       "14",
+       "PENDING"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c07",
-   "lvl": "C",
+   "lvl": "E",
    "kind": "sql",
    "concept": "Conditional aggregation",
    "domain": "Statements",
@@ -476,11 +1625,53 @@
    "why": "A CASE inside an aggregate lets one scan produce several conditional totals. ELSE 0 keeps the result 0 rather than NULL for accounts with only credits or only debits.",
    "tip": "Conditional aggregation replaces several subqueries with one table scan, which is what I look for first when a report is slow.",
    "simple": "Think of one walk through your wallet's receipts, where you keep two piles: money in and money out. A CASE inside SUM lets you add to the right pile as you go, so one pass gives credits, debits and the net.",
-   "remember": "SUM(CASE ...) = many totals in one pass."
+   "remember": "SUM(CASE ...) = many totals in one pass.",
+   "data": [
+    {
+     "name": "TXN",
+     "cols": [
+      "txn_id",
+      "acct_id",
+      "txn_date",
+      "dr_cr",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "101",
+       "02-03-2026",
+       "CR",
+       "10000"
+      ],
+      [
+       "2",
+       "101",
+       "05-03-2026",
+       "DR",
+       "2500"
+      ],
+      [
+       "3",
+       "101",
+       "09-03-2026",
+       "DR",
+       "1500"
+      ],
+      [
+       "4",
+       "102",
+       "10-03-2026",
+       "CR",
+       "800"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c08",
-   "lvl": "C",
+   "lvl": "M",
    "kind": "sql",
    "concept": "Self-join",
    "domain": "Reversals",
@@ -493,11 +1684,53 @@
    "why": "Two aliases let you compare rows of the same table. The txn_id condition enforces order and stops a row pairing with itself. If the same amount is debited twice, this pairs each debit with each later credit, which you should mention.",
    "tip": "With self-joins I always state how I prevent duplicate pairs and what happens when several rows match.",
    "simple": "To find a payment and its refund, you compare the list with itself: one copy for the money going out and one copy for the money coming back. You match the same account, amount and day, and make sure the refund came after the payment.",
-   "remember": "Self-join = compare a table with a copy of itself."
+   "remember": "Self-join = compare a table with a copy of itself.",
+   "data": [
+    {
+     "name": "TXN",
+     "cols": [
+      "txn_id",
+      "acct_id",
+      "txn_date",
+      "dr_cr",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "101",
+       "10-03-2026 10:00",
+       "DR",
+       "4999"
+      ],
+      [
+       "2",
+       "101",
+       "10-03-2026 15:30",
+       "CR",
+       "4999"
+      ],
+      [
+       "3",
+       "102",
+       "10-03-2026 11:00",
+       "DR",
+       "700"
+      ],
+      [
+       "4",
+       "102",
+       "11-03-2026 09:00",
+       "CR",
+       "700"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c09",
-   "lvl": "C",
+   "lvl": "M",
    "kind": "sql",
    "concept": "Correlated UPDATE with EXISTS",
    "domain": "NPA classification",
@@ -510,11 +1743,68 @@
    "why": "EXISTS stops at the first qualifying due, so a loan with ten overdue instalments is still updated once. Filtering on status = 'STANDARD' keeps the statement safe to re-run.",
    "tip": "I write batch updates so they can be re-run safely: the WHERE clause excludes rows already processed.",
    "simple": "You go through the loan list and ask, for each loan, 'is there any payment more than 90 days overdue?' If yes, mark it NPA. EXISTS stops looking as soon as it finds one, so it is quick.",
-   "remember": "EXISTS = 'is there at least one?'"
+   "remember": "EXISTS = 'is there at least one?'",
+   "data": [
+    {
+     "name": "LOAN",
+     "cols": [
+      "loan_id",
+      "status",
+      "status_date"
+     ],
+     "rows": [
+      [
+       "1",
+       "STANDARD",
+       "01-01-2026"
+      ],
+      [
+       "2",
+       "STANDARD",
+       "01-01-2026"
+      ],
+      [
+       "3",
+       "NPA",
+       "01-08-2026"
+      ]
+     ]
+    },
+    {
+     "name": "LOAN_DUE",
+     "cols": [
+      "loan_id",
+      "due_date",
+      "paid_flag"
+     ],
+     "rows": [
+      [
+       "1",
+       "01-07-2026",
+       "N"
+      ],
+      [
+       "2",
+       "01-10-2026",
+       "N"
+      ],
+      [
+       "2",
+       "01-07-2026",
+       "Y"
+      ],
+      [
+       "3",
+       "01-05-2026",
+       "N"
+      ]
+     ]
+    }
+   ]
   },
   {
    "id": "c10",
-   "lvl": "C",
+   "lvl": "E",
    "kind": "sql",
    "concept": "Join with date arithmetic",
    "domain": "Loans",
@@ -527,7 +1817,550 @@
    "why": "Subtracting two DATEs gives days. LEAST returns the smaller of the computed penalty and the cap. Unpaid is tested with IS NULL, since = NULL is never true.",
    "tip": "I check NULL with IS NULL and truncate SYSDATE so the time of day does not add a partial day.",
    "simple": "Subtracting two dates gives the number of days in between, like counting days on a calendar. Multiply the days late by 50 rupees, and LEAST makes sure the fine never goes above 2,000.",
-   "remember": "Date minus date = days; LEAST puts a ceiling on a number."
+   "remember": "Date minus date = days; LEAST puts a ceiling on a number.",
+   "data": [
+    {
+     "name": "CUSTOMER",
+     "cols": [
+      "cust_id",
+      "cust_name",
+      "mobile"
+     ],
+     "rows": [
+      [
+       "11",
+       "Ravi",
+       "98xxxxxx01"
+      ],
+      [
+       "12",
+       "Neha",
+       "98xxxxxx02"
+      ]
+     ]
+    },
+    {
+     "name": "LOAN",
+     "cols": [
+      "loan_id",
+      "cust_id"
+     ],
+     "rows": [
+      [
+       "501",
+       "11"
+      ],
+      [
+       "502",
+       "12"
+      ]
+     ]
+    },
+    {
+     "name": "EMI",
+     "cols": [
+      "loan_id",
+      "due_date",
+      "emi_amt",
+      "paid_on"
+     ],
+     "rows": [
+      [
+       "501",
+       "05-11-2026",
+       "12000",
+       "NULL"
+      ],
+      [
+       "501",
+       "05-10-2026",
+       "12000",
+       "NULL"
+      ],
+      [
+       "502",
+       "05-11-2026",
+       "8000",
+       "04-11-2026"
+      ]
+     ]
+    }
+   ]
+  },
+  {
+   "id": "e01",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "GROUP BY with COUNT",
+   "domain": "Branch banking",
+   "title": "Accounts in each branch",
+   "scenario": "Ramesh, a regional manager, wants to know how many accounts each branch has, so he can plan staff.",
+   "schema": "ACCOUNT(acct_id NUMBER, branch_id NUMBER, acct_type VARCHAR2(10), balance NUMBER(14,2))",
+   "data": [
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_id",
+      "branch_id",
+      "acct_type",
+      "balance"
+     ],
+     "rows": [
+      [
+       "1",
+       "10",
+       "SAVINGS",
+       "5000"
+      ],
+      [
+       "2",
+       "10",
+       "CURRENT",
+       "90000"
+      ],
+      [
+       "3",
+       "20",
+       "SAVINGS",
+       "1200"
+      ],
+      [
+       "4",
+       "10",
+       "SAVINGS",
+       "300"
+      ],
+      [
+       "5",
+       "30",
+       "SAVINGS",
+       "45000"
+      ]
+     ]
+    }
+   ],
+   "task": "Show branch_id and the number of accounts in that branch.",
+   "hint": "Group the rows by branch, then count each group.",
+   "solution": "SELECT branch_id, COUNT(*) AS accounts\nFROM account\nGROUP BY branch_id\nORDER BY branch_id;",
+   "simple": "Imagine sorting coins into piles by colour, then counting each pile. GROUP BY makes one pile per branch, and COUNT(*) counts the accounts in each pile.",
+   "remember": "GROUP BY makes piles; COUNT counts each pile.",
+   "why": "GROUP BY collapses all rows with the same branch_id into one result row, and COUNT(*) counts how many rows went into it. Every column in SELECT must be either grouped or inside an aggregate.",
+   "tip": "Every non-aggregated column in the SELECT must also be in the GROUP BY."
+  },
+  {
+   "id": "e02",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "ORDER BY with FETCH FIRST",
+   "domain": "Deposits",
+   "title": "Five biggest balances",
+   "scenario": "Kavita from wealth management wants to call the 5 customers with the highest balances this week.",
+   "schema": "ACCOUNT(acct_id NUMBER, cust_name VARCHAR2(60), balance NUMBER(14,2))",
+   "data": [
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_id",
+      "cust_name",
+      "balance"
+     ],
+     "rows": [
+      [
+       "1",
+       "Ravi",
+       "250000"
+      ],
+      [
+       "2",
+       "Neha",
+       "1800000"
+      ],
+      [
+       "3",
+       "Arjun",
+       "90000"
+      ],
+      [
+       "4",
+       "Pooja",
+       "640000"
+      ],
+      [
+       "5",
+       "Imran",
+       "1200000"
+      ],
+      [
+       "6",
+       "Leena",
+       "30000"
+      ],
+      [
+       "7",
+       "Sahil",
+       "875000"
+      ]
+     ]
+    }
+   ],
+   "task": "Show the 5 accounts with the highest balance, biggest first.",
+   "hint": "Sort from biggest to smallest, then take only the first 5 rows.",
+   "solution": "SELECT acct_id, cust_name, balance\nFROM account\nORDER BY balance DESC\nFETCH FIRST 5 ROWS ONLY;",
+   "simple": "It is like lining up students from tallest to shortest and picking the first five. ORDER BY balance DESC lines up the accounts from biggest to smallest, and FETCH FIRST 5 ROWS ONLY picks the first five.",
+   "remember": "Sort first, then take the top rows.",
+   "why": "FETCH FIRST n ROWS ONLY (Oracle 12c and later) is applied after ORDER BY. The older ROWNUM <= 5 is applied before ORDER BY unless you sort inside a subquery, which is a common mistake.",
+   "tip": "On 12c and later I use FETCH FIRST; with ROWNUM I sort in an inner query first."
+  },
+  {
+   "id": "e03",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "INNER JOIN",
+   "domain": "Customer service",
+   "title": "Customer name next to each account",
+   "scenario": "The call centre screen shows only account numbers. Deepak wants the customer's name next to each account.",
+   "schema": "CUSTOMER(cust_id NUMBER, cust_name VARCHAR2(60), city VARCHAR2(30))\nACCOUNT(acct_id NUMBER, cust_id NUMBER, balance NUMBER(14,2))",
+   "data": [
+    {
+     "name": "CUSTOMER",
+     "cols": [
+      "cust_id",
+      "cust_name",
+      "city"
+     ],
+     "rows": [
+      [
+       "11",
+       "Ravi",
+       "Pune"
+      ],
+      [
+       "12",
+       "Neha",
+       "Mumbai"
+      ],
+      [
+       "13",
+       "Arjun",
+       "Nagpur"
+      ]
+     ]
+    },
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_id",
+      "cust_id",
+      "balance"
+     ],
+     "rows": [
+      [
+       "1001",
+       "11",
+       "5000"
+      ],
+      [
+       "1002",
+       "11",
+       "72000"
+      ],
+      [
+       "1003",
+       "12",
+       "300"
+      ]
+     ]
+    }
+   ],
+   "task": "Show acct_id, cust_name and balance for every account.",
+   "hint": "Match the two tables on cust_id.",
+   "solution": "SELECT a.acct_id, c.cust_name, a.balance\nFROM account a\nJOIN customer c ON c.cust_id = a.cust_id;",
+   "simple": "Think of two lists: one with roll numbers and marks, one with roll numbers and names. You match them on roll number to see each name with its marks. JOIN does that matching using cust_id.",
+   "remember": "JOIN matches rows from two tables on a common column.",
+   "why": "An INNER JOIN returns only rows that have a match in both tables, so Arjun (no account) does not appear. Table aliases (a, c) keep the query short and make it clear which table each column comes from.",
+   "tip": "Inner join keeps only matches; if I need rows without a match I switch to a LEFT JOIN."
+  },
+  {
+   "id": "e04",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "CASE expression",
+   "domain": "Account services",
+   "title": "Label accounts by balance",
+   "scenario": "Sunita in marketing wants each account tagged as Premium, Regular or Low so she can send different offers.",
+   "schema": "ACCOUNT(acct_id NUMBER, cust_name VARCHAR2(60), balance NUMBER(14,2))",
+   "data": [
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_id",
+      "cust_name",
+      "balance"
+     ],
+     "rows": [
+      [
+       "1",
+       "Ravi",
+       "250000"
+      ],
+      [
+       "2",
+       "Neha",
+       "1800000"
+      ],
+      [
+       "3",
+       "Arjun",
+       "900"
+      ],
+      [
+       "4",
+       "Pooja",
+       "64000"
+      ]
+     ]
+    }
+   ],
+   "task": "Show acct_id, cust_name, balance and a tag: 'Premium' for 1,00,000 or more, 'Regular' for 10,000 to 99,999.99, 'Low' below 10,000.",
+   "hint": "CASE checks conditions from top to bottom and stops at the first true one.",
+   "solution": "SELECT acct_id, cust_name, balance,\n       CASE\n         WHEN balance >= 100000 THEN 'Premium'\n         WHEN balance >= 10000  THEN 'Regular'\n         ELSE 'Low'\n       END AS tag\nFROM account;",
+   "simple": "CASE is like a sorting hat. It looks at each account's balance and asks: is it 1 lakh or more? Then Premium. If not, is it 10,000 or more? Then Regular. Otherwise Low.",
+   "remember": "CASE = if this, then that, checked top to bottom.",
+   "why": "CASE returns the result of the first WHEN that is true, so later conditions only need the lower limit. ELSE catches everything left, including NULL balances.",
+   "tip": "I order CASE conditions from the strictest to the loosest so each one only needs one limit."
+  },
+  {
+   "id": "e05",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "NVL for missing values",
+   "domain": "Account opening",
+   "title": "Show 'Not added' for missing nominee",
+   "scenario": "Many old accounts have no nominee. Farah wants a list where an empty nominee shows as 'Not added' instead of a blank.",
+   "schema": "ACCOUNT(acct_id NUMBER, cust_name VARCHAR2(60), nominee VARCHAR2(60))",
+   "data": [
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_id",
+      "cust_name",
+      "nominee"
+     ],
+     "rows": [
+      [
+       "1",
+       "Ravi",
+       "Sita"
+      ],
+      [
+       "2",
+       "Neha",
+       "NULL"
+      ],
+      [
+       "3",
+       "Arjun",
+       "Kiran"
+      ],
+      [
+       "4",
+       "Pooja",
+       "NULL"
+      ]
+     ]
+    }
+   ],
+   "task": "Show acct_id, cust_name and nominee, with 'Not added' where nominee is missing.",
+   "hint": "NVL(column, replacement) gives the replacement when the column is NULL.",
+   "solution": "SELECT acct_id, cust_name, NVL(nominee, 'Not added') AS nominee\nFROM account;",
+   "simple": "NULL means the box is empty. NVL says: if the box is empty, write 'Not added' in it. If the box has a name, keep the name.",
+   "remember": "NVL fills an empty box with a default.",
+   "why": "NVL(a, b) returns b only when a is NULL. Both arguments should be the same data type; COALESCE does the same job and accepts more than two values.",
+   "tip": "For a default value I use NVL or COALESCE; COALESCE is standard SQL and takes several fallbacks."
+  },
+  {
+   "id": "e06",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "WHERE with IN",
+   "domain": "Payments",
+   "title": "Only UPI and IMPS payments",
+   "scenario": "Vikram from the digital team wants to see only instant payments (UPI and IMPS) above Rs 1,000.",
+   "schema": "PAYMENT(pay_id NUMBER, channel VARCHAR2(10), amount NUMBER(12,2), pay_date DATE)",
+   "data": [
+    {
+     "name": "PAYMENT",
+     "cols": [
+      "pay_id",
+      "channel",
+      "amount",
+      "pay_date"
+     ],
+     "rows": [
+      [
+       "1",
+       "UPI",
+       "450",
+       "02-03-2026"
+      ],
+      [
+       "2",
+       "IMPS",
+       "5000",
+       "02-03-2026"
+      ],
+      [
+       "3",
+       "NEFT",
+       "25000",
+       "03-03-2026"
+      ],
+      [
+       "4",
+       "UPI",
+       "1800",
+       "04-03-2026"
+      ],
+      [
+       "5",
+       "RTGS",
+       "500000",
+       "05-03-2026"
+      ]
+     ]
+    }
+   ],
+   "task": "List pay_id, channel and amount for UPI or IMPS payments where amount is more than 1,000.",
+   "hint": "IN lets you list several allowed values in one condition.",
+   "solution": "SELECT pay_id, channel, amount\nFROM payment\nWHERE channel IN ('UPI', 'IMPS')\n  AND amount > 1000;",
+   "simple": "It is like a guest list at a party: only names on the list get in. IN ('UPI','IMPS') is the guest list for channel, and amount > 1000 is a second check at the door.",
+   "remember": "IN = is the value on this list?",
+   "why": "channel IN ('UPI','IMPS') is short for channel = 'UPI' OR channel = 'IMPS'. Writing it with IN avoids the classic bug of mixing OR and AND without brackets.",
+   "tip": "If I use OR together with AND, I add brackets; IN avoids that trap for lists of values."
+  },
+  {
+   "id": "e07",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "HAVING after GROUP BY",
+   "domain": "Customer analytics",
+   "title": "Customers with more than 2 accounts",
+   "scenario": "Anjali in relationship banking wants customers who hold more than 2 accounts, to offer them a family banking pack.",
+   "schema": "ACCOUNT(acct_id NUMBER, cust_id NUMBER, acct_type VARCHAR2(10))",
+   "data": [
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_id",
+      "cust_id",
+      "acct_type"
+     ],
+     "rows": [
+      [
+       "1",
+       "11",
+       "SAVINGS"
+      ],
+      [
+       "2",
+       "11",
+       "FD"
+      ],
+      [
+       "3",
+       "11",
+       "RD"
+      ],
+      [
+       "4",
+       "12",
+       "SAVINGS"
+      ],
+      [
+       "5",
+       "12",
+       "FD"
+      ],
+      [
+       "6",
+       "13",
+       "SAVINGS"
+      ],
+      [
+       "7",
+       "11",
+       "CURRENT"
+      ]
+     ]
+    }
+   ],
+   "task": "Show cust_id and number of accounts for customers with more than 2 accounts.",
+   "hint": "WHERE filters rows before grouping; you need a filter after grouping.",
+   "solution": "SELECT cust_id, COUNT(*) AS accounts\nFROM account\nGROUP BY cust_id\nHAVING COUNT(*) > 2;",
+   "simple": "First you make one pile of accounts per customer and count each pile. Then you keep only the piles with more than 2. WHERE works before piles are made; HAVING works after.",
+   "remember": "WHERE filters rows, HAVING filters groups.",
+   "why": "WHERE cannot use COUNT(*) because the groups do not exist yet when WHERE runs. HAVING runs after GROUP BY, so it can test aggregates.",
+   "tip": "WHERE runs before grouping and HAVING after, so conditions on COUNT or SUM go in HAVING."
+  },
+  {
+   "id": "e08",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "SUM with GROUP BY on dates",
+   "domain": "Branch banking",
+   "title": "Total deposits per day",
+   "scenario": "Branch manager Shweta wants the total deposits received on each day of the first week of March.",
+   "schema": "DEPOSIT(dep_id NUMBER, acct_id NUMBER, dep_date DATE, amount NUMBER(12,2))\n-- dep_date has no time part",
+   "data": [
+    {
+     "name": "DEPOSIT",
+     "cols": [
+      "dep_id",
+      "acct_id",
+      "dep_date",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "101",
+       "01-03-2026",
+       "5000"
+      ],
+      [
+       "2",
+       "102",
+       "01-03-2026",
+       "2500"
+      ],
+      [
+       "3",
+       "101",
+       "02-03-2026",
+       "800"
+      ],
+      [
+       "4",
+       "103",
+       "03-03-2026",
+       "12000"
+      ],
+      [
+       "5",
+       "104",
+       "09-03-2026",
+       "700"
+      ]
+     ]
+    }
+   ],
+   "task": "Show dep_date and total amount for each day from 1 to 7 March 2026, in date order.",
+   "hint": "Filter the dates first, then group by date and add up.",
+   "solution": "SELECT dep_date, SUM(amount) AS total\nFROM deposit\nWHERE dep_date BETWEEN DATE '2026-03-01' AND DATE '2026-03-07'\nGROUP BY dep_date\nORDER BY dep_date;",
+   "simple": "Imagine one envelope for each day. You drop every deposit into its day's envelope, then add up the money in each envelope. GROUP BY dep_date makes the envelopes and SUM adds them.",
+   "remember": "SUM adds up each group.",
+   "why": "BETWEEN includes both ends, which is safe here because dep_date has no time part. If it had a time, I would use >= 1 March and < 8 March instead.",
+   "tip": "BETWEEN on dates is only safe when there is no time part; otherwise I use a half-open range."
   }
  ],
  "lessons": [
