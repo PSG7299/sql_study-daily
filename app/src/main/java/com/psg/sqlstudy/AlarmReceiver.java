@@ -12,5 +12,11 @@ public class AlarmReceiver extends BroadcastReceiver {
             Notifier.show(context, slot);
         }
         Scheduler.ensure(context);
+        final PendingResult pr = goAsync();
+        final Context app = context.getApplicationContext();
+        new Thread(() -> {
+            Store.refresh(app);
+            pr.finish();
+        }).start();
     }
 }

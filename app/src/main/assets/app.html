@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQL Study Daily</title>
+<style>
+:root{
+  /* Layout: phone app — sticky header with streak, one scrolling view per tab, bottom tab bar */
+  --bg:#f2f4f3; --surface:#ffffff; --ink:#122029; --muted:#5d6b73; --line:#dfe5e3;
+  --accent:#0d6b82; --accent-soft:#e3f0f3; --brass:#b5761b; --brass-soft:#f8eedd;
+  --good:#1f7a4a; --good-soft:#e2f2e8; --warn:#a8650f; --bad:#b23a3a; --bad-soft:#f8e4e4;
+  --code-bg:#f0f3f2;
+  --f-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: ui-monospace, "Roboto Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1418; --surface:#141f25; --ink:#e3ebee; --muted:#93a3ab; --line:#24323a;
+    --accent:#4cb3cc; --accent-soft:#12303a; --brass:#e0a54a; --brass-soft:#33280f;
+    --good:#57c08a; --good-soft:#123323; --warn:#e0a54a; --bad:#e57373; --bad-soft:#3a1a1a;
+    --code-bg:#0f191e; color-scheme: dark;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line)}
+header h1{font-size:19px;margin:0;letter-spacing:-.01em}
+header .sub{font-size:12px;color:var(--muted)}
+.flame{display:flex;align-items:center;gap:6px;background:var(--brass-soft);color:var(--brass);font-weight:700;border-radius:999px;padding:6px 12px;font-variant-numeric:tabular-nums}
+.flame svg{width:18px;height:18px}
+main{padding:14px 16px 96px;display:flex;flex-direction:column;gap:14px;max-width:720px;margin:0 auto}
+.view{display:none;flex-direction:column;gap:14px}
+.view.on{display:flex}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+h2{font-size:18px;margin:0;line-height:1.3;text-wrap:balance}
+h3{font-size:15px;margin:0}
+.muted{color:var(--muted)} .small{font-size:13px}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.slot{border-radius:10px;padding:8px 4px;text-align:center;font-size:11px;color:var(--muted);background:var(--code-bg);border:1px solid var(--line)}
+.slot b{display:block;font-size:14px;color:var(--ink)}
+.slot.done{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.slot.done b{color:var(--good)}
+.slot.now{border-color:var(--accent);background:var(--accent-soft)}
+.progress{height:6px;background:var(--code-bg);border-radius:99px;overflow:hidden}
+.progress i{display:block;height:100%;background:var(--good);border-radius:99px;transition:width .3s}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--code-bg);color:var(--muted);border:1px solid var(--line)}
+.chip.adv{background:var(--brass-soft);color:var(--brass);border-color:transparent;font-weight:600}
+.chip.core{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-weight:600}
+.chip.rev{background:var(--bad-soft);color:var(--bad);border-color:transparent;font-weight:600}
+.label{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.task{background:var(--accent-soft);border-left:3px solid var(--accent);padding:10px 12px;border-radius:8px;font-weight:600}
+pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0;overflow-x:auto;font-family:var(--f-mono);font-size:12.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+textarea{width:100%;min-height:140px;font-family:var(--f-mono);font-size:14px;background:var(--code-bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px;resize:vertical}
+details{background:var(--code-bg);border-radius:10px;padding:10px 12px}
+summary{cursor:pointer;font-weight:600;color:var(--accent)}
+button{font:inherit;font-weight:600;font-size:15px;border-radius:10px;padding:12px 14px;border:0;background:var(--accent);color:#fff;cursor:pointer;width:100%}
+button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+button.small{width:auto;padding:8px 12px;font-size:13px}
+button:active{transform:scale(.98)}
+button:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.grade{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grade button{padding:12px 6px;font-size:14px}
+.g0{background:var(--bad)} .g1{background:var(--warn)} .g2{background:var(--good)}
+.tip{background:var(--brass-soft);border-radius:10px;padding:10px 12px}
+.tip b{color:var(--brass)}
+.banner{background:var(--good-soft);color:var(--good);border-radius:12px;padding:12px 14px;font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+.tile .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile .l{font-size:12px;color:var(--muted)}
+.list{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .t{font-size:14px}
+.pill{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px}
+.pill.g0{background:var(--bad-soft);color:var(--bad)} .pill.g1{background:var(--brass-soft);color:var(--warn)} .pill.g2{background:var(--good-soft);color:var(--good)}
+.lesson{cursor:pointer}
+.lesson.new{border-color:var(--accent)}
+.job{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;color:var(--ink);text-align:left;font-weight:500}
+.job small{display:block;color:var(--muted);font-weight:400}
+.job svg{flex:none;width:18px;height:18px;color:var(--accent)}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:6}
+nav button{background:transparent;color:var(--muted);padding:6px 2px;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:2px;border-radius:8px}
+nav button svg{width:22px;height:22px}
+nav button.on{color:var(--accent)}
+.hidden{display:none !important}
+.times{display:flex;gap:6px;flex-wrap:wrap}
+.times span{background:var(--code-bg);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:13px;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion: reduce){*{transition:none !important}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>SQL Study Daily</h1>
+    <div class="sub">Advanced SQL for banking &amp; finance interviews</div>
+  </div>
+  <div class="flame" title="Day streak">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 3.5-1.5 5-1.5 7.5 0 1.4 1 2.5 2.3 2.5 1.6 0 2.4-1.3 2.2-3 2.2 1.7 3.5 4.3 3.5 6.8C18.5 19.6 15.6 22 12 22s-6.5-2.4-6.5-6.2C5.5 10.6 10.6 7.6 12 2z"/></svg>
+    <span id="hStreak">0</span>
+  </div>
+</header>
+
+<main>
+  <!-- TODAY -->
+  <section class="view on" id="v-today">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <h3>Today's 4</h3><span class="small muted" id="todayCount">0 of 4 done</span>
+      </div>
+      <div class="progress"><i id="todayBar" style="width:0%"></i></div>
+      <div class="slots" id="slots"></div>
+    </div>
+
+    <div class="banner hidden" id="doneBanner">Daily goal done. Your streak is safe. Keep going with bonus questions if you like.</div>
+
+    <div class="card" id="qCard">
+      <div class="chips" id="qChips"></div>
+      <h2 id="qTitle"></h2>
+      <div id="qScenario"></div>
+      <div><div class="label" style="margin-bottom:6px">Tables</div><pre id="qSchema"></pre></div>
+      <div class="task" id="qTask"></div>
+      <details id="qHintBox"><summary>Need a hint?</summary><div id="qHint" style="margin-top:6px"></div></details>
+      <div>
+        <label class="label" for="answer">Your answer</label>
+        <textarea id="answer" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Write your query here, then compare with the solution"></textarea>
+      </div>
+      <button id="btnReveal">Show solution</button>
+
+      <div id="solBox" class="hidden" style="display:flex;flex-direction:column;gap:12px">
+        <div class="label">Model solution</div>
+        <pre id="qSolution"></pre>
+        <div id="qWhy"></div>
+        <div class="tip"><b>Say this in the interview:</b> <span id="qTip"></span></div>
+        <div class="label">How did you do?</div>
+        <div class="grade">
+          <button class="g0" data-g="0">Missed it</button>
+          <button class="g1" data-g="1">Partly</button>
+          <button class="g2" data-g="2">Got it</button>
+        </div>
+        <div class="small muted">Missed and Partly questions come back for review in 1 and 3 days.</div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="emptyCard">
+      <h2>You've done every question available</h2>
+      <div class="muted">New questions arrive every day. Meanwhile, review the ones you marked Missed or Partly from the Progress tab, or read a lesson in Learn.</div>
+    </div>
+  </section>
+
+  <!-- LEARN -->
+  <section class="view" id="v-learn">
+    <div id="lessonDetail" class="card hidden"></div>
+    <div id="lessonList" style="display:flex;flex-direction:column;gap:10px"></div>
+  </section>
+
+  <!-- PROGRESS -->
+  <section class="view" id="v-progress">
+    <div class="tiles">
+      <div class="tile"><div class="n" id="pStreak">0</div><div class="l">day streak</div></div>
+      <div class="tile"><div class="n" id="pBest">0</div><div class="l">best streak</div></div>
+      <div class="tile"><div class="n" id="pSolved">0</div><div class="l">questions done</div></div>
+      <div class="tile"><div class="n" id="pAcc">–</div><div class="l">marked "Got it"</div></div>
+    </div>
+    <div class="card">
+      <h3>Concepts to revisit</h3>
+      <div class="list" id="weakList"></div>
+    </div>
+    <div class="card">
+      <h3>Recent</h3>
+      <div class="list" id="histList"></div>
+    </div>
+    <div class="card">
+      <h3>Reminders</h3>
+      <div class="small muted">4 random times between 9 am and 10 pm, picked fresh each day. Only this phone rings.</div>
+      <div class="times" id="times"></div>
+      <button class="ghost" id="btnTest">Send a test notification</button>
+      <div class="small muted" id="bankInfo"></div>
+    </div>
+  </section>
+
+  <!-- JOBS -->
+  <section class="view" id="v-jobs">
+    <div class="card">
+      <h3>Apply to jobs</h3>
+      <div class="small muted">Each search opens in your browser or the job app, already filtered. Apply there with your saved profile and CV.</div>
+    </div>
+    <div id="jobList" style="display:flex;flex-direction:column;gap:8px"></div>
+  </section>
+</main>
+
+<nav>
+  <button class="on" data-v="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Today</button>
+  <button data-v="learn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/></svg>Learn</button>
+  <button data-v="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progress</button>
+  <button data-v="jobs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Jobs</button>
+</nav>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+  var A = window.Android || null;
+  var KEY = "sqlsd_v2";
+  var PLAN = [{lvl:"A", label:"Advanced"},{lvl:"C", label:"Scenario"},{lvl:"A", label:"Advanced"},{lvl:"A", label:"Adv / PL/SQL", plsql:true}];
+  var JOBS = [
+    ["Naukri", "PL/SQL Developer · Pune", "https://www.naukri.com/pl-sql-developer-jobs-in-pune"],
+    ["Naukri", "Oracle PL/SQL · Banking", "https://www.naukri.com/oracle-pl-sql-developer-banking-jobs"],
+    ["LinkedIn", "PL/SQL Developer banking · Easy Apply", "https://www.linkedin.com/jobs/search/?keywords=PL%2FSQL%20Developer%20banking&location=Pune&f_AL=true"],
+    ["LinkedIn", "Data Engineer Oracle ETL · Easy Apply", "https://www.linkedin.com/jobs/search/?keywords=Data%20Engineer%20Oracle%20ETL&location=Pune&f_AL=true"],
+    ["Indeed", "PL/SQL Developer · Banking", "https://in.indeed.com/jobs?q=pl+sql+developer+banking&l=Pune"],
+    ["Foundit", "Oracle PL/SQL Developer · Pune", "https://www.foundit.in/srp/results?query=oracle%20pl%20sql%20developer&locations=Pune"]
+  ];
+
+  function dkey(d){ d = d || new Date(); return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2); }
+  function addDays(n){ var d = new Date(); d.setDate(d.getDate()+n); return dkey(d); }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+  var state = {streak:0,best:0,lastDay:"",days:{},q:{},lessons:{},hist:[],cur:null,revealed:false,draft:""};
+  try { var s = localStorage.getItem(KEY); if (s) state = Object.assign(state, JSON.parse(s)); } catch(e) {}
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {} }
+
+  var Q = [], L = [], byId = {};
+  function loadBank(){
+    var merged = {}, lessons = {};
+    [A ? A.bank() : '{"questions":[],"lessons":[]}', A ? A.feed() : '{"questions":[],"lessons":[]}'].forEach(function(txt){
+      try {
+        var b = JSON.parse(txt);
+        (b.questions||[]).forEach(function(q){ if (q && q.id && q.task && q.solution) merged[q.id] = q; });
+        (b.lessons||[]).forEach(function(l){ if (l && l.id && l.concept) lessons[l.id] = l; });
+      } catch(e) {}
+    });
+    Q = Object.keys(merged).map(function(k){ return merged[k]; });
+    L = Object.keys(lessons).map(function(k){ return lessons[k]; });
+    byId = merged;
+  }
+
+  function todayCount(){ return state.days[dkey()] || 0; }
+  function liveStreak(){ return (state.lastDay === dkey() || state.lastDay === addDays(-1)) ? state.streak : 0; }
+
+  function choose(){
+    var idx = todayCount() % 4, slot = PLAN[idx], today = dkey();
+    var seen = state.q;
+    var due = Q.filter(function(q){ var r = seen[q.id]; return r && r.g < 2 && r.due <= today; });
+    var unseen = Q.filter(function(q){ return !seen[q.id]; });
+    var fit = unseen.filter(function(q){ return q.lvl === slot.lvl; });
+    if (slot.plsql && Math.random() < 0.5) {
+      var pl = fit.filter(function(q){ return q.kind === "plsql"; });
+      if (pl.length) fit = pl;
+    }
+    if (due.length && (Math.random() < 0.35 || !fit.length)) return {id: pick(due).id, review: true};
+    if (fit.length) return {id: pick(fit).id, review: false};
+    if (unseen.length) return {id: pick(unseen).id, review: false};
+    if (due.length) return {id: pick(due).id, review: true};
+    return null;
+  }
+
+  function ensureCurrent(){
+    if (!state.cur || !byId[state.cur.id]) { state.cur = choose(); state.revealed = false; state.draft = ""; save(); }
+    pushTeaser();
+  }
+
+  function pushTeaser(){
+    if (!A || !state.cur) return;
+    var q = byId[state.cur.id];
+    if (!q) return;
+    var teaser = (q.scenario || "").split(". ")[0];
+    if (teaser.length > 140) teaser = teaser.slice(0, 137) + "...";
+    try { A.setNext(q.title, teaser + (teaser.endsWith(".") ? "" : ".")); } catch(e) {}
+  }
+
+  function renderHeader(){
+    $("hStreak").textContent = liveStreak();
+    var tc = todayCount();
+    $("todayCount").textContent = Math.min(tc, 4) + " of 4 done" + (tc > 4 ? " · +" + (tc-4) + " bonus" : "");
+    $("todayBar").style.width = Math.min(100, tc/4*100) + "%";
+    $("slots").innerHTML = PLAN.map(function(p, i){
+      var cls = i < tc ? "slot done" : (i === tc ? "slot now" : "slot");
+      return '<div class="' + cls + '"><b>Q' + (i+1) + (i < tc ? " ✓" : "") + '</b>' + esc(p.label) + '</div>';
+    }).join("");
+    $("doneBanner").classList.toggle("hidden", tc < 4);
+  }
+
+  function renderQuestion(){
+    if (!state.cur) { $("qCard").classList.add("hidden"); $("emptyCard").classList.remove("hidden"); return; }
+    $("qCard").classList.remove("hidden"); $("emptyCard").classList.add("hidden");
+    var q = byId[state.cur.id];
+    var chips = [];
+    chips.push(q.lvl === "A" ? '<span class="chip adv">Advanced</span>' : '<span class="chip core">Scenario</span>');
+    if (q.kind === "plsql") chips.push('<span class="chip adv">PL/SQL</span>');
+    if (state.cur.review) chips.push('<span class="chip rev">Review</span>');
+    chips.push('<span class="chip">' + esc(q.concept) + '</span>');
+    chips.push('<span class="chip">' + esc(q.domain) + '</span>');
+    $("qChips").innerHTML = chips.join("");
+    $("qTitle").textContent = q.title;
+    $("qScenario").textContent = q.scenario;
+    $("qSchema").textContent = q.schema;
+    $("qTask").textContent = q.task;
+    $("qHint").textContent = q.hint;
+    $("qHintBox").open = false;
+    $("answer").value = state.draft || "";
+    $("qSolution").textContent = q.solution;
+    $("qWhy").textContent = q.why;
+    $("qTip").textContent = q.tip;
+    $("solBox").classList.toggle("hidden", !state.revealed);
+    $("btnReveal").classList.toggle("hidden", state.revealed);
+  }
+
+  function grade(g){
+    var q = byId[state.cur.id], today = dkey();
+    if (state.lastDay !== today) {
+      state.streak = (state.lastDay === addDays(-1)) ? state.streak + 1 : 1;
+      state.lastDay = today;
+    }
+    state.best = Math.max(state.best || 0, state.streak);
+    state.days[today] = (state.days[today] || 0) + 1;
+    var r = state.q[q.id] || {n:0};
+    r.n += 1; r.g = g; r.seen = today; r.due = addDays(g === 0 ? 1 : g === 1 ? 3 : 30);
+    state.q[q.id] = r;
+    state.hist.unshift({id:q.id, d:today, g:g});
+    state.hist = state.hist.slice(0, 300);
+    var ks = Object.keys(state.days).sort(); while (ks.length > 120) delete state.days[ks.shift()];
+    state.cur = null;
+    save();
+    ensureCurrent();
+    renderAll();
+    window.scrollTo(0, 0);
+    if (A) A.toast(g === 2 ? "Nice. Next one is ready." : "Saved. It will come back for review.");
+  }
+
+  function renderLearn(){
+    var openId = renderLearn.open;
+    var next = L.filter(function(l){ return !state.lessons[l.id]; })[0];
+    if (openId) {
+      var l = L.filter(function(x){ return x.id === openId; })[0];
+      $("lessonDetail").innerHTML =
+        '<button class="ghost small" id="lessonBack">‹ All lessons</button>' +
+        '<div class="chips"><span class="chip adv">Concept</span></div>' +
+        '<h2>' + esc(l.concept) + '</h2>' +
+        '<div class="muted">' + esc(l.why) + '</div>' +
+        '<div>' + esc(l.explain) + '</div>' +
+        '<pre>' + esc(l.example) + '</pre>' +
+        '<div><b>Common mistake:</b> ' + esc(l.gotcha) + '</div>' +
+        '<div class="tip"><b>Say this in the interview:</b> ' + esc(l.line) + '</div>' +
+        '<div class="small muted">Run the example on freesql.com to see it work.</div>';
+      $("lessonDetail").classList.remove("hidden");
+      $("lessonList").classList.add("hidden");
+      $("lessonBack").onclick = function(){ renderLearn.open = null; renderLearn(); window.scrollTo(0,0); };
+      if (!state.lessons[l.id]) { state.lessons[l.id] = dkey(); save(); }
+      return;
+    }
+    $("lessonDetail").classList.add("hidden");
+    $("lessonList").classList.remove("hidden");
+    $("lessonList").innerHTML = L.map(function(l){
+      var isNew = next && l.id === next.id, read = !!state.lessons[l.id];
+      return '<div class="card lesson' + (isNew ? ' new' : '') + '" data-id="' + esc(l.id) + '" role="button" tabindex="0">' +
+        '<div class="chips">' + (isNew ? '<span class="chip core">Next up</span>' : '') + (read ? '<span class="chip">Read</span>' : '') + '</div>' +
+        '<h3>' + esc(l.concept) + '</h3><div class="small muted">' + esc(l.why) + '</div></div>';
+    }).join("") || '<div class="card muted">Lessons will appear here.</div>';
+    Array.prototype.forEach.call(document.querySelectorAll(".lesson"), function(el){
+      el.onclick = function(){ renderLearn.open = el.getAttribute("data-id"); renderLearn(); window.scrollTo(0,0); };
+    });
+  }
+
+  function renderProgress(){
+    $("pStreak").textContent = liveStreak();
+    $("pBest").textContent = state.best || 0;
+    $("pSolved").textContent = state.hist.length;
+    var got = state.hist.filter(function(h){ return h.g === 2; }).length;
+    $("pAcc").textContent = state.hist.length ? Math.round(got/state.hist.length*100) + "%" : "–";
+    var weak = Object.keys(state.q).filter(function(id){ return byId[id] && state.q[id].g < 2; });
+    $("weakList").innerHTML = weak.length ? weak.map(function(id){
+      var q = byId[id], r = state.q[id];
+      return '<div class="row"><div><div class="t">' + esc(q.concept) + '</div><div class="small muted">' + esc(q.title) + ' · review ' + (r.due <= dkey() ? 'due now' : 'on ' + esc(r.due)) + '</div></div><span class="pill g' + r.g + '">' + (r.g ? "Partly" : "Missed") + '</span></div>';
+    }).join("") : '<div class="small muted">Nothing to revisit yet. Questions you mark Missed or Partly show up here.</div>';
+    $("histList").innerHTML = state.hist.length ? state.hist.slice(0, 15).map(function(h){
+      var q = byId[h.id]; if (!q) return "";
+      return '<div class="row"><div><div class="t">' + esc(q.title) + '</div><div class="small muted">' + esc(q.concept) + ' · ' + esc(h.d) + '</div></div><span class="pill g' + h.g + '">' + ["Missed","Partly","Got it"][h.g] + '</span></div>';
+    }).join("") : '<div class="small muted">No questions yet. Start with Today.</div>';
+    var t = A ? A.times().split(",") : [];
+    $("times").innerHTML = t.map(function(x){ return "<span>" + esc(x) + "</span>"; }).join("");
+    var left = Q.filter(function(q){ return !state.q[q.id]; }).length;
+    $("bankInfo").textContent = Q.length + " questions in the app · " + left + " not tried yet · " + L.length + " lessons. New ones download automatically.";
+  }
+
+  function renderJobs(){
+    var arrow = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg>';
+    $("jobList").innerHTML = JOBS.map(function(j, i){
+      return '<button class="job" data-i="' + i + '"><span>' + esc(j[1]) + '<small>' + esc(j[0]) + '</small></span>' + arrow + '</button>';
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".job"), function(b){
+      b.onclick = function(){ var u = JOBS[+b.getAttribute("data-i")][2]; if (A) A.openUrl(u); else window.open(u); };
+    });
+  }
+
+  function renderAll(){ renderHeader(); renderQuestion(); renderLearn(); renderProgress(); renderJobs(); }
+
+  function show(v){
+    Array.prototype.forEach.call(document.querySelectorAll(".view"), function(el){ el.classList.toggle("on", el.id === "v-" + v); });
+    Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){ b.classList.toggle("on", b.getAttribute("data-v") === v); });
+    if (v === "progress") renderProgress();
+    window.scrollTo(0, 0);
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){ b.onclick = function(){ show(b.getAttribute("data-v")); }; });
+  $("btnReveal").onclick = function(){ state.revealed = true; save(); renderQuestion(); $("solBox").scrollIntoView({behavior:"smooth", block:"start"}); };
+  Array.prototype.forEach.call(document.querySelectorAll(".grade button"), function(b){ b.onclick = function(){ grade(+b.getAttribute("data-g")); }; });
+  $("answer").addEventListener("input", function(){ state.draft = this.value; save(); });
+  $("btnTest").onclick = function(){ if (A) { A.testNotification(); A.toast("Test sent. Check your notifications."); } };
+
+  window.openToday = function(){ show("today"); };
+  window.onFeedUpdated = function(){ loadBank(); ensureCurrent(); renderAll(); };
+
+  loadBank();
+  ensureCurrent();
+  renderAll();
+})();
+</script>
+</body>
+</html>

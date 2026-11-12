@@ -6,23 +6,12 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
+import android.content.SharedPreferences;
 
 final class Notifier {
-    static final String APP_URL = "https://claude.ai/artifact/VWJDopynreVqgBj3S1FPHU";
     private static final String CHANNEL = "sql_daily";
-
-    private static final String[] TITLES = {
-            "Q1: Advanced SQL, banking scenario",
-            "Q2: Real-world finance question",
-            "Q3: Advanced SQL challenge",
-            "Q4: Advanced SQL or PL/SQL build"
-    };
-    private static final String[] TEXTS = {
-            "5 minutes now keeps your streak alive. Tap to solve.",
-            "A manager needs a report. Can you write the query? Tap to solve.",
-            "Interviewers at banks ask this kind. Tap to try it.",
-            "Last one today. Finish 4/4 before you open Instagram."
+    private static final String[] LABELS = {
+            "Q1 · Advanced SQL", "Q2 · Real-world scenario", "Q3 · Advanced SQL", "Q4 · Advanced SQL / PL/SQL"
     };
 
     private Notifier() {}
@@ -33,17 +22,24 @@ final class Notifier {
         nm.createNotificationChannel(new NotificationChannel(
                 CHANNEL, "Daily SQL questions", NotificationManager.IMPORTANCE_HIGH));
 
-        int i = Math.max(0, Math.min(slot, TITLES.length - 1));
-        Intent open = new Intent(Intent.ACTION_VIEW, Uri.parse(APP_URL));
-        open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        int i = Math.max(0, Math.min(slot, LABELS.length - 1));
+        SharedPreferences p = c.getSharedPreferences("next", Context.MODE_PRIVATE);
+        String title = p.getString("title", "");
+        String teaser = p.getString("teaser", "");
+        String heading = title.isEmpty() ? LABELS[i] : LABELS[i] + ": " + title;
+        String body = teaser.isEmpty() ? "Your next question is ready. Tap to solve it." : teaser;
+
+        Intent open = new Intent(c, MainActivity.class);
+        open.putExtra("slot", i);
+        open.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent pi = PendingIntent.getActivity(c, 100 + i, open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Notification n = new Notification.Builder(c, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat)
-                .setContentTitle(TITLES[i])
-                .setContentText(TEXTS[i])
-                .setStyle(new Notification.BigTextStyle().bigText(TEXTS[i]))
+                .setContentTitle(heading)
+                .setContentText(body)
+                .setStyle(new Notification.BigTextStyle().bigText(body))
                 .setAutoCancel(true)
                 .setContentIntent(pi)
                 .build();
