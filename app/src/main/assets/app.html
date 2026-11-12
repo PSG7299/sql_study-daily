@@ -44,6 +44,13 @@ h3{font-size:15px;margin:0}
 .slot.done{background:var(--good-soft);border-color:var(--good);color:var(--good)}
 .slot.done b{color:var(--good)}
 .slot.now{border-color:var(--accent);background:var(--accent-soft)}
+#qCard,#solBox{scroll-margin-top:90px}
+.slot.tap{cursor:pointer}
+.slot.viewing{outline:2px solid var(--brass);outline-offset:1px}
+.simple{background:var(--good-soft);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.simple .label{color:var(--good)}
+.remember{font-weight:700;border-top:1px dashed var(--good);padding-top:8px}
+.viewbar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--brass-soft);border-radius:10px;padding:8px 10px;font-size:14px}
 .progress{height:6px;background:var(--code-bg);border-radius:99px;overflow:hidden}
 .progress i{display:block;height:100%;background:var(--good);border-radius:99px;transition:width .3s}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
@@ -114,18 +121,20 @@ nav button.on{color:var(--accent)}
       </div>
       <div class="progress"><i id="todayBar" style="width:0%"></i></div>
       <div class="slots" id="slots"></div>
+      <div class="small muted">Tap a finished question to look at it again.</div>
     </div>
 
     <div class="banner hidden" id="doneBanner">Daily goal done. Your streak is safe. Keep going with bonus questions if you like.</div>
 
     <div class="card" id="qCard">
+      <div class="viewbar hidden" id="viewBar"><span id="viewText"></span><button class="ghost small" id="btnBack">Back to Q<span id="backNo"></span></button></div>
       <div class="chips" id="qChips"></div>
       <h2 id="qTitle"></h2>
       <div id="qScenario"></div>
       <div><div class="label" style="margin-bottom:6px">Tables</div><pre id="qSchema"></pre></div>
       <div class="task" id="qTask"></div>
       <details id="qHintBox"><summary>Need a hint?</summary><div id="qHint" style="margin-top:6px"></div></details>
-      <div>
+      <div id="answerBox">
         <label class="label" for="answer">Your answer</label>
         <textarea id="answer" spellcheck="false" autocapitalize="off" autocomplete="off" placeholder="Write your query here, then compare with the solution"></textarea>
       </div>
@@ -134,9 +143,14 @@ nav button.on{color:var(--accent)}
       <div id="solBox" class="hidden" style="display:flex;flex-direction:column;gap:12px">
         <div class="label">Model solution</div>
         <pre id="qSolution"></pre>
-        <div id="qWhy"></div>
+        <div class="simple">
+          <div class="label">In simple words</div>
+          <div id="qSimple"></div>
+          <div class="remember">Remember it as: <span id="qRemember"></span></div>
+        </div>
+        <details><summary>Technical details</summary><div id="qWhy" style="margin-top:6px"></div></details>
         <div class="tip"><b>Say this in the interview:</b> <span id="qTip"></span></div>
-        <div class="label">How did you do?</div>
+        <div class="label" id="gradeLabel">How did you do?</div>
         <div class="grade">
           <button class="g0" data-g="0">Missed it</button>
           <button class="g1" data-g="1">Partly</button>
@@ -274,19 +288,40 @@ nav button.on{color:var(--accent)}
     try { A.setNext(q.title, teaser + (teaser.endsWith(".") ? "" : ".")); } catch(e) {}
   }
 
+  var viewing = null;
+  function todayDone(){
+    var t = dkey();
+    return state.hist.filter(function(h){ return h.d === t; }).slice().reverse();
+  }
+
   function renderHeader(){
     $("hStreak").textContent = liveStreak();
     var tc = todayCount();
     $("todayCount").textContent = Math.min(tc, 4) + " of 4 done" + (tc > 4 ? " · +" + (tc-4) + " bonus" : "");
     $("todayBar").style.width = Math.min(100, tc/4*100) + "%";
+    var done = todayDone();
     $("slots").innerHTML = PLAN.map(function(p, i){
-      var cls = i < tc ? "slot done" : (i === tc ? "slot now" : "slot");
-      return '<div class="' + cls + '"><b>Q' + (i+1) + (i < tc ? " ✓" : "") + '</b>' + esc(p.label) + '</div>';
+      var cls = i < tc ? "slot done tap" : (i === tc ? "slot now tap" : "slot");
+      if (viewing && ((viewing.slot === i) )) cls += " viewing";
+      return '<div class="' + cls + '" data-s="' + i + '" role="button" tabindex="0"><b>Q' + (i+1) + (i < tc ? " ✓" : "") + '</b>' + esc(p.label) + '</div>';
     }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll(".slot.tap"), function(el){
+      el.onclick = function(){
+        var i = +el.getAttribute("data-s");
+        if (i < done.length) { viewing = {slot:i, id:done[i].id}; }
+        else { viewing = null; }
+        renderHeader(); renderQuestion();
+        $("qCard").scrollIntoView({behavior:"smooth", block:"start"});
+      };
+    });
     $("doneBanner").classList.toggle("hidden", tc < 4);
   }
 
   function renderQuestion(){
+    if (viewing) return renderViewing();
+    $("viewBar").classList.add("hidden");
+    $("answerBox").classList.remove("hidden");
+    $("gradeLabel").textContent = "How did you do?";
     if (!state.cur) { $("qCard").classList.add("hidden"); $("emptyCard").classList.remove("hidden"); return; }
     $("qCard").classList.remove("hidden"); $("emptyCard").classList.add("hidden");
     var q = byId[state.cur.id];
@@ -305,10 +340,63 @@ nav button.on{color:var(--accent)}
     $("qHintBox").open = false;
     $("answer").value = state.draft || "";
     $("qSolution").textContent = q.solution;
-    $("qWhy").textContent = q.why;
+    fillExplain(q);
     $("qTip").textContent = q.tip;
     $("solBox").classList.toggle("hidden", !state.revealed);
     $("btnReveal").classList.toggle("hidden", state.revealed);
+    markGrade(-1);
+  }
+
+  function fillExplain(q){
+    $("qWhy").textContent = q.why || "";
+    $("qSimple").textContent = q.simple || q.why || "";
+    $("qRemember").textContent = q.remember || q.concept;
+    $("qRemember").parentNode.classList.toggle("hidden", !q.remember);
+  }
+
+  function markGrade(g){
+    Array.prototype.forEach.call(document.querySelectorAll(".grade button"), function(b){
+      b.style.opacity = (g < 0 || +b.getAttribute("data-g") === g) ? "1" : ".35";
+    });
+  }
+
+  function renderViewing(){
+    var q = byId[viewing.id];
+    if (!q) { viewing = null; return renderQuestion(); }
+    var h = todayDone()[viewing.slot];
+    $("qCard").classList.remove("hidden"); $("emptyCard").classList.add("hidden");
+    $("viewBar").classList.remove("hidden");
+    $("viewText").textContent = "Q" + (viewing.slot + 1) + " · you marked it " + ["Missed","Partly","Got it"][h.g];
+    $("btnBack").firstChild.textContent = todayCount() >= 4 ? "Back to bonus" : "Back to Q";
+    $("backNo").textContent = todayCount() >= 4 ? "" : String(todayCount() + 1);
+    var chips = [];
+    chips.push(q.lvl === "A" ? '<span class="chip adv">Advanced</span>' : '<span class="chip core">Scenario</span>');
+    if (q.kind === "plsql") chips.push('<span class="chip adv">PL/SQL</span>');
+    chips.push('<span class="chip">' + esc(q.concept) + '</span>');
+    chips.push('<span class="chip">' + esc(q.domain) + '</span>');
+    $("qChips").innerHTML = chips.join("");
+    $("qTitle").textContent = q.title;
+    $("qScenario").textContent = q.scenario;
+    $("qSchema").textContent = q.schema;
+    $("qTask").textContent = q.task;
+    $("qHint").textContent = q.hint;
+    $("answerBox").classList.add("hidden");
+    $("qSolution").textContent = q.solution;
+    fillExplain(q);
+    $("qTip").textContent = q.tip;
+    $("solBox").classList.remove("hidden");
+    $("btnReveal").classList.add("hidden");
+    $("gradeLabel").textContent = "Change your mark if you like";
+    markGrade(h.g);
+  }
+
+  function regrade(g){
+    var h = todayDone()[viewing.slot];
+    h.g = g;
+    var r = state.q[h.id];
+    if (r) { r.g = g; r.due = addDays(g === 0 ? 1 : g === 1 ? 3 : 30); }
+    save(); renderAll();
+    if (A) A.toast("Mark updated.");
   }
 
   function grade(g){
@@ -343,9 +431,12 @@ nav button.on{color:var(--accent)}
         '<div class="chips"><span class="chip adv">Concept</span></div>' +
         '<h2>' + esc(l.concept) + '</h2>' +
         '<div class="muted">' + esc(l.why) + '</div>' +
-        '<div>' + esc(l.explain) + '</div>' +
+        '<div class="simple"><div class="label">In simple words</div><div>' + esc(l.simple || l.explain) + '</div>' +
+          (l.remember ? '<div class="remember">Remember it as: ' + esc(l.remember) + '</div>' : '') + '</div>' +
+        '<div class="label">Try it</div>' +
         '<pre>' + esc(l.example) + '</pre>' +
         '<div><b>Common mistake:</b> ' + esc(l.gotcha) + '</div>' +
+        '<details><summary>Technical details</summary><div style="margin-top:6px">' + esc(l.explain) + '</div></details>' +
         '<div class="tip"><b>Say this in the interview:</b> ' + esc(l.line) + '</div>' +
         '<div class="small muted">Run the example on freesql.com to see it work.</div>';
       $("lessonDetail").classList.remove("hidden");
@@ -360,7 +451,7 @@ nav button.on{color:var(--accent)}
       var isNew = next && l.id === next.id, read = !!state.lessons[l.id];
       return '<div class="card lesson' + (isNew ? ' new' : '') + '" data-id="' + esc(l.id) + '" role="button" tabindex="0">' +
         '<div class="chips">' + (isNew ? '<span class="chip core">Next up</span>' : '') + (read ? '<span class="chip">Read</span>' : '') + '</div>' +
-        '<h3>' + esc(l.concept) + '</h3><div class="small muted">' + esc(l.why) + '</div></div>';
+        '<h3>' + esc(l.concept) + '</h3><div class="small muted">' + esc(l.remember || l.why) + '</div></div>';
     }).join("") || '<div class="card muted">Lessons will appear here.</div>';
     Array.prototype.forEach.call(document.querySelectorAll(".lesson"), function(el){
       el.onclick = function(){ renderLearn.open = el.getAttribute("data-id"); renderLearn(); window.scrollTo(0,0); };
@@ -409,8 +500,9 @@ nav button.on{color:var(--accent)}
 
   Array.prototype.forEach.call(document.querySelectorAll("nav button"), function(b){ b.onclick = function(){ show(b.getAttribute("data-v")); }; });
   $("btnReveal").onclick = function(){ state.revealed = true; save(); renderQuestion(); $("solBox").scrollIntoView({behavior:"smooth", block:"start"}); };
-  Array.prototype.forEach.call(document.querySelectorAll(".grade button"), function(b){ b.onclick = function(){ grade(+b.getAttribute("data-g")); }; });
-  $("answer").addEventListener("input", function(){ state.draft = this.value; save(); });
+  Array.prototype.forEach.call(document.querySelectorAll(".grade button"), function(b){ b.onclick = function(){ if (viewing) regrade(+b.getAttribute("data-g")); else grade(+b.getAttribute("data-g")); }; });
+  $("answer").addEventListener("input", function(){ if (!viewing) { state.draft = this.value; save(); } });
+  $("btnBack").onclick = function(){ viewing = null; renderHeader(); renderQuestion(); };
   $("btnTest").onclick = function(){ if (A) { A.testNotification(); A.toast("Test sent. Check your notifications."); } };
 
   window.openToday = function(){ show("today"); };

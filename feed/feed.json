@@ -14,7 +14,9 @@
    "hint": "Use recursive subquery factoring that carries the opening balance forward one month at a time, and compute due dates from first_due, not from the previous due date.",
    "solution": "WITH sched (loan_id, month_no, due_date, opening, annual_rate, emi, tenure_months, first_due) AS (\n  SELECT loan_id, 1, first_due, principal, annual_rate, emi, tenure_months, first_due\n  FROM   loan\n  WHERE  loan_id = :loan_id\n  UNION ALL\n  SELECT s.loan_id, s.month_no + 1,\n         ADD_MONTHS(s.first_due, s.month_no),\n         s.opening - (s.emi - ROUND(s.opening * s.annual_rate / 1200, 2)),\n         s.annual_rate, s.emi, s.tenure_months, s.first_due\n  FROM   sched s\n  WHERE  s.month_no < s.tenure_months\n)\nSELECT month_no, due_date, opening,\n       ROUND(opening * annual_rate / 1200, 2) AS interest,\n       CASE WHEN month_no = tenure_months THEN opening\n            ELSE emi - ROUND(opening * annual_rate / 1200, 2) END AS principal_part,\n       CASE WHEN month_no = tenure_months THEN 0\n            ELSE opening - (emi - ROUND(opening * annual_rate / 1200, 2)) END AS closing,\n       CASE WHEN month_no = tenure_months\n            THEN opening + ROUND(opening * annual_rate / 1200, 2)\n            ELSE emi END AS amount_due\nFROM   sched\nORDER  BY month_no;",
    "why": "The anchor row is month 1 with the full principal; each recursive step subtracts that month's principal part (EMI minus interest at rate/1200) to get the next opening balance. The last month pays whatever is left plus its interest, so rounding differences do not leave a few rupees outstanding. Due dates use ADD_MONTHS from first_due so a 31st does not drift to the 28th forever after February.",
-   "tip": "Recursive WITH needs a column list, an anchor, a recursive member that references the CTE once, and a stop condition; I keep the stop condition on a counter so it can never loop."
+   "tip": "Recursive WITH needs a column list, an anchor, a recursive member that references the CTE once, and a stop condition; I keep the stop condition on a counter so it can never loop.",
+   "simple": "A loan schedule is like a staircase. Each month you start with what you owe, pay some interest and some of the loan, and what is left becomes next month's starting point. A recursive WITH builds one step, then uses it to build the next step, until the loan is paid off.",
+   "remember": "Recursive WITH = build the next row from the row before."
   },
   {
    "id": "f20261112-2",
@@ -29,7 +31,9 @@
    "hint": "GROUPING SETS lets you list exactly the groupings you want, and GROUPING() tells a real NULL apart from a subtotal NULL.",
    "solution": "SELECT CASE GROUPING_ID(region, sector)\n         WHEN 0 THEN 'Region x Sector'\n         WHEN 2 THEN 'Sector total'\n         WHEN 3 THEN 'Grand total'\n       END AS row_type,\n       CASE WHEN GROUPING(region) = 1 THEN 'ALL' ELSE NVL(region, 'Unknown') END AS region,\n       CASE WHEN GROUPING(sector) = 1 THEN 'ALL' ELSE NVL(sector, 'Unclassified') END AS sector,\n       SUM(outstanding) AS total_os,\n       SUM(CASE WHEN npa_flag = 'Y' THEN outstanding ELSE 0 END) AS npa_os,\n       ROUND(100 * SUM(CASE WHEN npa_flag = 'Y' THEN outstanding ELSE 0 END)\n             / NULLIF(SUM(outstanding), 0), 2) AS gnpa_pct\nFROM   advances\nWHERE  asof_date = DATE '2026-03-31'\nGROUP  BY GROUPING SETS ((region, sector), (sector), ())\nORDER  BY GROUPING_ID(region, sector), sector, region;",
    "why": "ROLLUP(region, sector) would produce region subtotals and no sector totals, so GROUPING SETS is the precise tool. GROUPING_ID builds a bit pattern (region = 2, sector = 1), giving 0 for detail, 2 for sector totals and 3 for the grand total. Checking GROUPING() before NVL means a legacy loan with NULL sector shows 'Unclassified' while the subtotal row shows 'ALL'.",
-   "tip": "ROLLUP and CUBE are shortcuts for fixed sets of groupings; when a report format needs a specific mix I write GROUPING SETS and label rows with GROUPING_ID."
+   "tip": "ROLLUP and CUBE are shortcuts for fixed sets of groupings; when a report format needs a specific mix I write GROUPING SETS and label rows with GROUPING_ID.",
+   "simple": "The report needs some lines by sector and region, some totals by sector, and one grand total, but not every possible mix. GROUPING SETS lets you list exactly which totals you want, like picking only the dishes you want from a menu instead of the full buffet.",
+   "remember": "GROUPING SETS = choose exactly which totals you want."
   },
   {
    "id": "f20261112-3",
@@ -44,7 +48,9 @@
    "hint": "Keep the number of binds fixed by adding a harmless '(1 = 1 OR :x IS NULL)' when a filter is not supplied, then OPEN ... FOR ... USING.",
    "solution": "CREATE OR REPLACE FUNCTION get_alerts (\n  p_branch  IN VARCHAR2 DEFAULT NULL,\n  p_min_amt IN NUMBER   DEFAULT NULL,\n  p_from_dt IN DATE     DEFAULT NULL\n) RETURN SYS_REFCURSOR\nIS\n  l_sql VARCHAR2(4000) :=\n    'SELECT alert_id, cust_id, branch_code, alert_amt, alert_dt'\n    || ' FROM aml_alert WHERE status = ''OPEN''';\n  l_rc  SYS_REFCURSOR;\nBEGIN\n  IF p_branch IS NOT NULL THEN\n    l_sql := l_sql || ' AND branch_code = :b';\n  ELSE\n    l_sql := l_sql || ' AND (1 = 1 OR :b IS NULL)';\n  END IF;\n\n  IF p_min_amt IS NOT NULL THEN\n    l_sql := l_sql || ' AND alert_amt >= :a';\n  ELSE\n    l_sql := l_sql || ' AND (1 = 1 OR :a IS NULL)';\n  END IF;\n\n  IF p_from_dt IS NOT NULL THEN\n    l_sql := l_sql || ' AND alert_dt >= :d';\n  ELSE\n    l_sql := l_sql || ' AND (1 = 1 OR :d IS NULL)';\n  END IF;\n\n  l_sql := l_sql || ' ORDER BY alert_amt DESC';\n\n  OPEN l_rc FOR l_sql USING p_branch, p_min_amt, p_from_dt;\n  RETURN l_rc;\nEND get_alerts;\n/",
    "why": "User values never become part of the SQL text, they are passed through USING, so nothing typed can change the statement and injection is impossible. There are at most 8 distinct SQL texts, so Oracle parses each once and reuses its plan instead of hard-parsing (building a fresh plan, which is CPU-heavy) for every search. Each text only has the predicates that apply, so the optimizer can use an index on branch_code when that filter is given.",
-   "tip": "With dynamic SQL I bind values and only concatenate structure I control; the '1 = 1 OR :x IS NULL' trick keeps the USING list fixed while each filter combination still gets its own good plan."
+   "tip": "With dynamic SQL I bind values and only concatenate structure I control; the '1 = 1 OR :x IS NULL' trick keeps the USING list fixed while each filter combination still gets its own good plan.",
+   "simple": "A search screen where the user fills only some boxes. You build the SQL with only the filters they filled. But you never paste what they typed into the SQL; you pass it separately, like putting a letter in an envelope instead of writing on the outside. That keeps it safe from hackers and fast.",
+   "remember": "Build the shape, pass the values separately with binds."
   },
   {
    "id": "f20261112-4",
@@ -59,7 +65,9 @@
    "hint": "Generate a calendar, outer join the rates, include some October rows for the lookback, and use LAST_VALUE(... IGNORE NULLS).",
    "solution": "WITH cal AS (\n  SELECT DATE '2026-11-01' + LEVEL - 1 AS d\n  FROM   dual\n  CONNECT BY LEVEL <= DATE '2026-12-01' - DATE '2026-11-01'\n),\nsrc AS (\n  SELECT rate_date, rate\n  FROM   fx_rate\n  WHERE  ccy = 'USD'\n  AND    rate_date >= DATE '2026-10-01'\n  AND    rate_date <  DATE '2026-12-01'\n),\nall_days AS (\n  SELECT c.d, s.rate\n  FROM   cal c LEFT JOIN src s ON s.rate_date = c.d\n  UNION ALL\n  SELECT rate_date, rate FROM src WHERE rate_date < DATE '2026-11-01'\n)\nSELECT rate_date, usd_inr, rate_src\nFROM (\n  SELECT d AS rate_date,\n         LAST_VALUE(rate IGNORE NULLS)\n           OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS usd_inr,\n         CASE WHEN rate IS NULL THEN 'Carried' ELSE 'Published' END AS rate_src\n  FROM   all_days\n)\nWHERE  rate_date >= DATE '2026-11-01'\nORDER  BY rate_date;",
    "why": "The calendar guarantees one row per day, and the outer join leaves rate NULL on non-business days. LAST_VALUE with IGNORE NULLS over all rows up to the current one picks the most recent non-NULL rate, and the October rows are only there so 1-Nov has something to look back to. The filter to November is applied outside the window, otherwise the October rows would be removed before the analytic function sees them.",
-   "tip": "For carry-forward I use LAST_VALUE IGNORE NULLS with an explicit ROWS frame, and I filter after the window so the lookback rows are still visible to it."
+   "tip": "For carry-forward I use LAST_VALUE IGNORE NULLS with an explicit ROWS frame, and I filter after the window so the lookback rows are still visible to it.",
+   "simple": "On holidays there is no new exchange rate, so you use the last one you had, like a scoreboard that keeps showing the last score until a new goal is scored. LAST_VALUE IGNORE NULLS looks back and picks the most recent rate that is not empty.",
+   "remember": "IGNORE NULLS = carry the last known value forward."
   },
   {
    "id": "f20261112-5",
@@ -74,7 +82,9 @@
    "hint": "ADD_MONTHS jumps to the last day of the target month when the start date is a month end (28-Feb becomes 31-Mar), so build the date from the first of the month plus the day number and cap it with LAST_DAY.",
    "solution": "WITH n AS (\n  SELECT LEVEL AS inst_no FROM dual CONNECT BY LEVEL <= 60\n)\nSELECT emi_plan_id, inst_no, due_date, emi_amt\nFROM (\n  SELECT e.emi_plan_id, n.inst_no, e.emi_amt,\n         LEAST(ADD_MONTHS(TRUNC(e.purchase_dt, 'MM'), n.inst_no)\n                 + EXTRACT(DAY FROM e.purchase_dt) - 1,\n               LAST_DAY(ADD_MONTHS(TRUNC(e.purchase_dt, 'MM'), n.inst_no))) AS due_date\n  FROM   card_emi e\n  JOIN   n ON n.inst_no <= e.tenure_months\n)\nWHERE  due_date >= DATE '2026-03-01'\nAND    due_date <  DATE '2026-04-01'\nORDER  BY due_date, emi_plan_id;",
    "why": "Chaining ADD_MONTHS loses the original day (30-Jan to 28-Feb to 31-Mar), and even a single ADD_MONTHS turns 28-Feb into 31-Mar because of Oracle's last-day rule. Starting from the first of the month, adding the day number minus one and capping with LAST_DAY gives 28-Feb, 30-Mar and 28-Mar exactly as the rule says. TRUNC removes the swipe time and the half-open range from 1-Mar to before 1-Apr catches the whole of 31-Mar.",
-   "tip": "I always compute instalment dates from the original start date, never the previous due date, and I remember ADD_MONTHS maps a month-end to a month-end."
+   "tip": "I always compute instalment dates from the original start date, never the previous due date, and I remember ADD_MONTHS maps a month-end to a month-end.",
+   "simple": "A due date on the 30th is tricky because February has only 28 days. Start from the 1st of the month, move to the right day, and if the month is shorter, stop at its last day. Always count from the original date, not from last month's date, or the day keeps slipping.",
+   "remember": "Start from the 1st, add the day, cap at the month's last day."
   },
   {
    "id": "f20261112-6",
@@ -89,7 +99,9 @@
    "hint": "A comparison with NULL is UNKNOWN, not TRUE, so use an outer join and LNNVL (or explicit IS NULL checks) to keep those rows.",
    "solution": "SELECT t.txn_id, t.cust_id, t.amount, t.txn_ts,\n       t.device_id, d.reg_device_id\nFROM   upi_txn t\nLEFT   JOIN customer_device d ON d.cust_id = t.cust_id\nWHERE  t.txn_ts >= DATE '2026-11-11'\nAND    t.txn_ts <  DATE '2026-11-12'\nAND    t.amount >= 10000\nAND    LNNVL(t.device_id = d.reg_device_id)\nORDER  BY t.amount DESC;",
    "why": "t.device_id <> d.reg_device_id is UNKNOWN when either side is NULL, and WHERE drops UNKNOWN rows, so the riskiest payments vanished. LNNVL(condition) returns TRUE when the condition is FALSE or UNKNOWN, which is exactly 'not a confirmed match'; the LEFT JOIN keeps customers with no CUSTOMER_DEVICE row. The equivalent long form is t.device_id IS NULL OR d.reg_device_id IS NULL OR t.device_id <> d.reg_device_id.",
-   "tip": "Whenever I write <> on nullable columns I ask what NULL should mean, and for 'not a confirmed match' I use LNNVL or explicit IS NULL checks."
+   "tip": "Whenever I write <> on nullable columns I ask what NULL should mean, and for 'not a confirmed match' I use LNNVL or explicit IS NULL checks.",
+   "simple": "If you do not know which phone a person registered, you cannot say the payment came from the right phone. Oracle treats 'not equal' with an unknown value as 'I don't know' and hides those rows. LNNVL says 'show me anything that is not a sure match', so the risky unknown ones stay in the list.",
+   "remember": "Unknown is not a match; LNNVL keeps the unknowns."
   }
  ],
  "lessons": [
@@ -100,7 +112,9 @@
    "explain": "When an analytic function has ORDER BY but no frame, Oracle uses RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW. For SUM that gives a running total, but for LAST_VALUE it means the last row seen so far is the current row, so you get the row's own value back. To get the true last value of the partition, state ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING, or use FIRST_VALUE with ORDER BY ... DESC. Adding IGNORE NULLS turns it into a carry-forward tool.",
    "example": "WITH r AS (\n  SELECT DATE '2026-11-02' d, 83.10 rate FROM dual UNION ALL\n  SELECT DATE '2026-11-03', 83.25 FROM dual UNION ALL\n  SELECT DATE '2026-11-04', 83.18 FROM dual\n)\nSELECT d, rate,\n       LAST_VALUE(rate) OVER (ORDER BY d) AS default_frame,\n       LAST_VALUE(rate) OVER (ORDER BY d\n         ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS closing_rate\nFROM r;\n-- default_frame: 83.10, 83.25, 83.18   closing_rate: 83.18, 83.18, 83.18",
    "gotcha": "LAST_VALUE(x) OVER (ORDER BY d) looks right in a quick test but just echoes x on every row.",
-   "line": "For a closing value per period I use LAST_VALUE with an explicit UNBOUNDED FOLLOWING frame, or FIRST_VALUE ordered descending, because the default frame stops at the current row."
+   "line": "For a closing value per period I use LAST_VALUE with an explicit UNBOUNDED FOLLOWING frame, or FIRST_VALUE ordered descending, because the default frame stops at the current row.",
+   "simple": "LAST_VALUE sounds like 'give me the last one', but by default it only looks from the top down to the current row, so the last one it sees is itself. To see the real last row, tell it to look all the way to the end.",
+   "remember": "Tell LAST_VALUE to look to the end: UNBOUNDED FOLLOWING."
   }
  ]
 }

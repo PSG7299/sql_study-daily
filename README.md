@@ -17,4 +17,4 @@ Every push to `main` rebuilds the APK and runs an emulator test through GitHub A
 
 ## Feed format
 
-`feed/feed.json` holds `{"questions": [...], "lessons": [...]}` using the same fields as `app/src/main/assets/bank.json`. New items are merged by `id`.
+`feed/feed.json` holds `{"questions": [...], "lessons": [...]}` using the same fields as `app/src/main/assets/bank.json`. New items are merged by `id`. Each question and lesson also has `simple` (an everyday explanation a 10-year-old can follow) and `remember` (a one-line memory hook).
