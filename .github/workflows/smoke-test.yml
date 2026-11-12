@@ -3,6 +3,8 @@ name: Emulator smoke test
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'feed/**'
   workflow_dispatch:
 
 jobs:
