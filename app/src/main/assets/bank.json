@@ -66,7 +66,53 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "txn_id",
+     "txn_ts",
+     "balance",
+     "overdraft"
+    ],
+    "rows": [
+     [
+      "101",
+      "1",
+      "01-03-2026 10:00",
+      "5000",
+      "N"
+     ],
+     [
+      "101",
+      "2",
+      "02-03-2026 12:30",
+      "3000",
+      "N"
+     ],
+     [
+      "101",
+      "3",
+      "02-03-2026 12:30",
+      "-1000",
+      "Y"
+     ],
+     [
+      "101",
+      "4",
+      "05-03-2026 09:15",
+      "2000",
+      "N"
+     ],
+     [
+      "102",
+      "5",
+      "01-03-2026 11:00",
+      "800",
+      "N"
+     ]
+    ]
+   }
   },
   {
    "id": "a02",
@@ -130,7 +176,23 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "first_missed",
+     "last_missed",
+     "streak"
+    ],
+    "rows": [
+     [
+      "501",
+      "01-02-2026",
+      "01-04-2026",
+      "3"
+     ]
+    ]
+   }
   },
   {
    "id": "a03",
@@ -196,7 +258,23 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "txn_id",
+     "card_no",
+     "txn_ts",
+     "cnt_10m"
+    ],
+    "rows": [
+     [
+      "3",
+      "4111-XX-0001",
+      "10-03-2026 22:09",
+      "3"
+     ]
+    ]
+   }
   },
   {
    "id": "a04",
@@ -269,7 +347,41 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "branch_id",
+     "cust_id",
+     "total_bal",
+     "rnk"
+    ],
+    "rows": [
+     [
+      "10",
+      "11",
+      "1000000",
+      "1"
+     ],
+     [
+      "10",
+      "12",
+      "1000000",
+      "1"
+     ],
+     [
+      "10",
+      "13",
+      "750000",
+      "2"
+     ],
+     [
+      "10",
+      "14",
+      "600000",
+      "3"
+     ]
+    ]
+   }
   },
   {
    "id": "a05",
@@ -333,7 +445,36 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "id",
+     "utr_no",
+     "payer_vpa",
+     "payee_vpa",
+     "amount",
+     "created_ts"
+    ],
+    "rows": [
+     [
+      "1",
+      "UTR9001",
+      "ravi@okhdfc",
+      "shop@ybl",
+      "450",
+      "10-03-2026 10:00:01"
+     ],
+     [
+      "3",
+      "UTR9002",
+      "neha@oksbi",
+      "rent@icici",
+      "15000",
+      "10-03-2026 11:20"
+     ]
+    ]
+   },
+   "output_note": "UPI_TXN after the DELETE"
   },
   {
    "id": "a06",
@@ -397,7 +538,32 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "balance",
+     "updated_on"
+    ],
+    "rows": [
+     [
+      "101",
+      "13800",
+      "SYSDATE"
+     ],
+     [
+      "102",
+      "1000",
+      "SYSDATE"
+     ],
+     [
+      "103",
+      "2500",
+      "SYSDATE"
+     ]
+    ]
+   },
+   "output_note": "ACCT_BALANCE after the MERGE"
   },
   {
    "id": "a07",
@@ -458,7 +624,39 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "branch_id",
+     "cbs_amt",
+     "gl_amt",
+     "diff",
+     "status"
+    ],
+    "rows": [
+     [
+      "2",
+      "320000",
+      "318500",
+      "1500",
+      "AMOUNT MISMATCH"
+     ],
+     [
+      "3",
+      "150000",
+      "NULL",
+      "150000",
+      "MISSING IN GL"
+     ],
+     [
+      "4",
+      "NULL",
+      "90000",
+      "-90000",
+      "MISSING IN CBS"
+     ]
+    ]
+   }
   },
   {
    "id": "a08",
@@ -507,7 +705,46 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "fund_id",
+     "month_end",
+     "aum",
+     "prev_aum",
+     "pct_change"
+    ],
+    "rows": [
+     [
+      "7",
+      "31-01-2026",
+      "1000000000",
+      "NULL",
+      "NULL"
+     ],
+     [
+      "7",
+      "28-02-2026",
+      "1100000000",
+      "1000000000",
+      "10"
+     ],
+     [
+      "7",
+      "31-03-2026",
+      "1045000000",
+      "1100000000",
+      "-5"
+     ],
+     [
+      "8",
+      "31-03-2026",
+      "0",
+      "NULL",
+      "NULL"
+     ]
+    ]
+   }
   },
   {
    "id": "a09",
@@ -567,7 +804,46 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "lvl",
+     "emp_id",
+     "emp_name",
+     "designation",
+     "chain"
+    ],
+    "rows": [
+     [
+      "1",
+      "4107",
+      "Rahul",
+      "Loan Officer",
+      " > Rahul"
+     ],
+     [
+      "2",
+      "3002",
+      "Priya",
+      "Branch Manager",
+      " > Rahul > Priya"
+     ],
+     [
+      "3",
+      "2001",
+      "Anil",
+      "Regional Head",
+      " > Rahul > Priya > Anil"
+     ],
+     [
+      "4",
+      "1001",
+      "Meera",
+      "Zonal Head",
+      " > Rahul > Priya > Anil > Meera"
+     ]
+    ]
+   }
   },
   {
    "id": "a10",
@@ -640,7 +916,32 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "branch_id",
+     "upi",
+     "neft",
+     "rtgs",
+     "imps"
+    ],
+    "rows": [
+     [
+      "10",
+      "2",
+      "1",
+      "0",
+      "0"
+     ],
+     [
+      "20",
+      "1",
+      "0",
+      "1",
+      "0"
+     ]
+    ]
+   }
   },
   {
    "id": "a11",
@@ -706,7 +1007,51 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "region",
+     "product",
+     "total_amt"
+    ],
+    "rows": [
+     [
+      "South",
+      "Gold",
+      "200000"
+     ],
+     [
+      "South",
+      "Home",
+      "4000000"
+     ],
+     [
+      "South",
+      "ALL PRODUCTS",
+      "4200000"
+     ],
+     [
+      "West",
+      "Car",
+      "800000"
+     ],
+     [
+      "West",
+      "Home",
+      "5500000"
+     ],
+     [
+      "West",
+      "ALL PRODUCTS",
+      "6300000"
+     ],
+     [
+      "GRAND TOTAL",
+      "NULL",
+      "10500000"
+     ]
+    ]
+   }
   },
   {
    "id": "a12",
@@ -760,7 +1105,26 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "last_kyc",
+     "last_doc"
+    ],
+    "rows": [
+     [
+      "11",
+      "15-06-2024",
+      "Aadhaar"
+     ],
+     [
+      "12",
+      "01-02-2023",
+      "Passport"
+     ]
+    ]
+   }
   },
   {
    "id": "a13",
@@ -829,7 +1193,65 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "symbol",
+     "trade_date",
+     "close_price",
+     "ma7"
+    ],
+    "rows": [
+     [
+      "INFY",
+      "02-03-2026",
+      "1500",
+      "NULL"
+     ],
+     [
+      "INFY",
+      "03-03-2026",
+      "1510",
+      "NULL"
+     ],
+     [
+      "INFY",
+      "04-03-2026",
+      "1490",
+      "NULL"
+     ],
+     [
+      "INFY",
+      "05-03-2026",
+      "1520",
+      "NULL"
+     ],
+     [
+      "INFY",
+      "06-03-2026",
+      "1530",
+      "NULL"
+     ],
+     [
+      "INFY",
+      "09-03-2026",
+      "1540",
+      "NULL"
+     ],
+     [
+      "INFY",
+      "10-03-2026",
+      "1550",
+      "1520"
+     ],
+     [
+      "INFY",
+      "11-03-2026",
+      "1560",
+      "1528.57"
+     ]
+    ]
+   }
   },
   {
    "id": "a14",
@@ -893,7 +1315,23 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "start_dt",
+     "end_dt",
+     "falling_days"
+    ],
+    "rows": [
+     [
+      "900",
+      "01-03-2026",
+      "04-03-2026",
+      "3"
+     ]
+    ]
+   }
   },
   {
    "id": "a15",
@@ -947,7 +1385,25 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "txn_id",
+     "txn_date",
+     "prev_date",
+     "gap_days"
+    ],
+    "rows": [
+     [
+      "301",
+      "2",
+      "15-03-2026",
+      "10-01-2023",
+      "1160"
+     ]
+    ]
+   }
   },
   {
    "id": "a16",
@@ -995,7 +1451,26 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "total_deposit",
+     "cum_pct"
+    ],
+    "rows": [
+     [
+      "1",
+      "5000000",
+      "50"
+     ],
+     [
+      "2",
+      "3000000",
+      "80"
+     ]
+    ]
+   }
   },
   {
    "id": "a17",
@@ -1044,7 +1519,23 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "interest"
+    ],
+    "rows": [
+     [
+      "201",
+      "1066.3"
+     ],
+     [
+      "202",
+      "431.51"
+     ]
+    ]
+   }
   },
   {
    "id": "p01",
@@ -1110,7 +1601,24 @@
      ],
      "rows": []
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "balance"
+    ],
+    "rows": [
+     [
+      "101",
+      "40350.25"
+     ],
+     [
+      "102",
+      "138200"
+     ]
+    ]
+   },
+   "output_note": "ACCT_BALANCE after the block. Account 999 has no row, so its UPDATE changes 0 rows. That is not an error, so ERR_LOG stays empty."
   },
   {
    "id": "p02",
@@ -1150,7 +1658,28 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "balance"
+    ],
+    "rows": [
+     [
+      "101",
+      "15000"
+     ],
+     [
+      "102",
+      "10000"
+     ],
+     [
+      "103",
+      "0"
+     ]
+    ]
+   },
+   "output_note": "ACCT_BALANCE after transfer(101, 102, 5000). transfer(103, 101, 100) would raise ORA-20003: Insufficient funds."
   },
   {
    "id": "p03",
@@ -1188,7 +1717,33 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "log_id",
+     "event",
+     "details",
+     "logged_by",
+     "logged_on"
+    ],
+    "rows": [
+     [
+      "1",
+      "TRANSFER_FAIL",
+      "101 to 102, Rs 50000: insufficient funds",
+      "APP_USER",
+      "10-03-2026 14:02:11"
+     ],
+     [
+      "2",
+      "TRANSFER_FAIL",
+      "102 to 103, Rs 8000: insufficient funds",
+      "APP_USER",
+      "10-03-2026 15:40:02"
+     ]
+    ]
+   },
+   "output_note": "AUDIT_LOG after log_event(...) is called and the caller then does ROLLBACK. Row 2 is still there."
   },
   {
    "id": "p04",
@@ -1236,7 +1791,18 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "result"
+    ],
+    "rows": [
+     [
+      "ORA-20010: Daily ATM limit exceeded for account 101"
+     ]
+    ]
+   },
+   "output_note": "Inserting a Rs 15,000 withdrawal for account 101 at 20:00 on 10-03-2026 (day total 55,000). The insert is rolled back and ATM_TXN stays as it was."
   },
   {
    "id": "c01",
@@ -1296,7 +1862,32 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "bucket",
+     "loans",
+     "total_os"
+    ],
+    "rows": [
+     [
+      "1-30",
+      "2",
+      "17000"
+     ],
+     [
+      "61-90",
+      "1",
+      "8000"
+     ],
+     [
+      "90+",
+      "1",
+      "15000"
+     ]
+    ]
+   },
+   "output_note": "If today is 12-11-2026"
   },
   {
    "id": "c02",
@@ -1356,7 +1947,23 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "cust_name"
+    ],
+    "rows": [
+     [
+      "12",
+      "Neha"
+     ],
+     [
+      "13",
+      "Arjun"
+     ]
+    ]
+   }
   },
   {
    "id": "c03",
@@ -1410,7 +2017,29 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "txn_id",
+     "acct_id",
+     "txn_ts",
+     "amount"
+    ],
+    "rows": [
+     [
+      "2",
+      "101",
+      "31-03-2026 00:00",
+      "700"
+     ],
+     [
+      "3",
+      "102",
+      "31-03-2026 23:59:30",
+      "250"
+     ]
+    ]
+   }
   },
   {
    "id": "c04",
@@ -1481,7 +2110,22 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "opened_on",
+     "last_txn"
+    ],
+    "rows": [
+     [
+      "2",
+      "05-06-2021",
+      "NULL"
+     ]
+    ]
+   },
+   "output_note": "If today is 12-11-2026"
   },
   {
    "id": "c05",
@@ -1547,7 +2191,19 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "total_spend"
+    ],
+    "rows": [
+     [
+      "11",
+      "2500"
+     ]
+    ]
+   }
   },
   {
    "id": "c06",
@@ -1608,7 +2264,27 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "issue"
+    ],
+    "rows": [
+     [
+      "12",
+      "NO KYC RECORD"
+     ],
+     [
+      "13",
+      "KYC WITHOUT ACTIVE CUSTOMER"
+     ],
+     [
+      "14",
+      "KYC WITHOUT ACTIVE CUSTOMER"
+     ]
+    ]
+   }
   },
   {
    "id": "c07",
@@ -1667,7 +2343,32 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "total_cr",
+     "total_dr",
+     "net",
+     "txn_count"
+    ],
+    "rows": [
+     [
+      "101",
+      "10000",
+      "4000",
+      "6000",
+      "3"
+     ],
+     [
+      "102",
+      "800",
+      "0",
+      "800",
+      "1"
+     ]
+    ]
+   }
   },
   {
    "id": "c08",
@@ -1726,7 +2427,25 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "txn_day",
+     "amount",
+     "debit_id",
+     "credit_id"
+    ],
+    "rows": [
+     [
+      "101",
+      "10-03-2026",
+      "4999",
+      "1",
+      "2"
+     ]
+    ]
+   }
   },
   {
    "id": "c09",
@@ -1800,7 +2519,32 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "status",
+     "status_date"
+    ],
+    "rows": [
+     [
+      "1",
+      "NPA",
+      "12-11-2026"
+     ],
+     [
+      "2",
+      "STANDARD",
+      "01-01-2026"
+     ],
+     [
+      "3",
+      "NPA",
+      "01-08-2026"
+     ]
+    ]
+   },
+   "output_note": "LOAN after the UPDATE, if today is 12-11-2026"
   },
   {
    "id": "c10",
@@ -1885,7 +2629,36 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "cust_name",
+     "mobile",
+     "loan_id",
+     "due_date",
+     "days_late",
+     "penalty"
+    ],
+    "rows": [
+     [
+      "Ravi",
+      "98xxxxxx01",
+      "501",
+      "05-10-2026",
+      "38",
+      "1900"
+     ],
+     [
+      "Ravi",
+      "98xxxxxx01",
+      "501",
+      "05-11-2026",
+      "7",
+      "350"
+     ]
+    ]
+   },
+   "output_note": "If today is 12-11-2026"
   },
   {
    "id": "e01",
@@ -1945,7 +2718,27 @@
    "simple": "Imagine sorting coins into piles by colour, then counting each pile. GROUP BY makes one pile per branch, and COUNT(*) counts the accounts in each pile.",
    "remember": "GROUP BY makes piles; COUNT counts each pile.",
    "why": "GROUP BY collapses all rows with the same branch_id into one result row, and COUNT(*) counts how many rows went into it. Every column in SELECT must be either grouped or inside an aggregate.",
-   "tip": "Every non-aggregated column in the SELECT must also be in the GROUP BY."
+   "tip": "Every non-aggregated column in the SELECT must also be in the GROUP BY.",
+   "output": {
+    "cols": [
+     "branch_id",
+     "accounts"
+    ],
+    "rows": [
+     [
+      "10",
+      "3"
+     ],
+     [
+      "20",
+      "1"
+     ],
+     [
+      "30",
+      "1"
+     ]
+    ]
+   }
   },
   {
    "id": "e02",
@@ -2009,7 +2802,41 @@
    "simple": "It is like lining up students from tallest to shortest and picking the first five. ORDER BY balance DESC lines up the accounts from biggest to smallest, and FETCH FIRST 5 ROWS ONLY picks the first five.",
    "remember": "Sort first, then take the top rows.",
    "why": "FETCH FIRST n ROWS ONLY (Oracle 12c and later) is applied after ORDER BY. The older ROWNUM <= 5 is applied before ORDER BY unless you sort inside a subquery, which is a common mistake.",
-   "tip": "On 12c and later I use FETCH FIRST; with ROWNUM I sort in an inner query first."
+   "tip": "On 12c and later I use FETCH FIRST; with ROWNUM I sort in an inner query first.",
+   "output": {
+    "cols": [
+     "acct_id",
+     "cust_name",
+     "balance"
+    ],
+    "rows": [
+     [
+      "2",
+      "Neha",
+      "1800000"
+     ],
+     [
+      "5",
+      "Imran",
+      "1200000"
+     ],
+     [
+      "7",
+      "Sahil",
+      "875000"
+     ],
+     [
+      "4",
+      "Pooja",
+      "640000"
+     ],
+     [
+      "1",
+      "Ravi",
+      "250000"
+     ]
+    ]
+   }
   },
   {
    "id": "e03",
@@ -2078,7 +2905,31 @@
    "simple": "Think of two lists: one with roll numbers and marks, one with roll numbers and names. You match them on roll number to see each name with its marks. JOIN does that matching using cust_id.",
    "remember": "JOIN matches rows from two tables on a common column.",
    "why": "An INNER JOIN returns only rows that have a match in both tables, so Arjun (no account) does not appear. Table aliases (a, c) keep the query short and make it clear which table each column comes from.",
-   "tip": "Inner join keeps only matches; if I need rows without a match I switch to a LEFT JOIN."
+   "tip": "Inner join keeps only matches; if I need rows without a match I switch to a LEFT JOIN.",
+   "output": {
+    "cols": [
+     "acct_id",
+     "cust_name",
+     "balance"
+    ],
+    "rows": [
+     [
+      "1001",
+      "Ravi",
+      "5000"
+     ],
+     [
+      "1002",
+      "Ravi",
+      "72000"
+     ],
+     [
+      "1003",
+      "Neha",
+      "300"
+     ]
+    ]
+   }
   },
   {
    "id": "e04",
@@ -2127,7 +2978,41 @@
    "simple": "CASE is like a sorting hat. It looks at each account's balance and asks: is it 1 lakh or more? Then Premium. If not, is it 10,000 or more? Then Regular. Otherwise Low.",
    "remember": "CASE = if this, then that, checked top to bottom.",
    "why": "CASE returns the result of the first WHEN that is true, so later conditions only need the lower limit. ELSE catches everything left, including NULL balances.",
-   "tip": "I order CASE conditions from the strictest to the loosest so each one only needs one limit."
+   "tip": "I order CASE conditions from the strictest to the loosest so each one only needs one limit.",
+   "output": {
+    "cols": [
+     "acct_id",
+     "cust_name",
+     "balance",
+     "tag"
+    ],
+    "rows": [
+     [
+      "1",
+      "Ravi",
+      "250000",
+      "Premium"
+     ],
+     [
+      "2",
+      "Neha",
+      "1800000",
+      "Premium"
+     ],
+     [
+      "3",
+      "Arjun",
+      "900",
+      "Low"
+     ],
+     [
+      "4",
+      "Pooja",
+      "64000",
+      "Regular"
+     ]
+    ]
+   }
   },
   {
    "id": "e05",
@@ -2176,7 +3061,36 @@
    "simple": "NULL means the box is empty. NVL says: if the box is empty, write 'Not added' in it. If the box has a name, keep the name.",
    "remember": "NVL fills an empty box with a default.",
    "why": "NVL(a, b) returns b only when a is NULL. Both arguments should be the same data type; COALESCE does the same job and accepts more than two values.",
-   "tip": "For a default value I use NVL or COALESCE; COALESCE is standard SQL and takes several fallbacks."
+   "tip": "For a default value I use NVL or COALESCE; COALESCE is standard SQL and takes several fallbacks.",
+   "output": {
+    "cols": [
+     "acct_id",
+     "cust_name",
+     "nominee"
+    ],
+    "rows": [
+     [
+      "1",
+      "Ravi",
+      "Sita"
+     ],
+     [
+      "2",
+      "Neha",
+      "Not added"
+     ],
+     [
+      "3",
+      "Arjun",
+      "Kiran"
+     ],
+     [
+      "4",
+      "Pooja",
+      "Not added"
+     ]
+    ]
+   }
   },
   {
    "id": "e06",
@@ -2236,7 +3150,26 @@
    "simple": "It is like a guest list at a party: only names on the list get in. IN ('UPI','IMPS') is the guest list for channel, and amount > 1000 is a second check at the door.",
    "remember": "IN = is the value on this list?",
    "why": "channel IN ('UPI','IMPS') is short for channel = 'UPI' OR channel = 'IMPS'. Writing it with IN avoids the classic bug of mixing OR and AND without brackets.",
-   "tip": "If I use OR together with AND, I add brackets; IN avoids that trap for lists of values."
+   "tip": "If I use OR together with AND, I add brackets; IN avoids that trap for lists of values.",
+   "output": {
+    "cols": [
+     "pay_id",
+     "channel",
+     "amount"
+    ],
+    "rows": [
+     [
+      "2",
+      "IMPS",
+      "5000"
+     ],
+     [
+      "4",
+      "UPI",
+      "1800"
+     ]
+    ]
+   }
   },
   {
    "id": "e07",
@@ -2300,7 +3233,19 @@
    "simple": "First you make one pile of accounts per customer and count each pile. Then you keep only the piles with more than 2. WHERE works before piles are made; HAVING works after.",
    "remember": "WHERE filters rows, HAVING filters groups.",
    "why": "WHERE cannot use COUNT(*) because the groups do not exist yet when WHERE runs. HAVING runs after GROUP BY, so it can test aggregates.",
-   "tip": "WHERE runs before grouping and HAVING after, so conditions on COUNT or SUM go in HAVING."
+   "tip": "WHERE runs before grouping and HAVING after, so conditions on COUNT or SUM go in HAVING.",
+   "output": {
+    "cols": [
+     "cust_id",
+     "accounts"
+    ],
+    "rows": [
+     [
+      "11",
+      "4"
+     ]
+    ]
+   }
   },
   {
    "id": "e08",
@@ -2360,7 +3305,27 @@
    "simple": "Imagine one envelope for each day. You drop every deposit into its day's envelope, then add up the money in each envelope. GROUP BY dep_date makes the envelopes and SUM adds them.",
    "remember": "SUM adds up each group.",
    "why": "BETWEEN includes both ends, which is safe here because dep_date has no time part. If it had a time, I would use >= 1 March and < 8 March instead.",
-   "tip": "BETWEEN on dates is only safe when there is no time part; otherwise I use a half-open range."
+   "tip": "BETWEEN on dates is only safe when there is no time part; otherwise I use a half-open range.",
+   "output": {
+    "cols": [
+     "dep_date",
+     "total"
+    ],
+    "rows": [
+     [
+      "01-03-2026",
+      "7500"
+     ],
+     [
+      "02-03-2026",
+      "800"
+     ],
+     [
+      "03-03-2026",
+      "12000"
+     ]
+    ]
+   }
   }
  ],
  "lessons": [

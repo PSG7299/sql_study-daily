@@ -17,4 +17,4 @@ Every push to `main` rebuilds the APK and runs an emulator test through GitHub A
 
 ## Feed format
 
-`feed/feed.json` holds `{"questions": [...], "lessons": [...]}` using the same fields as `app/src/main/assets/bank.json`. New items are merged by `id`. Questions have `lvl` E (easy), M (medium) or A (advanced) and a `data` list of sample tables (`name`, `cols`, `rows`). Each question and lesson also has `simple` (an everyday explanation a 10-year-old can follow) and `remember` (a one-line memory hook).
+`feed/feed.json` holds `{"questions": [...], "lessons": [...]}` using the same fields as `app/src/main/assets/bank.json`. New items are merged by `id`. Questions have `lvl` E (easy), M (medium) or A (advanced) and a `data` list of sample tables (`name`, `cols`, `rows`). Each question has `output` (`cols`, `rows`: the result of the solution on the sample data) and an optional `output_note`. Each question and lesson also has `simple` (an everyday explanation a 10-year-old can follow) and `remember` (a one-line memory hook).

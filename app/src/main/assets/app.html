@@ -66,6 +66,8 @@ table.grid th{background:var(--accent-soft);color:var(--accent);text-align:left;
 table.grid td{padding:6px 9px;border-top:1px solid var(--line);white-space:nowrap}
 table.grid td.null{color:var(--muted);font-style:italic}
 table.grid tr.empty td{color:var(--muted);font-style:italic}
+.outbox{display:flex;flex-direction:column;gap:6px}
+.outbox table.grid th{background:var(--good-soft);color:var(--good)}
 .chip.rev{background:var(--bad-soft);color:var(--bad);border-color:transparent;font-weight:600}
 .label{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .task{background:var(--accent-soft);border-left:3px solid var(--accent);padding:10px 12px;border-radius:8px;font-weight:600}
@@ -146,6 +148,11 @@ nav button.on{color:var(--accent)}
         <details><summary>Column types</summary><pre id="qSchema" style="margin-top:8px"></pre></details>
       </div>
       <div class="task" id="qTask"></div>
+      <div class="outbox" id="qOutBox">
+        <div class="label">Expected output</div>
+        <div class="small muted" id="qOutNote"></div>
+        <div id="qOut"></div>
+      </div>
       <details id="qHintBox"><summary>Need a hint?</summary><div id="qHint" style="margin-top:6px"></div></details>
       <div id="answerBox">
         <label class="label" for="answer">Your answer</label>
@@ -306,6 +313,21 @@ nav button.on{color:var(--accent)}
     if (q.lvl === "A") return '<span class="chip adv">Advanced</span>';
     return '<span class="chip core">Medium</span>';
   }
+  function gridHtml(cols, rows){
+    var head = '<tr>' + cols.map(function(c){ return '<th>' + esc(c) + '</th>'; }).join('') + '</tr>';
+    var body = rows.length ? rows.map(function(r){
+      return '<tr>' + r.map(function(v){ return v === "NULL" ? '<td class="null">NULL</td>' : '<td>' + esc(v) + '</td>'; }).join('') + '</tr>';
+    }).join('') : '<tr class="empty"><td colspan="' + cols.length + '">(no rows)</td></tr>';
+    return '<div class="tscroll"><table class="grid"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+  }
+  function fillOutput(q){
+    var has = q.output && q.output.cols;
+    $("qOutBox").classList.toggle("hidden", !has);
+    if (!has) return;
+    $("qOutNote").textContent = q.output_note || "";
+    $("qOutNote").classList.toggle("hidden", !q.output_note);
+    $("qOut").innerHTML = gridHtml(q.output.cols, q.output.rows);
+  }
   function dataHtml(q){
     if (!q.data || !q.data.length) return '<pre>' + esc(q.schema) + '</pre>';
     return q.data.map(function(t){
@@ -364,6 +386,7 @@ nav button.on{color:var(--accent)}
     $("qScenario").textContent = q.scenario;
     $("qSchema").textContent = q.schema;
     $("qData").innerHTML = dataHtml(q);
+    fillOutput(q);
     $("qTask").textContent = q.task;
     $("qHint").textContent = q.hint;
     $("qHintBox").open = false;
@@ -408,6 +431,7 @@ nav button.on{color:var(--accent)}
     $("qScenario").textContent = q.scenario;
     $("qSchema").textContent = q.schema;
     $("qData").innerHTML = dataHtml(q);
+    fillOutput(q);
     $("qTask").textContent = q.task;
     $("qHint").textContent = q.hint;
     $("answerBox").classList.add("hidden");

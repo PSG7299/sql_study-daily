@@ -39,7 +39,48 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "month_no",
+     "due_date",
+     "opening",
+     "interest",
+     "principal_part",
+     "closing",
+     "amount_due"
+    ],
+    "rows": [
+     [
+      "1",
+      "05-01-2026",
+      "300000",
+      "3000",
+      "99006.64",
+      "200993.36",
+      "102006.64"
+     ],
+     [
+      "2",
+      "05-02-2026",
+      "200993.36",
+      "2009.93",
+      "99996.71",
+      "100996.65",
+      "102006.64"
+     ],
+     [
+      "3",
+      "05-03-2026",
+      "100996.65",
+      "1009.97",
+      "100996.65",
+      "0",
+      "102006.62"
+     ]
+    ]
+   },
+   "output_note": "For :loan_id = 7001"
   },
   {
    "id": "f20261112-2",
@@ -111,7 +152,83 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "row_type",
+     "region",
+     "sector",
+     "total_os",
+     "npa_os",
+     "gnpa_pct"
+    ],
+    "rows": [
+     [
+      "Region x Sector",
+      "South",
+      "MSME",
+      "500000",
+      "0",
+      "0"
+     ],
+     [
+      "Region x Sector",
+      "West",
+      "MSME",
+      "1000000",
+      "200000",
+      "20"
+     ],
+     [
+      "Region x Sector",
+      "South",
+      "Retail",
+      "100000",
+      "100000",
+      "100"
+     ],
+     [
+      "Region x Sector",
+      "West",
+      "Unclassified",
+      "50000",
+      "0",
+      "0"
+     ],
+     [
+      "Sector total",
+      "ALL",
+      "MSME",
+      "1500000",
+      "200000",
+      "13.33"
+     ],
+     [
+      "Sector total",
+      "ALL",
+      "Retail",
+      "100000",
+      "100000",
+      "100"
+     ],
+     [
+      "Sector total",
+      "ALL",
+      "Unclassified",
+      "50000",
+      "0",
+      "0"
+     ],
+     [
+      "Grand total",
+      "ALL",
+      "ALL",
+      "1650000",
+      "300000",
+      "18.18"
+     ]
+    ]
+   }
   },
   {
    "id": "f20261112-3",
@@ -167,7 +284,28 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "alert_id",
+     "cust_id",
+     "branch_code",
+     "alert_amt",
+     "alert_dt",
+     "status"
+    ],
+    "rows": [
+     [
+      "1",
+      "11",
+      "PUN01",
+      "1500000",
+      "02-11-2026",
+      "OPEN"
+     ]
+    ]
+   },
+   "output_note": "Rows returned by get_alerts('PUN01', NULL, NULL). Alert 3 is also PUN01 but CLOSED."
   },
   {
    "id": "f20261112-4",
@@ -216,7 +354,42 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "rate_date",
+     "usd_inr",
+     "rate_src"
+    ],
+    "rows": [
+     [
+      "01-11-2026",
+      "84.1",
+      "Carried"
+     ],
+     [
+      "02-11-2026",
+      "84.25",
+      "Published"
+     ],
+     [
+      "03-11-2026",
+      "84.3",
+      "Published"
+     ],
+     [
+      "04-11-2026",
+      "84.3",
+      "Carried"
+     ],
+     [
+      "05-11-2026",
+      "84.3",
+      "Carried"
+     ]
+    ]
+   },
+   "output_note": "First 5 days of November shown"
   },
   {
    "id": "f20261112-5",
@@ -272,7 +445,29 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "emi_plan_id",
+     "inst_no",
+     "due_date",
+     "emi_amt"
+    ],
+    "rows": [
+     [
+      "2",
+      "1",
+      "28-03-2026",
+      "4000"
+     ],
+     [
+      "1",
+      "2",
+      "30-03-2026",
+      "5000"
+     ]
+    ]
+   }
   },
   {
    "id": "f20261112-6",
@@ -352,7 +547,43 @@
       ]
      ]
     }
-   ]
+   ],
+   "output": {
+    "cols": [
+     "txn_id",
+     "cust_id",
+     "amount",
+     "txn_ts",
+     "device_id",
+     "reg_device_id"
+    ],
+    "rows": [
+     [
+      "3",
+      "13",
+      "40000",
+      "11-11-2026 13:00",
+      "NULL",
+      "DEV-C"
+     ],
+     [
+      "2",
+      "12",
+      "15000",
+      "11-11-2026 12:00",
+      "DEV-X",
+      "DEV-B"
+     ],
+     [
+      "4",
+      "14",
+      "12000",
+      "11-11-2026 14:00",
+      "DEV-Q",
+      "NULL"
+     ]
+    ]
+   }
   }
  ],
  "lessons": [
