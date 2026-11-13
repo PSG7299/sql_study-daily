@@ -584,6 +584,869 @@
      ]
     ]
    }
+  },
+  {
+   "id": "f20261113-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "LIKE pattern match",
+   "domain": "Core banking/NRI",
+   "title": "List all NRE accounts",
+   "scenario": "Shalini Rao in the NRI desk must send a balance list of all NRE (Non-Resident External) accounts to the relationship managers before the month-end call. In this bank every NRE account number starts with the letters NRE.",
+   "schema": "ACCOUNT(acct_no VARCHAR2(14), cust_name VARCHAR2(60), acct_type VARCHAR2(10), balance NUMBER(14,2))\n-- acct_no prefix tells the product: NRE..., NRO..., SB..., CA...\n-- balance in INR",
+   "task": "List acct_no, cust_name and balance of every account whose number starts with NRE, biggest balance first.",
+   "hint": "Use LIKE with the % wildcard after the fixed letters, so only the start of the number is checked.",
+   "solution": "SELECT acct_no, cust_name, balance\nFROM   account\nWHERE  acct_no LIKE 'NRE%'\nORDER  BY balance DESC;",
+   "simple": "Think of a school register where you want every name that starts with 'Ra'. You only look at the first letters and do not care what comes after. LIKE 'NRE%' does the same: the % means 'anything can come after this'. So CA4001NRE is not picked, because NRE is at the end, not the start.",
+   "remember": "% = anything after; 'NRE%' means starts with NRE.",
+   "why": "LIKE compares a string to a pattern where % matches zero or more characters and _ matches exactly one. With the wildcard only at the end ('NRE%'), Oracle can still use an index on acct_no as a range scan, whereas a leading wildcard ('%NRE') forces it to check every row. The match is case-sensitive, so 'nre1004' would not be returned.",
+   "tip": "I keep the wildcard at the end of a LIKE pattern when I can, because 'ABC%' can use an index and '%ABC' cannot.",
+   "data": [
+    {
+     "name": "ACCOUNT",
+     "cols": [
+      "acct_no",
+      "cust_name",
+      "acct_type",
+      "balance"
+     ],
+     "rows": [
+      [
+       "NRE1001",
+       "Anil Kapoor",
+       "SAVINGS",
+       "450000"
+      ],
+      [
+       "SB2001",
+       "Meena Iyer",
+       "SAVINGS",
+       "82000"
+      ],
+      [
+       "NRO3001",
+       "Farhan Shaikh",
+       "SAVINGS",
+       "120000"
+      ],
+      [
+       "NRE1002",
+       "Divya Nair",
+       "FD",
+       "1500000"
+      ],
+      [
+       "CA4001NRE",
+       "Gupta Traders",
+       "CURRENT",
+       "900000"
+      ],
+      [
+       "NRE1003",
+       "Suresh Pillai",
+       "SAVINGS",
+       "35000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "acct_no",
+     "cust_name",
+     "balance"
+    ],
+    "rows": [
+     [
+      "NRE1002",
+      "Divya Nair",
+      "1500000"
+     ],
+     [
+      "NRE1001",
+      "Anil Kapoor",
+      "450000"
+     ],
+     [
+      "NRE1003",
+      "Suresh Pillai",
+      "35000"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f20261113-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "Subquery with AVG",
+   "domain": "Mutual funds/SIP",
+   "title": "SIPs bigger than the average",
+   "scenario": "Karthik Menon, who runs the SIP desk at an AMC, wants to call investors whose monthly SIP is above the average SIP amount and offer them a premium advisory service. He needs the list from the SIP register.",
+   "schema": "SIP(sip_id NUMBER, investor_name VARCHAR2(60), scheme VARCHAR2(40), monthly_amount NUMBER(10,2))\n-- monthly_amount is the SIP instalment in INR",
+   "task": "List sip_id, investor_name and monthly_amount for SIPs whose monthly_amount is greater than the average monthly_amount of all SIPs, biggest first.",
+   "hint": "Put SELECT AVG(monthly_amount) FROM sip in brackets inside the WHERE clause.",
+   "solution": "SELECT sip_id, investor_name, monthly_amount\nFROM   sip\nWHERE  monthly_amount > (SELECT AVG(monthly_amount) FROM sip)\nORDER  BY monthly_amount DESC;",
+   "simple": "Imagine your class gets marks and the teacher first works out the class average. Then she reads out only the names who scored more than that average. The query in brackets works out the average first, and the outer query keeps only the rows above it. Here the average is 6000, so only the 10000 and 15000 SIPs are shown.",
+   "remember": "Inner query finds the average; outer query compares with it.",
+   "why": "A scalar subquery returns exactly one value, so it can be used anywhere a single number is allowed, such as the right side of >. Oracle evaluates it once because it does not refer to the outer row. You cannot write WHERE monthly_amount > AVG(monthly_amount) directly, because aggregate functions are not allowed in WHERE.",
+   "tip": "Aggregates are not allowed in WHERE, so to compare each row with an overall average I use a scalar subquery or AVG() OVER ().",
+   "data": [
+    {
+     "name": "SIP",
+     "cols": [
+      "sip_id",
+      "investor_name",
+      "scheme",
+      "monthly_amount"
+     ],
+     "rows": [
+      [
+       "501",
+       "Lakshmi Rao",
+       "Bluechip Equity",
+       "5000"
+      ],
+      [
+       "502",
+       "Amit Joshi",
+       "Liquid Fund",
+       "2000"
+      ],
+      [
+       "503",
+       "Neeraj Bansal",
+       "Midcap Growth",
+       "10000"
+      ],
+      [
+       "504",
+       "Fatima Khan",
+       "ELSS Tax Saver",
+       "3000"
+      ],
+      [
+       "505",
+       "Sanjay Gupta",
+       "Flexi Cap",
+       "15000"
+      ],
+      [
+       "506",
+       "Ritu Sharma",
+       "Index Nifty 50",
+       "1000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "sip_id",
+     "investor_name",
+     "monthly_amount"
+    ],
+    "rows": [
+     [
+      "505",
+      "Sanjay Gupta",
+      "15000"
+     ],
+     [
+      "503",
+      "Neeraj Bansal",
+      "10000"
+     ]
+    ]
+   },
+   "output_note": "The average monthly_amount is 6000."
+  },
+  {
+   "id": "f20261113-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "NTILE spend bands",
+   "domain": "Credit cards",
+   "title": "Split cardholders into four spend bands",
+   "scenario": "Priya Deshpande in credit card marketing wants to divide cardholders into four equal-sized bands by October spend, so band 1 gets a lounge-access offer and band 4 gets a spend-more cashback. Two cardholders spent exactly the same amount and she wants the result repeatable every time it is run.",
+   "schema": "CARD_SPEND(card_id NUMBER, holder_name VARCHAR2(60), oct_spend NUMBER(12,2))\n-- oct_spend is total October 2026 spend in INR",
+   "task": "Show card_id, holder_name, oct_spend and spend_band (1 = highest spenders) using four bands, breaking ties by card_id.",
+   "hint": "NTILE(4) OVER (ORDER BY ...) deals the rows into 4 buckets; add card_id to the ORDER BY so ties always land the same way.",
+   "solution": "SELECT card_id, holder_name, oct_spend,\n       NTILE(4) OVER (ORDER BY oct_spend DESC, card_id) AS spend_band\nFROM   card_spend\nORDER  BY spend_band, oct_spend DESC, card_id;",
+   "simple": "Think of a teacher splitting a line of 7 children into 4 teams, tallest first. 7 does not divide by 4, so the first three teams get 2 children and the last team gets 1. NTILE(4) does exactly this with rows. When two children are the same height, the roll number decides who goes first, so the teams are the same every time.",
+   "remember": "NTILE(n) = deal rows into n teams, extras go to the first teams.",
+   "why": "NTILE(n) sorts the rows and assigns bucket numbers so bucket sizes differ by at most one, with the larger buckets first (7 rows into 4 gives 2,2,2,1). It is based on row position, not value, so tied amounts can fall into different buckets; adding a unique tiebreaker like card_id makes the assignment deterministic. If you need equal-value rows to stay together, use a value-based rule such as WIDTH_BUCKET or PERCENT_RANK instead.",
+   "tip": "NTILE splits by row count not by value, so I always add a unique tiebreaker to its ORDER BY to make the bands reproducible.",
+   "data": [
+    {
+     "name": "CARD_SPEND",
+     "cols": [
+      "card_id",
+      "holder_name",
+      "oct_spend"
+     ],
+     "rows": [
+      [
+       "4101",
+       "Kavya Reddy",
+       "185000"
+      ],
+      [
+       "4102",
+       "Rahul Verma",
+       "42000"
+      ],
+      [
+       "4103",
+       "Sneha Kulkarni",
+       "96000"
+      ],
+      [
+       "4104",
+       "Imran Qureshi",
+       "96000"
+      ],
+      [
+       "4105",
+       "Pooja Agarwal",
+       "12500"
+      ],
+      [
+       "4106",
+       "Vikram Singh",
+       "230000"
+      ],
+      [
+       "4107",
+       "Neha Chawla",
+       "61000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "card_id",
+     "holder_name",
+     "oct_spend",
+     "spend_band"
+    ],
+    "rows": [
+     [
+      "4106",
+      "Vikram Singh",
+      "230000",
+      "1"
+     ],
+     [
+      "4101",
+      "Kavya Reddy",
+      "185000",
+      "1"
+     ],
+     [
+      "4103",
+      "Sneha Kulkarni",
+      "96000",
+      "2"
+     ],
+     [
+      "4104",
+      "Imran Qureshi",
+      "96000",
+      "2"
+     ],
+     [
+      "4107",
+      "Neha Chawla",
+      "61000",
+      "3"
+     ],
+     [
+      "4102",
+      "Rahul Verma",
+      "42000",
+      "3"
+     ],
+     [
+      "4105",
+      "Pooja Agarwal",
+      "12500",
+      "4"
+     ]
+    ]
+   },
+   "output_note": "7 rows into 4 bands gives sizes 2, 2, 2, 1. The tie at 96000 is broken by card_id."
+  },
+  {
+   "id": "f20261113-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "RATIO_TO_REPORT share",
+   "domain": "NEFT/Payments",
+   "title": "Each bank's share of daily NEFT",
+   "scenario": "Rajesh Iyer in payments operations reviews outward NEFT settlement files and wants each remitter bank's percentage share of the day's value, to spot concentration. On 10-11-2026 the ICICI file had not reconciled yet, so its amount is still NULL.",
+   "schema": "NEFT_SUMMARY(batch_date DATE, remitter_bank VARCHAR2(20), txn_count NUMBER, amount_inr NUMBER(16,2))\n-- one row per bank per day; amount_inr NULL until the file reconciles",
+   "task": "For every row show batch_date, remitter_bank, amount_inr and share_pct (percentage of that day's total amount, 2 decimals), highest share first within each day.",
+   "hint": "Use RATIO_TO_REPORT(amount_inr) OVER (PARTITION BY batch_date) and multiply by 100; the NULL row gets a NULL share.",
+   "solution": "SELECT batch_date, remitter_bank, amount_inr,\n       ROUND(100 * RATIO_TO_REPORT(amount_inr)\n                     OVER (PARTITION BY batch_date), 2) AS share_pct\nFROM   neft_summary\nORDER  BY batch_date, share_pct DESC NULLS LAST;",
+   "simple": "Think of a pizza shared by friends each day. Each friend's share is their slices divided by that day's total slices. RATIO_TO_REPORT does this division for every row, and PARTITION BY batch_date makes sure each day is its own pizza. A friend whose slices are unknown (NULL) gets an unknown share, and the others are counted without him.",
+   "remember": "RATIO_TO_REPORT = my part divided by the group total.",
+   "why": "RATIO_TO_REPORT(x) OVER (PARTITION BY p) equals x / SUM(x) OVER (PARTITION BY p), so it avoids a self-join or a second GROUP BY. SUM ignores NULLs, so the day's total is built only from the reconciled banks and the NULL row's own ratio is NULL. Forgetting PARTITION BY would divide by the grand total of all days.",
+   "tip": "For percent-of-total I use RATIO_TO_REPORT or x / SUM(x) OVER (PARTITION BY ...) instead of joining back to an aggregated subquery.",
+   "data": [
+    {
+     "name": "NEFT_SUMMARY",
+     "cols": [
+      "batch_date",
+      "remitter_bank",
+      "txn_count",
+      "amount_inr"
+     ],
+     "rows": [
+      [
+       "10-11-2026",
+       "HDFC",
+       "1200",
+       "48000000"
+      ],
+      [
+       "10-11-2026",
+       "SBI",
+       "2000",
+       "72000000"
+      ],
+      [
+       "10-11-2026",
+       "ICICI",
+       "800",
+       "NULL"
+      ],
+      [
+       "11-11-2026",
+       "HDFC",
+       "1500",
+       "50000000"
+      ],
+      [
+       "11-11-2026",
+       "SBI",
+       "1800",
+       "30000000"
+      ],
+      [
+       "11-11-2026",
+       "AXIS",
+       "600",
+       "20000000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "batch_date",
+     "remitter_bank",
+     "amount_inr",
+     "share_pct"
+    ],
+    "rows": [
+     [
+      "10-11-2026",
+      "SBI",
+      "72000000",
+      "60"
+     ],
+     [
+      "10-11-2026",
+      "HDFC",
+      "48000000",
+      "40"
+     ],
+     [
+      "10-11-2026",
+      "ICICI",
+      "NULL",
+      "NULL"
+     ],
+     [
+      "11-11-2026",
+      "HDFC",
+      "50000000",
+      "50"
+     ],
+     [
+      "11-11-2026",
+      "SBI",
+      "30000000",
+      "30"
+     ],
+     [
+      "11-11-2026",
+      "AXIS",
+      "20000000",
+      "20"
+     ]
+    ]
+   },
+   "output_note": "The 10-11-2026 total is 12,00,00,000 because the NULL ICICI amount is ignored."
+  },
+  {
+   "id": "f20261113-5",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "Associative array reconciliation",
+   "domain": "GL reconciliation",
+   "title": "GL versus sub-ledger breaks with collections",
+   "scenario": "Deepak Narayan in finance control runs the daily GL to sub-ledger reconciliation and wants every break written to RECON_BREAK: amounts that differ, GL codes with no sub-ledger total, and sub-ledger codes missing from the GL. He wants it done in one PL/SQL pass using an associative array keyed by GL code instead of a FULL OUTER JOIN.",
+   "schema": "GL_BALANCE(gl_code VARCHAR2(10) PRIMARY KEY, balance NUMBER(16,2))\n-- closing balance per GL code in INR\nSUBLEDGER_TOTAL(gl_code VARCHAR2(10) PRIMARY KEY, sl_balance NUMBER(16,2))\n-- sum of sub-ledger accounts mapped to the GL code\nRECON_BREAK(gl_code VARCHAR2(10), gl_bal NUMBER(16,2), sl_bal NUMBER(16,2), diff NUMBER(16,2))\n-- diff = NVL(gl_bal,0) - NVL(sl_bal,0); empty before the run",
+   "task": "Write an anonymous block that loads GL_BALANCE into an associative array indexed by gl_code, walks SUBLEDGER_TOTAL, and inserts every mismatch, sub-ledger-only code and GL-only code into RECON_BREAK.",
+   "hint": "Delete each matched key from the array as you go; whatever keys remain at the end are GL codes with no sub-ledger, and you can walk them with FIRST and NEXT.",
+   "solution": "DECLARE\n  TYPE t_gl_map IS TABLE OF NUMBER INDEX BY VARCHAR2(10);\n  l_gl  t_gl_map;\n  l_key VARCHAR2(10);\nBEGIN\n  FOR g IN (SELECT gl_code, balance FROM gl_balance) LOOP\n    l_gl(g.gl_code) := g.balance;\n  END LOOP;\n\n  FOR s IN (SELECT gl_code, sl_balance FROM subledger_total ORDER BY gl_code) LOOP\n    IF NOT l_gl.EXISTS(s.gl_code) THEN\n      INSERT INTO recon_break (gl_code, gl_bal, sl_bal, diff)\n      VALUES (s.gl_code, NULL, s.sl_balance, -s.sl_balance);\n    ELSE\n      IF l_gl(s.gl_code) <> s.sl_balance THEN\n        INSERT INTO recon_break (gl_code, gl_bal, sl_bal, diff)\n        VALUES (s.gl_code, l_gl(s.gl_code), s.sl_balance,\n                l_gl(s.gl_code) - s.sl_balance);\n      END IF;\n      l_gl.DELETE(s.gl_code);\n    END IF;\n  END LOOP;\n\n  l_key := l_gl.FIRST;\n  WHILE l_key IS NOT NULL LOOP\n    INSERT INTO recon_break (gl_code, gl_bal, sl_bal, diff)\n    VALUES (l_key, l_gl(l_key), NULL, l_gl(l_key));\n    l_key := l_gl.NEXT(l_key);\n  END LOOP;\n\n  COMMIT;\nEND;\n/",
+   "simple": "Imagine your teacher has a list of children who should be in class, and you tick each child off as they walk in. Children who walk in but are not on the list are a problem. Names still not ticked at the end are absent. The associative array is that list with names as labels: we tick off (delete) each match, write down the problems, and whatever names are left at the end are the missing ones.",
+   "remember": "Tick off matches; leftovers in the array are the missing ones.",
+   "why": "An INDEX BY VARCHAR2 associative array gives keyed lookups in memory, so EXISTS and direct access by gl_code replace a join. Deleting matched keys makes the leftovers exactly the GL-only codes, and FIRST/NEXT walk string keys in sorted order, so the output is deterministic. EXISTS must be checked before reading l_gl(key), because reading a missing key raises NO_DATA_FOUND.",
+   "tip": "Before reading an associative array element I check .EXISTS, because a missing key raises NO_DATA_FOUND, and I walk sparse arrays with FIRST/NEXT, never a 1..COUNT loop.",
+   "data": [
+    {
+     "name": "GL_BALANCE",
+     "cols": [
+      "gl_code",
+      "balance"
+     ],
+     "rows": [
+      [
+       "10010",
+       "5240000"
+      ],
+      [
+       "10020",
+       "1875000"
+      ],
+      [
+       "20010",
+       "930000"
+      ],
+      [
+       "30010",
+       "410000"
+      ]
+     ]
+    },
+    {
+     "name": "SUBLEDGER_TOTAL",
+     "cols": [
+      "gl_code",
+      "sl_balance"
+     ],
+     "rows": [
+      [
+       "10010",
+       "5240000"
+      ],
+      [
+       "10020",
+       "1872500"
+      ],
+      [
+       "20010",
+       "930000"
+      ],
+      [
+       "40010",
+       "15000"
+      ]
+     ]
+    },
+    {
+     "name": "RECON_BREAK",
+     "cols": [
+      "gl_code",
+      "gl_bal",
+      "sl_bal",
+      "diff"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "gl_code",
+     "gl_bal",
+     "sl_bal",
+     "diff"
+    ],
+    "rows": [
+     [
+      "10020",
+      "1875000",
+      "1872500",
+      "2500"
+     ],
+     [
+      "40010",
+      "NULL",
+      "15000",
+      "-15000"
+     ],
+     [
+      "30010",
+      "410000",
+      "NULL",
+      "410000"
+     ]
+    ]
+   },
+   "output_note": "RECON_BREAK after the block, in insert order: 10020 differs by 2500, 40010 exists only in the sub-ledger, 30010 exists only in the GL."
+  },
+  {
+   "id": "f20261113-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Merging overlapping date ranges",
+   "domain": "Health insurance",
+   "title": "Continuous cover periods per member",
+   "scenario": "Anjali Saxena in health insurance claims checks pre-existing-disease waiting periods, which only count if cover was continuous. A member can have several policies, renewals and top-ups that overlap or start the day after the previous one ends, and she wants each member's unbroken cover blocks.",
+   "schema": "POLICY_COVER(member_id NUMBER, policy_no VARCHAR2(20), start_dt DATE, end_dt DATE)\n-- one row per policy or top-up; dates inclusive, no time part\n-- a policy starting the day after another ends counts as continuous",
+   "task": "Return member_id, cover_from and cover_to for each continuous block of cover, merging ranges that overlap or touch (next start = previous end + 1).",
+   "hint": "Compare each start_dt with the largest end_dt seen so far for that member (MAX over the earlier rows); start a new group when the gap is more than one day, then GROUP BY that group.",
+   "solution": "WITH s AS (\n  SELECT member_id, start_dt, end_dt,\n         MAX(end_dt) OVER (PARTITION BY member_id\n                           ORDER BY start_dt, end_dt\n                           ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS prev_max_end\n  FROM   policy_cover\n), g AS (\n  SELECT s.*,\n         SUM(CASE WHEN prev_max_end >= start_dt - 1 THEN 0 ELSE 1 END)\n           OVER (PARTITION BY member_id ORDER BY start_dt, end_dt\n                 ROWS UNBOUNDED PRECEDING) AS grp\n  FROM   s\n)\nSELECT member_id, MIN(start_dt) AS cover_from, MAX(end_dt) AS cover_to\nFROM   g\nGROUP  BY member_id, grp\nORDER  BY member_id, cover_from;",
+   "simple": "Imagine laying paper strips on a ruler, one strip for each policy. Where strips overlap or touch, you tape them into one long strip. Where there is a gap, you start a new strip. The query checks whether each new strip starts before the furthest point covered so far (plus one day). If yes it joins the current strip, if not it starts a new one.",
+   "remember": "Starts after the furthest end plus one? New block.",
+   "why": "Comparing with only the previous row's end_dt fails when an earlier long policy covers a later short one, so the running MAX(end_dt) over all earlier rows is used. A running SUM of 'new block' flags turns the rows into group numbers (gaps-and-islands), and MIN/MAX per group gives each block. The frame ending at 1 PRECEDING excludes the current row, and its NULL on the first row correctly starts group 1.",
+   "tip": "To merge intervals I use a running MAX of end dates, not LAG, because a long earlier interval can swallow several later ones.",
+   "data": [
+    {
+     "name": "POLICY_COVER",
+     "cols": [
+      "member_id",
+      "policy_no",
+      "start_dt",
+      "end_dt"
+     ],
+     "rows": [
+      [
+       "501",
+       "HLT-25-0101",
+       "01-01-2025",
+       "31-12-2025"
+      ],
+      [
+       "501",
+       "HLT-26-0101",
+       "01-01-2026",
+       "31-12-2026"
+      ],
+      [
+       "501",
+       "TOP-26-0450",
+       "15-06-2026",
+       "30-09-2026"
+      ],
+      [
+       "502",
+       "HLT-25-0377",
+       "01-04-2025",
+       "31-03-2026"
+      ],
+      [
+       "502",
+       "HLT-26-0912",
+       "15-05-2026",
+       "14-05-2027"
+      ],
+      [
+       "502",
+       "HLT-27-0031",
+       "01-03-2027",
+       "28-02-2028"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "member_id",
+     "cover_from",
+     "cover_to"
+    ],
+    "rows": [
+     [
+      "501",
+      "01-01-2025",
+      "31-12-2026"
+     ],
+     [
+      "502",
+      "01-04-2025",
+      "31-03-2026"
+     ],
+     [
+      "502",
+      "15-05-2026",
+      "28-02-2028"
+     ]
+    ]
+   },
+   "output_note": "Member 502 has a gap from 01-04-2026 to 14-05-2026, so the waiting period restarts."
+  },
+  {
+   "id": "f20261113-7",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "MATCH_RECOGNIZE time-bound pattern",
+   "domain": "AML/Cash structuring",
+   "title": "Catch cash deposits split below 50,000",
+   "scenario": "Sunita Bhatt in the AML cell knows PAN is mandatory for cash deposits of INR 50,000 or more, so some customers split cash into deposits just under that limit. She wants accounts with three or more back-to-back cash deposits of INR 45,000 to 49,999, all within 7 days of the first one, flagged for an STR review.",
+   "schema": "CASH_DEPOSIT(txn_id NUMBER, acct_id NUMBER, txn_ts DATE, amount NUMBER(12,2))\n-- cash deposits only; txn_ts has a time part; amount in INR",
+   "task": "For each run of 3 or more consecutive deposits per account that are each between 45,000 and 49,999 and fall within 7 days (168 hours) of the run's first deposit, show acct_id, first_ts, last_ts, dep_count and total_amt.",
+   "hint": "Use MATCH_RECOGNIZE with PATTERN (s{3,}) and put both the amount band and txn_ts < FIRST(txn_ts) + 7 inside DEFINE.",
+   "solution": "SELECT acct_id, first_ts, last_ts, dep_count, total_amt\nFROM   cash_deposit\nMATCH_RECOGNIZE (\n  PARTITION BY acct_id\n  ORDER BY txn_ts\n  MEASURES FIRST(txn_ts) AS first_ts,\n           LAST(txn_ts)  AS last_ts,\n           COUNT(*)      AS dep_count,\n           SUM(amount)   AS total_amt\n  ONE ROW PER MATCH\n  AFTER MATCH SKIP PAST LAST ROW\n  PATTERN (s{3,})\n  DEFINE s AS amount BETWEEN 45000 AND 49999\n          AND txn_ts < FIRST(txn_ts) + 7\n)\nORDER  BY acct_id, first_ts;",
+   "simple": "Think of a stopwatch that starts at a customer's first 'just under the limit' deposit. Every next deposit just under the limit is counted, as long as the stopwatch shows less than 7 days. A big normal deposit or the stopwatch running out stops the count. If the count reaches 3 or more, the account is flagged.",
+   "remember": "PATTERN finds the run; DEFINE says what each step must look like.",
+   "why": "MATCH_RECOGNIZE scans rows in ORDER BY txn_ts per account and greedily extends s{3,} while each row satisfies DEFINE. FIRST(txn_ts) inside DEFINE refers to the first row of the match being built, so the 7-day window is anchored to the start of the run; DATE + 7 adds exactly 168 hours. Account 9003's third deposit is 30 minutes past the 7-day mark and account 9002's run is broken by an INR 1,20,000 deposit, so only 9001 matches.",
+   "tip": "For 'N events within T of the first' I put FIRST(ts) + T in DEFINE, because MATCH_RECOGNIZE handles the sequence and the time limit in one pass.",
+   "data": [
+    {
+     "name": "CASH_DEPOSIT",
+     "cols": [
+      "txn_id",
+      "acct_id",
+      "txn_ts",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "9001",
+       "01-11-2026 10:00",
+       "48000"
+      ],
+      [
+       "2",
+       "9001",
+       "03-11-2026 11:30",
+       "49500"
+      ],
+      [
+       "3",
+       "9001",
+       "05-11-2026 16:00",
+       "47000"
+      ],
+      [
+       "4",
+       "9001",
+       "07-11-2026 12:00",
+       "46000"
+      ],
+      [
+       "5",
+       "9002",
+       "02-11-2026 10:00",
+       "48000"
+      ],
+      [
+       "6",
+       "9002",
+       "04-11-2026 10:00",
+       "120000"
+      ],
+      [
+       "7",
+       "9002",
+       "05-11-2026 10:00",
+       "49000"
+      ],
+      [
+       "8",
+       "9002",
+       "06-11-2026 10:00",
+       "45500"
+      ],
+      [
+       "9",
+       "9003",
+       "01-11-2026 09:00",
+       "49999"
+      ],
+      [
+       "10",
+       "9003",
+       "05-11-2026 09:00",
+       "49000"
+      ],
+      [
+       "11",
+       "9003",
+       "08-11-2026 09:30",
+       "48500"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "first_ts",
+     "last_ts",
+     "dep_count",
+     "total_amt"
+    ],
+    "rows": [
+     [
+      "9001",
+      "01-11-2026 10:00",
+      "07-11-2026 12:00",
+      "4",
+      "190500"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f20261113-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "FIFO allocation with running sums",
+   "domain": "Equity trading/Capital gains",
+   "title": "Match share sales to buy lots FIFO",
+   "scenario": "Manoj Thakur in the broking back office prepares capital-gains statements, and income-tax rules require shares sold to be matched to the earliest purchases first (FIFO). Clients bought in several lots, two of them on the same day, and he needs how many units of each lot were consumed by the sale and their buy cost.",
+   "schema": "BUY_LOT(lot_id NUMBER, client_id NUMBER, isin VARCHAR2(12), buy_dt DATE, qty NUMBER, price NUMBER(10,2))\n-- one row per purchase; price per share in INR; same-day lots are used in lot_id order\nSELL_ORDER(client_id NUMBER, isin VARCHAR2(12), sell_qty NUMBER)\n-- total quantity sold per client and ISIN",
+   "task": "For each client and ISIN, list lot_id, buy_dt, price, qty_sold (units taken from that lot) and cost_inr (qty_sold * price), using the oldest lots first and stopping when the sold quantity is covered.",
+   "hint": "Compute a running SUM(qty) per client and ISIN in FIFO order; a lot is used if the quantity before it is less than sell_qty, and it gives LEAST(qty, sell_qty - quantity_before).",
+   "solution": "WITH l AS (\n  SELECT b.*,\n         SUM(qty) OVER (PARTITION BY client_id, isin\n                        ORDER BY buy_dt, lot_id\n                        ROWS UNBOUNDED PRECEDING) - qty AS qty_before\n  FROM   buy_lot b\n)\nSELECT l.client_id, l.lot_id, l.buy_dt, l.price,\n       LEAST(l.qty, s.sell_qty - l.qty_before)           AS qty_sold,\n       LEAST(l.qty, s.sell_qty - l.qty_before) * l.price AS cost_inr\nFROM   l\nJOIN   sell_order s\n  ON   s.client_id = l.client_id\n AND   s.isin      = l.isin\nWHERE  l.qty_before < s.sell_qty\nORDER  BY l.client_id, l.buy_dt, l.lot_id;",
+   "simple": "Think of a stack of biscuit packets with the oldest at the front of the cupboard. If you need 210 biscuits, you empty the oldest packets first, and from the last packet you only take what you still need. The running total tells you how many biscuits were in all the packets before this one. If that is already enough, you do not open this packet at all.",
+   "remember": "Running total before me decides how much I give.",
+   "why": "The running SUM minus the current qty gives the units in all earlier lots, so each lot can work out its own share without a loop or cursor. LEAST(qty, sell_qty - qty_before) takes the whole lot or only the remainder for the last lot touched, and the WHERE drops lots never reached. Including lot_id in the ORDER BY and using ROWS (not the default RANGE) keeps the two same-day lots from being summed together.",
+   "tip": "For FIFO allocation I compute the quantity before each row with a running SUM and use LEAST against the remaining demand, all in one set-based query.",
+   "data": [
+    {
+     "name": "BUY_LOT",
+     "cols": [
+      "lot_id",
+      "client_id",
+      "isin",
+      "buy_dt",
+      "qty",
+      "price"
+     ],
+     "rows": [
+      [
+       "1",
+       "301",
+       "INE002A01018",
+       "10-01-2026",
+       "100",
+       "2450"
+      ],
+      [
+       "2",
+       "301",
+       "INE002A01018",
+       "15-03-2026",
+       "50",
+       "2600"
+      ],
+      [
+       "3",
+       "301",
+       "INE002A01018",
+       "15-03-2026",
+       "80",
+       "2580"
+      ],
+      [
+       "4",
+       "301",
+       "INE002A01018",
+       "20-06-2026",
+       "120",
+       "2900"
+      ],
+      [
+       "5",
+       "302",
+       "INE009A01021",
+       "05-02-2026",
+       "40",
+       "1500"
+      ],
+      [
+       "6",
+       "302",
+       "INE009A01021",
+       "12-08-2026",
+       "25",
+       "1620"
+      ]
+     ]
+    },
+    {
+     "name": "SELL_ORDER",
+     "cols": [
+      "client_id",
+      "isin",
+      "sell_qty"
+     ],
+     "rows": [
+      [
+       "301",
+       "INE002A01018",
+       "210"
+      ],
+      [
+       "302",
+       "INE009A01021",
+       "30"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "client_id",
+     "lot_id",
+     "buy_dt",
+     "price",
+     "qty_sold",
+     "cost_inr"
+    ],
+    "rows": [
+     [
+      "301",
+      "1",
+      "10-01-2026",
+      "2450",
+      "100",
+      "245000"
+     ],
+     [
+      "301",
+      "2",
+      "15-03-2026",
+      "2600",
+      "50",
+      "130000"
+     ],
+     [
+      "301",
+      "3",
+      "15-03-2026",
+      "2580",
+      "60",
+      "154800"
+     ],
+     [
+      "302",
+      "5",
+      "05-02-2026",
+      "1500",
+      "30",
+      "45000"
+     ]
+    ]
+   }
   }
  ],
  "lessons": [
@@ -597,6 +1460,17 @@
    "line": "For a closing value per period I use LAST_VALUE with an explicit UNBOUNDED FOLLOWING frame, or FIRST_VALUE ordered descending, because the default frame stops at the current row.",
    "simple": "LAST_VALUE sounds like 'give me the last one', but by default it only looks from the top down to the current row, so the last one it sees is itself. To see the real last row, tell it to look all the way to the end.",
    "remember": "Tell LAST_VALUE to look to the end: UNBOUNDED FOLLOWING."
+  },
+  {
+   "id": "fl20261113",
+   "concept": "ROWNUM versus ORDER BY",
+   "why": "Top-N queries written with ROWNUM in the same SELECT as ORDER BY return the wrong rows, a classic interview trap and a real reporting bug.",
+   "simple": "Imagine a teacher who hands out medals to the first 2 children who walk in, and only after that lines them up by height. The medal winners were never the tallest, just the first through the door. ROWNUM is that door number: Oracle gives it out before ORDER BY sorts. So sort first in an inner query, then hand out the numbers.",
+   "remember": "ROWNUM is given before sorting; sort inside, filter outside.",
+   "explain": "ROWNUM is assigned to each row as it passes the WHERE clause, before ORDER BY runs, so WHERE ROWNUM <= 2 ... ORDER BY bal DESC picks any two rows and then sorts just those. The fix is to sort in an inline view and apply ROWNUM outside it, or in 12c and later use ORDER BY ... FETCH FIRST 2 ROWS ONLY (or ROW_NUMBER() OVER for top-N per group). WHERE ROWNUM > 1 never returns anything, because the first row fails, so the next row becomes ROWNUM 1 again. FETCH FIRST n ROWS WITH TIES also keeps rows tied with the last one.",
+   "example": "WITH a AS (\n  SELECT 'A1' acct, 5000 bal FROM dual UNION ALL\n  SELECT 'A2', 90000 FROM dual UNION ALL\n  SELECT 'A3', 40000 FROM dual\n)\nSELECT acct, bal\nFROM  (SELECT acct, bal FROM a ORDER BY bal DESC)\nWHERE ROWNUM <= 2;\n-- A2 90000, A3 40000\n-- Same result: SELECT acct, bal FROM a ORDER BY bal DESC FETCH FIRST 2 ROWS ONLY;",
+   "gotcha": "SELECT ... WHERE ROWNUM <= 5 ORDER BY amount DESC returns five random rows sorted, not the top five.",
+   "line": "Because ROWNUM is assigned before ORDER BY, I either sort in an inline view and filter ROWNUM outside, or simply use FETCH FIRST n ROWS ONLY."
   }
  ]
 }
