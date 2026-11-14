@@ -1447,6 +1447,940 @@
      ]
     ]
    }
+  },
+  {
+   "id": "f20261114-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "COALESCE first non-null",
+   "domain": "Insurance/Claims",
+   "title": "Best contact for claim updates",
+   "scenario": "Nandini Kulkarni runs the health claims desk and must send a claim-status message to every policyholder today. Some customers gave no mobile, some only an alternate number, some only an email, so she wants one 'best contact' per policy.",
+   "schema": "POLICY_CONTACT(policy_no VARCHAR2(10), holder_name VARCHAR2(60), mobile VARCHAR2(10), alt_mobile VARCHAR2(10), email VARCHAR2(80))\n-- mobile = primary number, alt_mobile = alternate number\n-- any of mobile, alt_mobile, email can be NULL",
+   "task": "Show policy_no, holder_name and contact, where contact is the mobile if present, else alt_mobile, else email, else the text 'NO CONTACT'. Sort by policy_no.",
+   "hint": "COALESCE takes a list and returns the first value in it that is not NULL.",
+   "solution": "SELECT policy_no,\n       holder_name,\n       COALESCE(mobile, alt_mobile, email, 'NO CONTACT') AS contact\nFROM   policy_contact\nORDER  BY policy_no;",
+   "simple": "Think of calling home: first you try Papa's phone, if nobody picks up you try Mummy's phone, and if that fails you send an email. You stop at the first one that works. COALESCE does exactly this: it checks each column from left to right and gives back the first one that is not empty (NULL). If all are empty, it gives the last fallback text.",
+   "remember": "COALESCE = try each one, keep the first non-empty.",
+   "why": "COALESCE returns the first non-NULL expression in its list and stops evaluating as soon as it finds one (short-circuit). Unlike NVL, which takes exactly two arguments and always evaluates both, COALESCE accepts any number of arguments, all of which must be of compatible data types. Here every argument is a string, so the literal 'NO CONTACT' fits as the final default.",
+   "tip": "I use COALESCE instead of nested NVL calls when there are more than two fallbacks, because it reads left to right and stops at the first non-NULL value.",
+   "data": [
+    {
+     "name": "POLICY_CONTACT",
+     "cols": [
+      "policy_no",
+      "holder_name",
+      "mobile",
+      "alt_mobile",
+      "email"
+     ],
+     "rows": [
+      [
+       "HL5001",
+       "Rekha Joshi",
+       "9820011223",
+       "NULL",
+       "rekha.j@mail.in"
+      ],
+      [
+       "HL5002",
+       "Imran Qureshi",
+       "NULL",
+       "9930044556",
+       "NULL"
+      ],
+      [
+       "HL5003",
+       "Lakshmi Menon",
+       "NULL",
+       "NULL",
+       "lakshmi.m@mail.in"
+      ],
+      [
+       "HL5004",
+       "Vikram Sethi",
+       "NULL",
+       "NULL",
+       "NULL"
+      ],
+      [
+       "HL5005",
+       "Pooja Bansal",
+       "9811077889",
+       "9811000111",
+       "NULL"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "policy_no",
+     "holder_name",
+     "contact"
+    ],
+    "rows": [
+     [
+      "HL5001",
+      "Rekha Joshi",
+      "9820011223"
+     ],
+     [
+      "HL5002",
+      "Imran Qureshi",
+      "9930044556"
+     ],
+     [
+      "HL5003",
+      "Lakshmi Menon",
+      "lakshmi.m@mail.in"
+     ],
+     [
+      "HL5004",
+      "Vikram Sethi",
+      "NO CONTACT"
+     ],
+     [
+      "HL5005",
+      "Pooja Bansal",
+      "9811077889"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f20261114-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "BETWEEN range filter",
+   "domain": "RTGS/Payments",
+   "title": "RTGS payments needing one approval",
+   "scenario": "Rohit Agarwal in payments operations says RTGS transfers from Rs 2,00,000 up to and including Rs 5,00,000 need one checker approval, while bigger ones go to the branch head. He wants today's list for the checker queue.",
+   "schema": "RTGS_TXN(utr VARCHAR2(16), sender_acct VARCHAR2(12), amount NUMBER(14,2), txn_time DATE)\n-- utr = unique transaction reference\n-- amount in INR",
+   "task": "List utr, sender_acct and amount of every RTGS payment with amount from 2,00,000 to 5,00,000 (both ends included), smallest first.",
+   "hint": "BETWEEN low AND high includes both the low and the high value.",
+   "solution": "SELECT utr, sender_acct, amount\nFROM   rtgs_txn\nWHERE  amount BETWEEN 200000 AND 500000\nORDER  BY amount;",
+   "simple": "Imagine a ride at a fair that allows children from 120 cm to 150 cm tall. A child who is exactly 120 cm can ride, and so can one who is exactly 150 cm. BETWEEN works the same way: it keeps values inside the range and also the two edge values. So 2,00,000 and 5,00,000 are kept, but 1,99,999 and 5,00,001 are not.",
+   "remember": "BETWEEN includes both ends, like a ride's height limits.",
+   "why": "col BETWEEN a AND b is exactly col >= a AND col <= b, so both boundary values qualify. The lower value must come first: BETWEEN 500000 AND 200000 returns no rows. On DATE columns that carry a time part, BETWEEN DATE '2026-11-14' AND DATE '2026-11-14' misses rows after midnight, so date ranges are usually written as >= start AND < next day.",
+   "tip": "I remember that BETWEEN is inclusive on both ends, and for DATE columns with time I prefer >= start AND < end + 1 so no late-evening rows are lost.",
+   "data": [
+    {
+     "name": "RTGS_TXN",
+     "cols": [
+      "utr",
+      "sender_acct",
+      "amount",
+      "txn_time"
+     ],
+     "rows": [
+      [
+       "UTR24001",
+       "CA7001",
+       "199999",
+       "14-11-2026 10:05"
+      ],
+      [
+       "UTR24002",
+       "CA7002",
+       "200000",
+       "14-11-2026 10:20"
+      ],
+      [
+       "UTR24003",
+       "CA7003",
+       "350000",
+       "14-11-2026 11:10"
+      ],
+      [
+       "UTR24004",
+       "CA7001",
+       "500000",
+       "14-11-2026 12:45"
+      ],
+      [
+       "UTR24005",
+       "CA7004",
+       "500001",
+       "14-11-2026 13:30"
+      ],
+      [
+       "UTR24006",
+       "CA7005",
+       "1250000",
+       "14-11-2026 15:00"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "utr",
+     "sender_acct",
+     "amount"
+    ],
+    "rows": [
+     [
+      "UTR24002",
+      "CA7002",
+      "200000"
+     ],
+     [
+      "UTR24003",
+      "CA7003",
+      "350000"
+     ],
+     [
+      "UTR24004",
+      "CA7001",
+      "500000"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "f20261114-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "DENSE_RANK Nth highest",
+   "domain": "Equity trading/Surveillance",
+   "title": "Second-biggest trade value per stock",
+   "scenario": "Aparna Desai in the broking surveillance team reviews large orders. For each stock traded on 13-11-2026 she wants the trades at the second-highest trade value, because the top value is already reviewed by an automatic rule. Two trades can have the same value.",
+   "schema": "TRADE(trade_id VARCHAR2(10), symbol VARCHAR2(20), client_id VARCHAR2(10), trade_value NUMBER(14,2), trade_date DATE)\n-- trade_value in INR\n-- one row per executed trade",
+   "task": "For each symbol, return every trade whose trade_value is the second-highest distinct value for that symbol. Show symbol, trade_id, client_id and trade_value, sorted by symbol and trade_id.",
+   "hint": "ROW_NUMBER would call the second of two tied top trades 'number 2'; DENSE_RANK gives tied values the same rank and does not skip numbers.",
+   "solution": "SELECT symbol, trade_id, client_id, trade_value\nFROM  (SELECT t.*,\n              DENSE_RANK() OVER (PARTITION BY symbol\n                                 ORDER BY trade_value DESC) AS rnk\n       FROM   trade t)\nWHERE  rnk = 2\nORDER  BY symbol, trade_id;",
+   "simple": "Think of a race where two children finish together in first place. With DENSE_RANK both get gold, and the next child gets silver, not bronze. For INFY the two 8,50,000 trades share rank 1, so 6,20,000 is the true second-highest value. For HDFCBANK the two 7,30,000 trades are both second, so both are shown.",
+   "remember": "DENSE_RANK: ties share a place, no places skipped.",
+   "why": "DENSE_RANK assigns the same rank to equal values within each PARTITION BY group and continues with the next consecutive number, so rank 2 always means the second distinct value. ROW_NUMBER would wrongly return T902 for INFY and only one of the tied HDFCBANK trades, while RANK would skip rank 2 entirely for INFY (1, 1, 3). The analytic function cannot be filtered in the same SELECT's WHERE clause, so it is computed in an inline view first.",
+   "tip": "For 'Nth highest value' questions I use DENSE_RANK, because ROW_NUMBER breaks ties arbitrarily and RANK leaves gaps after ties.",
+   "data": [
+    {
+     "name": "TRADE",
+     "cols": [
+      "trade_id",
+      "symbol",
+      "client_id",
+      "trade_value",
+      "trade_date"
+     ],
+     "rows": [
+      [
+       "T901",
+       "INFY",
+       "C11",
+       "850000",
+       "13-11-2026"
+      ],
+      [
+       "T902",
+       "INFY",
+       "C12",
+       "850000",
+       "13-11-2026"
+      ],
+      [
+       "T903",
+       "INFY",
+       "C13",
+       "620000",
+       "13-11-2026"
+      ],
+      [
+       "T904",
+       "INFY",
+       "C14",
+       "410000",
+       "13-11-2026"
+      ],
+      [
+       "T905",
+       "HDFCBANK",
+       "C11",
+       "990000",
+       "13-11-2026"
+      ],
+      [
+       "T906",
+       "HDFCBANK",
+       "C15",
+       "730000",
+       "13-11-2026"
+      ],
+      [
+       "T907",
+       "HDFCBANK",
+       "C16",
+       "730000",
+       "13-11-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "symbol",
+     "trade_id",
+     "client_id",
+     "trade_value"
+    ],
+    "rows": [
+     [
+      "HDFCBANK",
+      "T906",
+      "C15",
+      "730000"
+     ],
+     [
+      "HDFCBANK",
+      "T907",
+      "C16",
+      "730000"
+     ],
+     [
+      "INFY",
+      "T903",
+      "C13",
+      "620000"
+     ]
+    ]
+   },
+   "output_note": "INFY has two trades tied at 8,50,000 (rank 1), so its rank 2 is 6,20,000. HDFCBANK has two trades tied at rank 2."
+  },
+  {
+   "id": "f20261114-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "LISTAGG with DISTINCT",
+   "domain": "KYC/Onboarding",
+   "title": "One-line KYC document summary",
+   "scenario": "Harish Patil in the KYC operations team prepares a re-KYC follow-up sheet. He wants one row per customer with the document types already received, written in a single comma-separated cell. Some customers re-uploaded the same document and some uploaded nothing.",
+   "schema": "CUSTOMER(cust_id VARCHAR2(10), cust_name VARCHAR2(60))\nKYC_DOC(doc_id VARCHAR2(10), cust_id VARCHAR2(10), doc_type VARCHAR2(20), uploaded_on DATE)\n-- one row per upload; the same doc_type can be uploaded twice",
+   "task": "Show cust_id, cust_name and docs, where docs lists each distinct doc_type once in alphabetical order separated by ', '. Customers with no documents must still appear with docs = 'NONE'.",
+   "hint": "LEFT JOIN keeps customers with no uploads, LISTAGG(DISTINCT ...) removes repeats, and NVL turns the empty list into 'NONE'.",
+   "solution": "SELECT c.cust_id,\n       c.cust_name,\n       NVL(LISTAGG(DISTINCT k.doc_type, ', ')\n             WITHIN GROUP (ORDER BY k.doc_type), 'NONE') AS docs\nFROM   customer c\nLEFT   JOIN kyc_doc k ON k.cust_id = c.cust_id\nGROUP  BY c.cust_id, c.cust_name\nORDER  BY c.cust_id;",
+   "simple": "Think of writing your shopping bill on one line: 'milk, bread, eggs' instead of one item per line. If you bought bread twice, you still write bread only once. LISTAGG glues many rows into one text line, and DISTINCT makes sure each document name appears only once. A customer with nothing uploaded gets 'NONE' so they are not forgotten.",
+   "remember": "LISTAGG = many rows glued into one line.",
+   "why": "LISTAGG is an aggregate that concatenates values per group in the order given by WITHIN GROUP (ORDER BY ...); the DISTINCT option is available from Oracle 19c. NULL values are skipped, so the LEFT JOIN row for K104 produces a NULL list, which NVL replaces. The result is VARCHAR2 and raises ORA-01489 if it exceeds the maximum length, unless ON OVERFLOW TRUNCATE is used.",
+   "tip": "On 19c I use LISTAGG(DISTINCT col, ', ') WITHIN GROUP (ORDER BY col), and I mention ON OVERFLOW TRUNCATE for long lists to avoid ORA-01489.",
+   "data": [
+    {
+     "name": "CUSTOMER",
+     "cols": [
+      "cust_id",
+      "cust_name"
+     ],
+     "rows": [
+      [
+       "K101",
+       "Sunita Rawat"
+      ],
+      [
+       "K102",
+       "Mohit Chawla"
+      ],
+      [
+       "K103",
+       "Ayesha Siddiqui"
+      ],
+      [
+       "K104",
+       "Gopal Reddy"
+      ]
+     ]
+    },
+    {
+     "name": "KYC_DOC",
+     "cols": [
+      "doc_id",
+      "cust_id",
+      "doc_type",
+      "uploaded_on"
+     ],
+     "rows": [
+      [
+       "D1",
+       "K101",
+       "PAN",
+       "02-11-2026"
+      ],
+      [
+       "D2",
+       "K101",
+       "AADHAAR",
+       "02-11-2026"
+      ],
+      [
+       "D3",
+       "K101",
+       "PAN",
+       "09-11-2026"
+      ],
+      [
+       "D4",
+       "K102",
+       "PASSPORT",
+       "05-11-2026"
+      ],
+      [
+       "D5",
+       "K103",
+       "VOTER ID",
+       "06-11-2026"
+      ],
+      [
+       "D6",
+       "K103",
+       "AADHAAR",
+       "07-11-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "cust_name",
+     "docs"
+    ],
+    "rows": [
+     [
+      "K101",
+      "Sunita Rawat",
+      "AADHAAR, PAN"
+     ],
+     [
+      "K102",
+      "Mohit Chawla",
+      "PASSPORT"
+     ],
+     [
+      "K103",
+      "Ayesha Siddiqui",
+      "AADHAAR, VOTER ID"
+     ],
+     [
+      "K104",
+      "Gopal Reddy",
+      "NONE"
+     ]
+    ]
+   },
+   "output_note": "K101 uploaded PAN twice but it is listed once. K104 has no uploads, so the LEFT JOIN gives NULL and NVL shows NONE."
+  },
+  {
+   "id": "f20261114-5",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "SAVEPOINT partial rollback",
+   "domain": "Loans/EMI collection",
+   "title": "Post EMIs, roll back only bounces",
+   "scenario": "Sanjay Mehra owns the nightly EMI auto-debit job. Each EMI debits the savings account and writes a loan receipt; if the account would go negative, only that EMI must be undone and marked BOUNCED, while the other EMIs in the same run stay posted.",
+   "schema": "ACCT_BALANCE(acct_no VARCHAR2(10) PRIMARY KEY, balance NUMBER(14,2))\n-- savings balance in INR\nEMI_DUE(loan_no VARCHAR2(10), acct_no VARCHAR2(10), emi_amt NUMBER(12,2))\n-- EMIs due tonight\nLOAN_RECEIPT(loan_no VARCHAR2(10), amount NUMBER(12,2))\n-- empty before the run\nEMI_RUN_LOG(loan_no VARCHAR2(10), acct_no VARCHAR2(10), status VARCHAR2(10), bal_after NUMBER(14,2))\n-- empty before the run",
+   "task": "Write an anonymous block that processes EMI_DUE in loan_no order: debit the account, insert the receipt, and if the new balance is below zero roll back just that EMI with a SAVEPOINT. Log every EMI as PAID or BOUNCED with the account balance after it, and commit once at the end.",
+   "hint": "Set the SAVEPOINT at the top of each loop pass, use RETURNING to read the new balance, and write the log row after any ROLLBACK TO so the log is not undone.",
+   "solution": "DECLARE\n  l_bal acct_balance.balance%TYPE;\nBEGIN\n  FOR r IN (SELECT loan_no, acct_no, emi_amt\n            FROM   emi_due\n            ORDER  BY loan_no) LOOP\n    SAVEPOINT before_emi;\n\n    UPDATE acct_balance\n    SET    balance = balance - r.emi_amt\n    WHERE  acct_no = r.acct_no\n    RETURNING balance INTO l_bal;\n\n    INSERT INTO loan_receipt (loan_no, amount)\n    VALUES (r.loan_no, r.emi_amt);\n\n    IF l_bal < 0 THEN\n      ROLLBACK TO before_emi;\n      SELECT balance INTO l_bal\n      FROM   acct_balance\n      WHERE  acct_no = r.acct_no;\n      INSERT INTO emi_run_log (loan_no, acct_no, status, bal_after)\n      VALUES (r.loan_no, r.acct_no, 'BOUNCED', l_bal);\n    ELSE\n      INSERT INTO emi_run_log (loan_no, acct_no, status, bal_after)\n      VALUES (r.loan_no, r.acct_no, 'PAID', l_bal);\n    END IF;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of playing a video game that saves a checkpoint before each level. If you lose a level, you go back to that checkpoint, not to the very start of the game. SAVEPOINT is the checkpoint before each EMI. When an EMI would make the balance go below zero, ROLLBACK TO undoes only that EMI, and all the EMIs already paid stay paid.",
+   "remember": "SAVEPOINT = checkpoint; ROLLBACK TO = undo only since it.",
+   "why": "ROLLBACK TO savepoint undoes only the changes made after that savepoint and keeps the transaction open, whereas a plain ROLLBACK would also undo every EMI posted earlier in the run. Re-using the same savepoint name in each iteration simply moves the marker forward. The log insert is placed after the ROLLBACK TO so it survives, and the single COMMIT at the end makes the whole batch atomic.",
+   "tip": "When one bad record must not undo a whole batch, I set a SAVEPOINT per record and ROLLBACK TO it, and I commit once at the end rather than inside the loop.",
+   "data": [
+    {
+     "name": "ACCT_BALANCE",
+     "cols": [
+      "acct_no",
+      "balance"
+     ],
+     "rows": [
+      [
+       "SB101",
+       "60000"
+      ],
+      [
+       "SB102",
+       "12000"
+      ],
+      [
+       "SB103",
+       "30000"
+      ]
+     ]
+    },
+    {
+     "name": "EMI_DUE",
+     "cols": [
+      "loan_no",
+      "acct_no",
+      "emi_amt"
+     ],
+     "rows": [
+      [
+       "L1",
+       "SB101",
+       "25000"
+      ],
+      [
+       "L2",
+       "SB102",
+       "15000"
+      ],
+      [
+       "L3",
+       "SB103",
+       "18000"
+      ],
+      [
+       "L4",
+       "SB101",
+       "40000"
+      ],
+      [
+       "L5",
+       "SB103",
+       "12000"
+      ]
+     ]
+    },
+    {
+     "name": "LOAN_RECEIPT",
+     "cols": [
+      "loan_no",
+      "amount"
+     ],
+     "rows": []
+    },
+    {
+     "name": "EMI_RUN_LOG",
+     "cols": [
+      "loan_no",
+      "acct_no",
+      "status",
+      "bal_after"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "loan_no",
+     "acct_no",
+     "status",
+     "bal_after"
+    ],
+    "rows": [
+     [
+      "L1",
+      "SB101",
+      "PAID",
+      "35000"
+     ],
+     [
+      "L2",
+      "SB102",
+      "BOUNCED",
+      "12000"
+     ],
+     [
+      "L3",
+      "SB103",
+      "PAID",
+      "12000"
+     ],
+     [
+      "L4",
+      "SB101",
+      "BOUNCED",
+      "35000"
+     ],
+     [
+      "L5",
+      "SB103",
+      "PAID",
+      "0"
+     ]
+    ]
+   },
+   "output_note": "EMI_RUN_LOG after the block. L2 and L4 were rolled back, so ACCT_BALANCE ends as SB101 35000, SB102 12000, SB103 0, and LOAN_RECEIPT holds only L1, L3 and L5. L5 takes SB103 to exactly 0, which is not below zero, so it is PAID."
+  },
+  {
+   "id": "f20261114-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "CUBE cross-tab totals",
+   "domain": "Cards/MIS",
+   "title": "Card spend with every subtotal",
+   "scenario": "Priya Venkatesh in the cards MIS team sends a daily spend summary to the card business head. He wants totals for every card type and channel pair, plus totals per card type, per channel and a grand total, all in one result.",
+   "schema": "CARD_TXN(txn_id VARCHAR2(10), card_type VARCHAR2(10), channel VARCHAR2(10), amount NUMBER(12,2))\n-- card_type: CREDIT or DEBIT\n-- channel: POS, ECOM or ATM; amount in INR",
+   "task": "Return card_type, channel, total_amt and txn_cnt for every combination, every card type total, every channel total and the grand total. Show 'ALL' where a column is rolled up, and order detail rows first, then card type totals, then channel totals, then the grand total.",
+   "hint": "CUBE(a, b) produces all four grouping levels; GROUPING(col) returns 1 on rows where that column was rolled up.",
+   "solution": "SELECT DECODE(GROUPING(card_type), 1, 'ALL', card_type) AS card_type,\n       DECODE(GROUPING(channel),   1, 'ALL', channel)   AS channel,\n       SUM(amount) AS total_amt,\n       COUNT(*)    AS txn_cnt\nFROM   card_txn\nGROUP  BY CUBE(card_type, channel)\nORDER  BY GROUPING_ID(card_type, channel), card_type, channel;",
+   "simple": "Think of a class marks sheet where you add up marks for each child, for each subject, and then the total of everything. CUBE does all these totals in one go. It gives the total for each card type with each channel, then each card type alone, then each channel alone, and finally one grand total. 'ALL' shows which column was added up.",
+   "remember": "CUBE = every possible subtotal, plus the grand total.",
+   "why": "GROUP BY CUBE(a, b) is shorthand for GROUPING SETS ((a, b), (a), (b), ()), so it returns 2^n grouping levels for n columns, unlike ROLLUP which only produces the hierarchical levels (a, b), (a), (). GROUPING(col) distinguishes a subtotal NULL from a real NULL value in the data. GROUPING_ID(card_type, channel) packs those bits into one number (0, 1, 2, 3), which is handy for ordering or filtering levels.",
+   "tip": "I explain that ROLLUP gives hierarchical subtotals while CUBE gives every combination, and I use GROUPING or GROUPING_ID rather than NVL to label the subtotal rows.",
+   "data": [
+    {
+     "name": "CARD_TXN",
+     "cols": [
+      "txn_id",
+      "card_type",
+      "channel",
+      "amount"
+     ],
+     "rows": [
+      [
+       "C1",
+       "CREDIT",
+       "POS",
+       "12000"
+      ],
+      [
+       "C2",
+       "CREDIT",
+       "ECOM",
+       "45000"
+      ],
+      [
+       "C3",
+       "CREDIT",
+       "POS",
+       "8000"
+      ],
+      [
+       "C4",
+       "DEBIT",
+       "ATM",
+       "10000"
+      ],
+      [
+       "C5",
+       "DEBIT",
+       "POS",
+       "3500"
+      ],
+      [
+       "C6",
+       "DEBIT",
+       "ECOM",
+       "6500"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "card_type",
+     "channel",
+     "total_amt",
+     "txn_cnt"
+    ],
+    "rows": [
+     [
+      "CREDIT",
+      "ECOM",
+      "45000",
+      "1"
+     ],
+     [
+      "CREDIT",
+      "POS",
+      "20000",
+      "2"
+     ],
+     [
+      "DEBIT",
+      "ATM",
+      "10000",
+      "1"
+     ],
+     [
+      "DEBIT",
+      "ECOM",
+      "6500",
+      "1"
+     ],
+     [
+      "DEBIT",
+      "POS",
+      "3500",
+      "1"
+     ],
+     [
+      "CREDIT",
+      "ALL",
+      "65000",
+      "3"
+     ],
+     [
+      "DEBIT",
+      "ALL",
+      "20000",
+      "3"
+     ],
+     [
+      "ALL",
+      "ATM",
+      "10000",
+      "1"
+     ],
+     [
+      "ALL",
+      "ECOM",
+      "51500",
+      "2"
+     ],
+     [
+      "ALL",
+      "POS",
+      "23500",
+      "3"
+     ],
+     [
+      "ALL",
+      "ALL",
+      "85000",
+      "6"
+     ]
+    ]
+   },
+   "output_note": "CREDIT has no ATM rows and DEBIT has one row per channel, so only 5 detail rows exist. Grand total is 85,000 over 6 transactions."
+  },
+  {
+   "id": "f20261114-7",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "MERGE with DELETE WHERE",
+   "domain": "Fixed deposits/Core banking",
+   "title": "Apply FD renewals, closures and openings",
+   "scenario": "Kiran Bhosale runs the fixed deposit maturity batch on 14-11-2026. The day's event file renews some FDs with interest added, closes others that are paid out, and opens new ones; closed FDs must disappear from FD_ACTIVE and an unknown closure must be ignored. He wants it in one MERGE statement.",
+   "schema": "FD_ACTIVE(fd_no VARCHAR2(10) PRIMARY KEY, cust_name VARCHAR2(60), principal NUMBER(14,2), maturity_date DATE)\n-- live fixed deposits, principal in INR\nFD_EVENT(fd_no VARCHAR2(10), cust_name VARCHAR2(60), event_type VARCHAR2(10), amount NUMBER(14,2), new_maturity DATE)\n-- event_type: RENEW (new principal and maturity), CLOSE (paid out), OPEN (new FD)",
+   "task": "Write one MERGE that updates principal and maturity_date for RENEW events, deletes the FD for CLOSE events, and inserts OPEN events that are not yet in FD_ACTIVE. A CLOSE for an FD not in FD_ACTIVE must not be inserted.",
+   "hint": "A MERGE update branch can end with DELETE WHERE, which removes only rows that the update just touched; add a WHERE to the INSERT branch too.",
+   "solution": "MERGE INTO fd_active t\nUSING fd_event s\nON (t.fd_no = s.fd_no)\nWHEN MATCHED THEN\n  UPDATE SET t.principal     = s.amount,\n             t.maturity_date = s.new_maturity\n  DELETE WHERE s.event_type = 'CLOSE'\nWHEN NOT MATCHED THEN\n  INSERT (fd_no, cust_name, principal, maturity_date)\n  VALUES (s.fd_no, s.cust_name, s.amount, s.new_maturity)\n  WHERE s.event_type = 'OPEN';",
+   "simple": "Think of a class register on the first day of term. Children who are staying get their new class written in, children who left the school are struck off, and new children are added at the bottom. MERGE does all three jobs in one pass. Its DELETE part only strikes off rows it has just updated, and the INSERT has its own rule so only real new FDs are added.",
+   "remember": "MERGE: update, strike off, add new, in one pass.",
+   "why": "In Oracle the DELETE WHERE clause belongs to the WHEN MATCHED branch, so it can only remove rows that were matched and updated in this MERGE; it is evaluated after the update. Source columns such as s.event_type can be referenced there, and the optional WHERE on WHEN NOT MATCHED stops the unknown FD099 closure from being inserted. Each target row may be matched by at most one source row, otherwise MERGE raises ORA-30926.",
+   "tip": "I mention that MERGE's DELETE WHERE only affects rows updated by that same MERGE, and that duplicate source keys cause ORA-30926, so I de-duplicate the source first.",
+   "data": [
+    {
+     "name": "FD_ACTIVE",
+     "cols": [
+      "fd_no",
+      "cust_name",
+      "principal",
+      "maturity_date"
+     ],
+     "rows": [
+      [
+       "FD101",
+       "Ramesh Iyer",
+       "500000",
+       "14-11-2026"
+      ],
+      [
+       "FD102",
+       "Kavita Saxena",
+       "1000000",
+       "14-11-2026"
+      ],
+      [
+       "FD103",
+       "Joseph Dsouza",
+       "250000",
+       "20-12-2026"
+      ],
+      [
+       "FD104",
+       "Nisha Arora",
+       "750000",
+       "14-11-2026"
+      ]
+     ]
+    },
+    {
+     "name": "FD_EVENT",
+     "cols": [
+      "fd_no",
+      "cust_name",
+      "event_type",
+      "amount",
+      "new_maturity"
+     ],
+     "rows": [
+      [
+       "FD101",
+       "Ramesh Iyer",
+       "RENEW",
+       "536250",
+       "14-11-2027"
+      ],
+      [
+       "FD102",
+       "Kavita Saxena",
+       "CLOSE",
+       "1072000",
+       "NULL"
+      ],
+      [
+       "FD104",
+       "Nisha Arora",
+       "RENEW",
+       "804375",
+       "14-11-2027"
+      ],
+      [
+       "FD105",
+       "Arjun Malhotra",
+       "OPEN",
+       "300000",
+       "14-11-2027"
+      ],
+      [
+       "FD099",
+       "Meera Bhatt",
+       "CLOSE",
+       "210000",
+       "NULL"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "fd_no",
+     "cust_name",
+     "principal",
+     "maturity_date"
+    ],
+    "rows": [
+     [
+      "FD101",
+      "Ramesh Iyer",
+      "536250",
+      "14-11-2027"
+     ],
+     [
+      "FD103",
+      "Joseph Dsouza",
+      "250000",
+      "20-12-2026"
+     ],
+     [
+      "FD104",
+      "Nisha Arora",
+      "804375",
+      "14-11-2027"
+     ],
+     [
+      "FD105",
+      "Arjun Malhotra",
+      "300000",
+      "14-11-2027"
+     ]
+    ]
+   },
+   "output_note": "FD_ACTIVE after the MERGE. FD102 was updated then deleted, FD103 had no event and is unchanged, FD105 was inserted, and FD099 was ignored."
+  },
+  {
+   "id": "f20261114-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Missing ranges with LEAD",
+   "domain": "GL audit/Concurrent audit",
+   "title": "Find missing GL voucher number ranges",
+   "scenario": "CA Ritu Goel, the concurrent auditor, must report any break in the voucher number series at each branch, because a missing voucher can hide a deleted or unauthorised entry. She wants each missing range once, not one row per missing number.",
+   "schema": "GL_VOUCHER(branch_code VARCHAR2(5), voucher_no NUMBER(8), voucher_date DATE, amount NUMBER(14,2))\n-- voucher_no is meant to be continuous within each branch\n-- amount in INR",
+   "task": "For each branch, list every missing range of voucher numbers as gap_from, gap_to and missing_cnt, sorted by branch_code and gap_from.",
+   "hint": "Use LEAD to put the next voucher number beside each row; a jump of more than 1 means numbers are missing in between.",
+   "solution": "SELECT branch_code,\n       voucher_no + 1             AS gap_from,\n       next_no - 1                AS gap_to,\n       next_no - voucher_no - 1   AS missing_cnt\nFROM  (SELECT branch_code, voucher_no,\n              LEAD(voucher_no) OVER (PARTITION BY branch_code\n                                     ORDER BY voucher_no) AS next_no\n       FROM   gl_voucher)\nWHERE  next_no - voucher_no > 1\nORDER  BY branch_code, gap_from;",
+   "simple": "Think of the numbered pages of your notebook. If page 2 is followed by page 5, you know pages 3 and 4 were torn out. LEAD lets each row peek at the next voucher number. If the next number is more than one bigger, the numbers in between are missing, and we print that range once.",
+   "remember": "LEAD peeks ahead; a jump bigger than 1 is a gap.",
+   "why": "LEAD(voucher_no) OVER (PARTITION BY branch_code ORDER BY voucher_no) returns the next number in the same branch, so a difference greater than 1 marks a gap of next - current - 1 numbers. The last voucher of each branch has a NULL LEAD, and NULL - n > 1 is not true, so it drops out without extra code. This reports ranges in a single pass instead of generating every possible number with CONNECT BY and using MINUS.",
+   "tip": "To find gaps I compare each row with LEAD of the ordered key and report next - current > 1, which gives ranges in one scan instead of generating all numbers.",
+   "data": [
+    {
+     "name": "GL_VOUCHER",
+     "cols": [
+      "branch_code",
+      "voucher_no",
+      "voucher_date",
+      "amount"
+     ],
+     "rows": [
+      [
+       "B01",
+       "1001",
+       "10-11-2026",
+       "45000"
+      ],
+      [
+       "B01",
+       "1002",
+       "10-11-2026",
+       "12500"
+      ],
+      [
+       "B01",
+       "1005",
+       "11-11-2026",
+       "78000"
+      ],
+      [
+       "B01",
+       "1009",
+       "12-11-2026",
+       "9900"
+      ],
+      [
+       "B02",
+       "2001",
+       "10-11-2026",
+       "230000"
+      ],
+      [
+       "B02",
+       "2002",
+       "11-11-2026",
+       "15000"
+      ],
+      [
+       "B02",
+       "2004",
+       "12-11-2026",
+       "61000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "branch_code",
+     "gap_from",
+     "gap_to",
+     "missing_cnt"
+    ],
+    "rows": [
+     [
+      "B01",
+      "1003",
+      "1004",
+      "2"
+     ],
+     [
+      "B01",
+      "1006",
+      "1008",
+      "3"
+     ],
+     [
+      "B02",
+      "2003",
+      "2003",
+      "1"
+     ]
+    ]
+   },
+   "output_note": "B01 is missing 1003-1004 and 1006-1008; B02 is missing 2003."
   }
  ],
  "lessons": [
@@ -1471,6 +2405,17 @@
    "example": "WITH a AS (\n  SELECT 'A1' acct, 5000 bal FROM dual UNION ALL\n  SELECT 'A2', 90000 FROM dual UNION ALL\n  SELECT 'A3', 40000 FROM dual\n)\nSELECT acct, bal\nFROM  (SELECT acct, bal FROM a ORDER BY bal DESC)\nWHERE ROWNUM <= 2;\n-- A2 90000, A3 40000\n-- Same result: SELECT acct, bal FROM a ORDER BY bal DESC FETCH FIRST 2 ROWS ONLY;",
    "gotcha": "SELECT ... WHERE ROWNUM <= 5 ORDER BY amount DESC returns five random rows sorted, not the top five.",
    "line": "Because ROWNUM is assigned before ORDER BY, I either sort in an inline view and filter ROWNUM outside, or simply use FETCH FIRST n ROWS ONLY."
+  },
+  {
+   "id": "fl20261114",
+   "concept": "ROW_NUMBER, RANK and DENSE_RANK",
+   "why": "Picking the wrong ranking function on tied values is one of the most common interview traps in top-N and Nth-highest questions.",
+   "simple": "Think of a race where two runners cross the line together. ROW_NUMBER is the strict referee who still gives them 1 and 2. RANK gives both of them 1 and the next runner 3, skipping 2. DENSE_RANK gives both of them 1 and the next runner 2, without skipping. All three just put numbers on rows in the order you ask for.",
+   "remember": "ROW_NUMBER unique, RANK skips, DENSE_RANK never skips.",
+   "explain": "All three are analytic functions that need OVER (ORDER BY ...) and can restart per group with PARTITION BY. ROW_NUMBER always gives 1, 2, 3 even on ties, so which tied row gets the lower number is not deterministic unless you add a tie-breaker column. RANK gives tied rows the same number and then jumps (1, 1, 3), while DENSE_RANK gives the same number and continues (1, 1, 2). Use ROW_NUMBER for de-duplication or exactly-N rows, RANK for 'positions' like a competition, and DENSE_RANK for 'Nth highest distinct value'.",
+   "example": "WITH b AS (\n  SELECT 'Arun' cust, 90000 bal FROM dual UNION ALL\n  SELECT 'Bina', 90000 FROM dual UNION ALL\n  SELECT 'Chetan', 70000 FROM dual UNION ALL\n  SELECT 'Divya', 50000 FROM dual\n)\nSELECT cust, bal,\n       ROW_NUMBER() OVER (ORDER BY bal DESC, cust) AS rn,\n       RANK()       OVER (ORDER BY bal DESC)       AS rnk,\n       DENSE_RANK() OVER (ORDER BY bal DESC)       AS drnk\nFROM   b;\n-- Arun 90000 1 1 1 | Bina 90000 2 1 1 | Chetan 70000 3 3 2 | Divya 50000 4 4 3",
+   "gotcha": "Using ROW_NUMBER = 1 to find 'the top customer' silently drops a customer who is tied for first place.",
+   "line": "I pick ROW_NUMBER when I need exactly one row per group, RANK when ties should share a position with gaps, and DENSE_RANK for Nth-highest distinct values."
   }
  ]
 }
