@@ -2381,6 +2381,925 @@
     ]
    },
    "output_note": "B01 is missing 1003-1004 and 1006-1008; B02 is missing 2003."
+  },
+  {
+   "id": "f20261115-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "SELECT DISTINCT",
+   "domain": "Cards/Fraud",
+   "title": "Cities where one card was used",
+   "scenario": "Ritu Sharma on the credit card fraud desk got a call from a customer who says his card C9001 was used abroad. Before calling him back she wants a clean list of every city the card was used in, each city shown only once.",
+   "schema": "CARD_TXN(txn_id VARCHAR2(10), card_no VARCHAR2(10), txn_date DATE, city VARCHAR2(40), amount NUMBER(12,2))\n-- one row per card swipe, amount in INR",
+   "data": [
+    {
+     "name": "CARD_TXN",
+     "cols": [
+      "txn_id",
+      "card_no",
+      "txn_date",
+      "city",
+      "amount"
+     ],
+     "rows": [
+      [
+       "T101",
+       "C9001",
+       "09-11-2026",
+       "Mumbai",
+       "1250"
+      ],
+      [
+       "T102",
+       "C9001",
+       "10-11-2026",
+       "Pune",
+       "4800"
+      ],
+      [
+       "T103",
+       "C9002",
+       "10-11-2026",
+       "Delhi",
+       "2200"
+      ],
+      [
+       "T104",
+       "C9001",
+       "11-11-2026",
+       "Mumbai",
+       "650"
+      ],
+      [
+       "T105",
+       "C9001",
+       "12-11-2026",
+       "Dubai",
+       "38500"
+      ],
+      [
+       "T106",
+       "C9001",
+       "13-11-2026",
+       "Pune",
+       "920"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "city"
+    ],
+    "rows": [
+     [
+      "Dubai"
+     ],
+     [
+      "Mumbai"
+     ],
+     [
+      "Pune"
+     ]
+    ]
+   },
+   "task": "List each city where card C9001 was used, without repeats, sorted alphabetically.",
+   "hint": "DISTINCT removes duplicate rows from the result after the WHERE filter is applied.",
+   "solution": "SELECT DISTINCT city\nFROM   card_txn\nWHERE  card_no = 'C9001'\nORDER  BY city;",
+   "simple": "Think of a class attendance register where Ravi's name is written on many days. If the teacher asks 'which children came this week?', you say each name only once. DISTINCT does the same: it keeps one copy of each repeated value. Here Mumbai and Pune appear twice for the card, but each shows up only once in the answer.",
+   "remember": "DISTINCT = say each name only once.",
+   "why": "DISTINCT is applied to the whole select list after WHERE filtering, so it removes rows whose selected columns are all equal. Oracle usually does this with a HASH UNIQUE or SORT UNIQUE step. Because only city is selected, the two Mumbai swipes collapse into one row even though their txn_id and amount differ.",
+   "tip": "I remember that DISTINCT works on the whole select list, so adding one extra column like amount can bring the duplicates back."
+  },
+  {
+   "id": "f20261115-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "ADD_MONTHS date function",
+   "domain": "Deposits/Fixed deposits",
+   "title": "Work out FD maturity dates",
+   "scenario": "Meera Pillai at the branch deposits desk wants to call customers before their fixed deposits mature. The FD table stores only the opening date and the tenure in months, so she needs the maturity date calculated.",
+   "schema": "FD_ACCOUNT(fd_no VARCHAR2(10), cust_name VARCHAR2(60), open_date DATE, tenure_months NUMBER(3), principal NUMBER(14,2))\n-- tenure_months = FD term in months, principal in INR",
+   "data": [
+    {
+     "name": "FD_ACCOUNT",
+     "cols": [
+      "fd_no",
+      "cust_name",
+      "open_date",
+      "tenure_months",
+      "principal"
+     ],
+     "rows": [
+      [
+       "FD7001",
+       "Meena Iyer",
+       "15-06-2025",
+       "18",
+       "200000"
+      ],
+      [
+       "FD7002",
+       "Rahul Gupta",
+       "31-01-2026",
+       "1",
+       "50000"
+      ],
+      [
+       "FD7003",
+       "Sunita Rao",
+       "20-11-2025",
+       "12",
+       "500000"
+      ],
+      [
+       "FD7004",
+       "Arjun Nair",
+       "05-08-2026",
+       "6",
+       "150000"
+      ],
+      [
+       "FD7005",
+       "Zoya Khan",
+       "10-12-2024",
+       "24",
+       "300000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "fd_no",
+     "cust_name",
+     "open_date",
+     "tenure_months",
+     "maturity_date"
+    ],
+    "rows": [
+     [
+      "FD7002",
+      "Rahul Gupta",
+      "31-01-2026",
+      "1",
+      "28-02-2026"
+     ],
+     [
+      "FD7003",
+      "Sunita Rao",
+      "20-11-2025",
+      "12",
+      "20-11-2026"
+     ],
+     [
+      "FD7005",
+      "Zoya Khan",
+      "10-12-2024",
+      "24",
+      "10-12-2026"
+     ],
+     [
+      "FD7001",
+      "Meena Iyer",
+      "15-06-2025",
+      "18",
+      "15-12-2026"
+     ],
+     [
+      "FD7004",
+      "Arjun Nair",
+      "05-08-2026",
+      "6",
+      "05-02-2027"
+     ]
+    ]
+   },
+   "task": "Show fd_no, cust_name, open_date, tenure_months and maturity_date (open_date plus tenure_months months), earliest maturity first.",
+   "hint": "ADD_MONTHS(date, n) moves a date forward by n calendar months.",
+   "solution": "SELECT fd_no, cust_name, open_date, tenure_months,\n       ADD_MONTHS(open_date, tenure_months) AS maturity_date\nFROM   fd_account\nORDER  BY maturity_date;",
+   "simple": "Think of a calendar on the wall: if you start on 15 June and flip 18 pages, you land on 15 December next year. ADD_MONTHS flips calendar pages for you. If the day does not exist in the new month, like 31 February, it stops at the last day of that month, so 31 January plus one month becomes 28 February.",
+   "remember": "ADD_MONTHS = flip the calendar pages, not count days.",
+   "why": "ADD_MONTHS adds calendar months, not a fixed 30 days, so FD7001 lands exactly on the 15th after 18 months. If the start date is the last day of its month, or the target month is shorter, Oracle returns the last day of the target month, which is why 31-01-2026 becomes 28-02-2026. ORDER BY can use the column alias maturity_date because ORDER BY is evaluated after SELECT.",
+   "tip": "For month-based tenures like FDs and EMIs I use ADD_MONTHS rather than adding 30 days, because it respects real month lengths."
+  },
+  {
+   "id": "f20261115-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "LEFT JOIN filter in ON",
+   "domain": "Payments/NEFT",
+   "title": "Failed NEFT count for every branch",
+   "scenario": "Deepak Joshi in payment operations sends a daily NEFT failure report to the regional head. Branches with no failures must still appear with 0, because the head reads a missing branch as missing data.",
+   "schema": "BRANCH(branch_code VARCHAR2(5), branch_name VARCHAR2(40))\nNEFT_TXN(utr VARCHAR2(16), branch_code VARCHAR2(5), txn_date DATE, amount NUMBER(14,2), status VARCHAR2(10))\n-- status is SUCCESS or FAILED, amount in INR",
+   "data": [
+    {
+     "name": "BRANCH",
+     "cols": [
+      "branch_code",
+      "branch_name"
+     ],
+     "rows": [
+      [
+       "B01",
+       "Andheri"
+      ],
+      [
+       "B02",
+       "Thane"
+      ],
+      [
+       "B03",
+       "Vashi"
+      ],
+      [
+       "B04",
+       "Borivali"
+      ]
+     ]
+    },
+    {
+     "name": "NEFT_TXN",
+     "cols": [
+      "utr",
+      "branch_code",
+      "txn_date",
+      "amount",
+      "status"
+     ],
+     "rows": [
+      [
+       "N8001",
+       "B01",
+       "14-11-2026",
+       "75000",
+       "FAILED"
+      ],
+      [
+       "N8002",
+       "B01",
+       "14-11-2026",
+       "120000",
+       "SUCCESS"
+      ],
+      [
+       "N8003",
+       "B02",
+       "14-11-2026",
+       "45000",
+       "FAILED"
+      ],
+      [
+       "N8004",
+       "B01",
+       "14-11-2026",
+       "30000",
+       "FAILED"
+      ],
+      [
+       "N8005",
+       "B03",
+       "14-11-2026",
+       "90000",
+       "SUCCESS"
+      ],
+      [
+       "N8006",
+       "B04",
+       "13-11-2026",
+       "60000",
+       "FAILED"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "branch_code",
+     "branch_name",
+     "failed_cnt",
+     "failed_amt"
+    ],
+    "rows": [
+     [
+      "B01",
+      "Andheri",
+      "2",
+      "105000"
+     ],
+     [
+      "B02",
+      "Thane",
+      "1",
+      "45000"
+     ],
+     [
+      "B03",
+      "Vashi",
+      "0",
+      "0"
+     ],
+     [
+      "B04",
+      "Borivali",
+      "0",
+      "0"
+     ]
+    ]
+   },
+   "output_note": "Vashi had only a successful NEFT and Borivali failed only on 13-11-2026, yet both still appear with 0.",
+   "task": "For 14-11-2026, show every branch with its count and total amount of FAILED NEFTs, showing 0 where there were none. Sort by branch_code.",
+   "hint": "Put the status and date conditions inside the LEFT JOIN's ON clause, not in WHERE, and count a column from NEFT_TXN.",
+   "solution": "SELECT b.branch_code, b.branch_name,\n       COUNT(n.utr)          AS failed_cnt,\n       NVL(SUM(n.amount), 0) AS failed_amt\nFROM   branch b\nLEFT   JOIN neft_txn n\n       ON  n.branch_code = b.branch_code\n       AND n.status      = 'FAILED'\n       AND n.txn_date    = DATE '2026-11-14'\nGROUP  BY b.branch_code, b.branch_name\nORDER  BY b.branch_code;",
+   "simple": "Think of a school register with every child's name, and a list of who got a late mark today. You keep every name from the register and write 0 for children with no late mark. A LEFT JOIN keeps every branch from the BRANCH table. The trick is to put 'only FAILED, only today' inside the join, so branches with nothing matching stay in the list with 0.",
+   "remember": "LEFT JOIN: filter the right table in ON, not WHERE.",
+   "why": "Conditions on the outer-joined table in the WHERE clause run after the join and throw away the NULL-extended rows, silently turning the LEFT JOIN into an inner join and dropping Vashi and Borivali. Inside ON they only decide which NEFT rows match. COUNT(n.utr) counts non-NULL values so unmatched branches give 0, while SUM returns NULL and needs NVL.",
+   "tip": "If a LEFT JOIN is losing rows, I first check whether a filter on the right-hand table has slipped into the WHERE clause."
+  },
+  {
+   "id": "f20261115-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Running MAX drawdown",
+   "domain": "Mutual funds",
+   "title": "NAV drawdown from the running peak",
+   "scenario": "Sneha Agarwal, a mutual fund product analyst, must show distributors how far each scheme's NAV has fallen from its highest point so far. The peak must restart for each scheme and only look at earlier or same-day NAVs.",
+   "schema": "MF_NAV(scheme_code VARCHAR2(6), nav_date DATE, nav NUMBER(10,2))\n-- one NAV per scheme per business day, in INR",
+   "data": [
+    {
+     "name": "MF_NAV",
+     "cols": [
+      "scheme_code",
+      "nav_date",
+      "nav"
+     ],
+     "rows": [
+      [
+       "EQ01",
+       "09-11-2026",
+       "52.4"
+      ],
+      [
+       "EQ01",
+       "10-11-2026",
+       "54.1"
+      ],
+      [
+       "EQ01",
+       "11-11-2026",
+       "51.9"
+      ],
+      [
+       "EQ01",
+       "12-11-2026",
+       "53"
+      ],
+      [
+       "DB02",
+       "09-11-2026",
+       "21.5"
+      ],
+      [
+       "DB02",
+       "10-11-2026",
+       "21.2"
+      ],
+      [
+       "DB02",
+       "11-11-2026",
+       "21.8"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "scheme_code",
+     "nav_date",
+     "nav",
+     "peak_nav",
+     "drawdown_pct"
+    ],
+    "rows": [
+     [
+      "DB02",
+      "09-11-2026",
+      "21.5",
+      "21.5",
+      "0"
+     ],
+     [
+      "DB02",
+      "10-11-2026",
+      "21.2",
+      "21.5",
+      "-1.4"
+     ],
+     [
+      "DB02",
+      "11-11-2026",
+      "21.8",
+      "21.8",
+      "0"
+     ],
+     [
+      "EQ01",
+      "09-11-2026",
+      "52.4",
+      "52.4",
+      "0"
+     ],
+     [
+      "EQ01",
+      "10-11-2026",
+      "54.1",
+      "54.1",
+      "0"
+     ],
+     [
+      "EQ01",
+      "11-11-2026",
+      "51.9",
+      "54.1",
+      "-4.07"
+     ],
+     [
+      "EQ01",
+      "12-11-2026",
+      "53",
+      "54.1",
+      "-2.03"
+     ]
+    ]
+   },
+   "task": "For every scheme and date, show nav, peak_nav (highest NAV of that scheme up to that date) and drawdown_pct = (nav - peak_nav) / peak_nav * 100 rounded to 2 decimals. Sort by scheme_code, nav_date.",
+   "hint": "MAX(nav) OVER (PARTITION BY scheme_code ORDER BY nav_date) gives a running maximum per scheme.",
+   "solution": "SELECT scheme_code, nav_date, nav, peak_nav,\n       ROUND((nav - peak_nav) / peak_nav * 100, 2) AS drawdown_pct\nFROM  (SELECT scheme_code, nav_date, nav,\n              MAX(nav) OVER (PARTITION BY scheme_code\n                             ORDER BY nav_date) AS peak_nav\n       FROM   mf_nav)\nORDER  BY scheme_code, nav_date;",
+   "simple": "Think of marking your height on the door every birthday, but here it is the highest score in a game so far. Each day you compare today's score with your best score until now. MAX with OVER and ORDER BY keeps a running 'best so far' for each scheme. Then today's fall from that best is the drawdown, and it is 0 on days that set a new high.",
+   "remember": "Running MAX = my best score so far.",
+   "why": "With ORDER BY and no frame, the analytic MAX uses RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW, giving a running maximum that never decreases. PARTITION BY scheme_code restarts the peak for DB02 so it is not compared with EQ01's higher NAV. The inline view is needed because an analytic alias cannot be reused in the same SELECT list.",
+   "tip": "Drawdown is just a running MAX window plus a percentage; I wrap the window in an inline view so the formula can reuse its alias."
+  },
+  {
+   "id": "f20261115-5",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "Pipelined table function",
+   "domain": "Insurance/Life",
+   "title": "Premium due calendar as a table",
+   "scenario": "Farhan Ali in life insurance operations wants a premium due calendar for renewal reminders. Policies pay yearly, half-yearly or quarterly, and he wants the instalments generated on the fly as rows he can query with plain SQL, without filling a staging table.",
+   "schema": "POLICY(policy_no VARCHAR2(10), holder_name VARCHAR2(60), start_date DATE, annual_premium NUMBER(12,2), pay_mode CHAR(1), term_years NUMBER(2))\n-- pay_mode: Y = yearly, H = half-yearly, Q = quarterly\n-- annual_premium in INR",
+   "data": [
+    {
+     "name": "POLICY",
+     "cols": [
+      "policy_no",
+      "holder_name",
+      "start_date",
+      "annual_premium",
+      "pay_mode",
+      "term_years"
+     ],
+     "rows": [
+      [
+       "LP101",
+       "Asha Verma",
+       "15-01-2026",
+       "42500",
+       "Y",
+       "2"
+      ],
+      [
+       "LP102",
+       "Gopal Das",
+       "01-04-2026",
+       "18000",
+       "H",
+       "1"
+      ],
+      [
+       "LP103",
+       "Priya Menon",
+       "10-07-2026",
+       "25000",
+       "Q",
+       "1"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "policy_no",
+     "inst_no",
+     "due_date",
+     "amount"
+    ],
+    "rows": [
+     [
+      "LP101",
+      "1",
+      "15-01-2026",
+      "42500"
+     ],
+     [
+      "LP101",
+      "2",
+      "15-01-2027",
+      "42500"
+     ],
+     [
+      "LP102",
+      "1",
+      "01-04-2026",
+      "9000"
+     ],
+     [
+      "LP102",
+      "2",
+      "01-10-2026",
+      "9000"
+     ],
+     [
+      "LP103",
+      "1",
+      "10-07-2026",
+      "6250"
+     ],
+     [
+      "LP103",
+      "2",
+      "10-10-2026",
+      "6250"
+     ],
+     [
+      "LP103",
+      "3",
+      "10-01-2027",
+      "6250"
+     ],
+     [
+      "LP103",
+      "4",
+      "10-04-2027",
+      "6250"
+     ]
+    ]
+   },
+   "output_note": "Result of the final SELECT. Each policy gives term_years * 12 / step rows, where step is 12, 6 or 3 months.",
+   "task": "Create an object type, a nested table type and a PIPELINED function premium_schedule that returns one row per instalment (policy_no, inst_no, due_date, amount = annual_premium * step / 12). Then query it with TABLE() ordered by policy_no, inst_no.",
+   "hint": "Map pay_mode to a step of 12, 6 or 3 months, loop term_years * 12 / step times, and PIPE ROW each instalment using ADD_MONTHS.",
+   "solution": "CREATE OR REPLACE TYPE prem_row AS OBJECT (\n  policy_no VARCHAR2(10),\n  inst_no   NUMBER,\n  due_date  DATE,\n  amount    NUMBER(12,2)\n);\n/\nCREATE OR REPLACE TYPE prem_tab AS TABLE OF prem_row;\n/\nCREATE OR REPLACE FUNCTION premium_schedule\n  RETURN prem_tab PIPELINED\nIS\n  l_step PLS_INTEGER;\nBEGIN\n  FOR p IN (SELECT policy_no, start_date, annual_premium,\n                   pay_mode, term_years\n            FROM   policy\n            ORDER  BY policy_no) LOOP\n    l_step := CASE p.pay_mode\n                WHEN 'Y' THEN 12\n                WHEN 'H' THEN 6\n                WHEN 'Q' THEN 3\n              END;\n    FOR i IN 1 .. p.term_years * 12 / l_step LOOP\n      PIPE ROW (prem_row(p.policy_no,\n                         i,\n                         ADD_MONTHS(p.start_date, (i - 1) * l_step),\n                         ROUND(p.annual_premium * l_step / 12, 2)));\n    END LOOP;\n  END LOOP;\n  RETURN;\nEND;\n/\n\nSELECT policy_no, inst_no, due_date, amount\nFROM   TABLE(premium_schedule())\nORDER  BY policy_no, inst_no;",
+   "simple": "Think of a tap that gives water drop by drop, instead of first filling a big bucket. A pipelined function hands over each row the moment it is made. Here, for each policy, it works out every premium due date and amount and passes each one straight to the SELECT. To SQL it then looks just like a normal table.",
+   "remember": "PIPE ROW = hand over one row at a time, no bucket.",
+   "why": "A pipelined table function returns rows to the calling SQL as they are produced with PIPE ROW, so the full collection is never built in PGA memory and the consumer can start fetching early. The return type must be a schema-level (or package-level) collection of an object type so the SQL engine can describe the columns, and the function ends with a bare RETURN. TABLE() lets you join, filter and sort its output like any table.",
+   "tip": "When I need to generate rows procedurally but consume them in SQL, I write a pipelined table function instead of filling a temporary table."
+  },
+  {
+   "id": "f20261115-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Recursive WITH cycle chain",
+   "domain": "Fraud/UPI money mules",
+   "title": "Find money going round in circles",
+   "scenario": "Harish Nambiar in the fraud analytics team suspects mule accounts are rotating money through UPI to fake turnover. He wants chains of up to 4 transfers that end back at the starting VPA, where each hop happens after the previous one.",
+   "schema": "UPI_TRANSFER(txn_id VARCHAR2(10), from_vpa VARCHAR2(40), to_vpa VARCHAR2(40), amount NUMBER(12,2), txn_ts DATE)\n-- one row per UPI transfer, amount in INR, txn_ts has date and time",
+   "data": [
+    {
+     "name": "UPI_TRANSFER",
+     "cols": [
+      "txn_id",
+      "from_vpa",
+      "to_vpa",
+      "amount",
+      "txn_ts"
+     ],
+     "rows": [
+      [
+       "U1",
+       "ravi@okaxis",
+       "neha@ybl",
+       "95000",
+       "12-11-2026 10:00"
+      ],
+      [
+       "U2",
+       "neha@ybl",
+       "amit@paytm",
+       "94000",
+       "12-11-2026 10:05"
+      ],
+      [
+       "U3",
+       "amit@paytm",
+       "ravi@okaxis",
+       "93000",
+       "12-11-2026 10:12"
+      ],
+      [
+       "U4",
+       "kiran@oksbi",
+       "john@ibl",
+       "40000",
+       "12-11-2026 09:00"
+      ],
+      [
+       "U5",
+       "john@ibl",
+       "sara@okhdfc",
+       "39000",
+       "12-11-2026 08:30"
+      ],
+      [
+       "U6",
+       "sara@okhdfc",
+       "kiran@oksbi",
+       "38000",
+       "12-11-2026 09:30"
+      ],
+      [
+       "U7",
+       "neha@ybl",
+       "shop@icici",
+       "1500",
+       "12-11-2026 10:20"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "start_vpa",
+     "path",
+     "hops",
+     "minutes_taken"
+    ],
+    "rows": [
+     [
+      "ravi@okaxis",
+      "ravi@okaxis > neha@ybl > amit@paytm > ravi@okaxis",
+      "3",
+      "12"
+     ]
+    ]
+   },
+   "output_note": "kiran, john and sara also form a loop, but no starting point gives hops in increasing time order, so it is not a money rotation.",
+   "task": "Using a recursive WITH, list every chain of 1 to 4 transfers where each hop is later than the previous one and the money ends at the starting VPA. Show start_vpa, path, hops and minutes from first to last hop.",
+   "hint": "Start from every transfer, extend by joining the next transfer whose from_vpa is the current to_vpa and whose time is later, and stop extending once you are back at the start or at 4 hops.",
+   "solution": "WITH chain (start_vpa, cur_vpa, path, hops, first_ts, last_ts) AS (\n  SELECT from_vpa, to_vpa,\n         CAST(from_vpa || ' > ' || to_vpa AS VARCHAR2(400)),\n         1, txn_ts, txn_ts\n  FROM   upi_transfer\n  UNION ALL\n  SELECT c.start_vpa, t.to_vpa,\n         c.path || ' > ' || t.to_vpa,\n         c.hops + 1, c.first_ts, t.txn_ts\n  FROM   chain c\n  JOIN   upi_transfer t\n         ON  t.from_vpa = c.cur_vpa\n         AND t.txn_ts   > c.last_ts\n  WHERE  c.hops < 4\n  AND    c.cur_vpa <> c.start_vpa\n)\nSELECT start_vpa, path, hops,\n       ROUND((last_ts - first_ts) * 24 * 60) AS minutes_taken\nFROM   chain\nWHERE  cur_vpa = start_vpa\nORDER  BY start_vpa;",
+   "simple": "Think of passing a parcel around in a circle game. You follow the parcel from one friend to the next, and only count it if each pass happens after the last one. If the parcel comes back to the first friend, you found a circle. A recursive WITH follows the money one step at a time, adding the next transfer to the path, until it returns home or has taken 4 steps.",
+   "remember": "Recursive WITH = follow the parcel, one pass at a time.",
+   "why": "The anchor member seeds one chain per transfer and the recursive member extends each chain by a later transfer out of the current VPA, so time order is enforced in the join. The hops < 4 and cur_vpa <> start_vpa predicates stop the recursion, preventing infinite loops through cycles. The CAST on path is needed because Oracle sizes the recursive column from the anchor and would otherwise fix its width from the one-hop string and fail with a value-too-large error once the path grows.",
+   "tip": "In recursive WITH I always put a depth limit in the recursive member and CAST the path column wide in the anchor, otherwise cycles loop forever or the string overflows."
+  },
+  {
+   "id": "f20261115-7",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "OUTER APPLY as-of lookup",
+   "domain": "Trading/Equity",
+   "title": "Value trades at last known price",
+   "scenario": "Kavita Rao in the broking mid-office checks that every trade is valued at the last price tick at or before the trade time. A trade placed before the first tick of its stock must still be listed, with no price, so she can chase it.",
+   "schema": "TRADE(trade_id VARCHAR2(10), symbol VARCHAR2(12), trade_ts DATE, qty NUMBER(8))\nPRICE_TICK(symbol VARCHAR2(12), tick_ts DATE, price NUMBER(10,2))\n-- prices in INR, timestamps include minutes",
+   "data": [
+    {
+     "name": "TRADE",
+     "cols": [
+      "trade_id",
+      "symbol",
+      "trade_ts",
+      "qty"
+     ],
+     "rows": [
+      [
+       "TR1",
+       "INFY",
+       "13-11-2026 09:20",
+       "200"
+      ],
+      [
+       "TR2",
+       "HDFCBANK",
+       "13-11-2026 09:16",
+       "150"
+      ],
+      [
+       "TR3",
+       "INFY",
+       "13-11-2026 09:31",
+       "100"
+      ],
+      [
+       "TR4",
+       "HDFCBANK",
+       "13-11-2026 09:14",
+       "300"
+      ],
+      [
+       "TR5",
+       "INFY",
+       "13-11-2026 09:25",
+       "50"
+      ]
+     ]
+    },
+    {
+     "name": "PRICE_TICK",
+     "cols": [
+      "symbol",
+      "tick_ts",
+      "price"
+     ],
+     "rows": [
+      [
+       "INFY",
+       "13-11-2026 09:15",
+       "1512.4"
+      ],
+      [
+       "INFY",
+       "13-11-2026 09:25",
+       "1518"
+      ],
+      [
+       "INFY",
+       "13-11-2026 09:30",
+       "1509.75"
+      ],
+      [
+       "HDFCBANK",
+       "13-11-2026 09:15",
+       "1680.5"
+      ],
+      [
+       "HDFCBANK",
+       "13-11-2026 09:20",
+       "1684"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "trade_id",
+     "symbol",
+     "trade_ts",
+     "qty",
+     "price",
+     "trade_value"
+    ],
+    "rows": [
+     [
+      "TR1",
+      "INFY",
+      "13-11-2026 09:20",
+      "200",
+      "1512.4",
+      "302480"
+     ],
+     [
+      "TR2",
+      "HDFCBANK",
+      "13-11-2026 09:16",
+      "150",
+      "1680.5",
+      "252075"
+     ],
+     [
+      "TR3",
+      "INFY",
+      "13-11-2026 09:31",
+      "100",
+      "1509.75",
+      "150975"
+     ],
+     [
+      "TR4",
+      "HDFCBANK",
+      "13-11-2026 09:14",
+      "300",
+      "NULL",
+      "NULL"
+     ],
+     [
+      "TR5",
+      "INFY",
+      "13-11-2026 09:25",
+      "50",
+      "1518",
+      "75900"
+     ]
+    ]
+   },
+   "output_note": "TR5 at exactly 09:25 picks the 09:25 tick; TR4 is before the first HDFCBANK tick, so price is NULL.",
+   "task": "For each trade show trade_id, symbol, trade_ts, qty, the latest price with tick_ts on or before trade_ts, and trade_value = qty * price. Keep trades with no earlier tick. Sort by trade_id.",
+   "hint": "OUTER APPLY lets an inline view refer to the outer TRADE row, and FETCH FIRST 1 ROW ONLY with ORDER BY tick_ts DESC picks the latest tick.",
+   "solution": "SELECT t.trade_id, t.symbol, t.trade_ts, t.qty,\n       p.price,\n       t.qty * p.price AS trade_value\nFROM   trade t\nOUTER  APPLY (SELECT pt.price\n              FROM   price_tick pt\n              WHERE  pt.symbol  = t.symbol\n              AND    pt.tick_ts <= t.trade_ts\n              ORDER  BY pt.tick_ts DESC\n              FETCH  FIRST 1 ROW ONLY) p\nORDER  BY t.trade_id;",
+   "simple": "Think of a shop price board that changes during the day. If you bought something at 9:20, you pay the price written on the board at that moment, which is the last change before 9:20. OUTER APPLY looks up, for each trade, the newest price change at or before its time. If the board was still blank when you bought, it keeps your trade and leaves the price empty.",
+   "remember": "OUTER APPLY = for each row, look up its own latest price.",
+   "why": "OUTER APPLY (12c+) is a lateral join: the inline view runs per outer row and may reference t.symbol and t.trade_ts, which an ordinary inline view cannot. FETCH FIRST 1 ROW ONLY with ORDER BY tick_ts DESC returns the as-of price, and the OUTER form keeps trades with no qualifying tick, like a LEFT JOIN. CROSS APPLY would silently drop TR4.",
+   "tip": "For 'latest value as of a time' lookups I use OUTER APPLY with FETCH FIRST 1 ROW, which is clearer than a correlated MAX subquery joined back."
+  },
+  {
+   "id": "f20261115-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Largest remainder rounding allocation",
+   "domain": "GL/Cost allocation",
+   "title": "Split shared cost in whole rupees",
+   "scenario": "Rajesh Khanna in finance control must charge a shared ₹1,00,000 core banking licence cost to five branches in proportion to their transaction counts. The GL only accepts whole rupees and the five postings must add up to exactly ₹1,00,000, so plain rounding is not safe.",
+   "schema": "BRANCH_TXN_VOL(branch_code VARCHAR2(5), branch_name VARCHAR2(40), txn_cnt NUMBER(10))\n-- transactions handled by each branch this month",
+   "data": [
+    {
+     "name": "BRANCH_TXN_VOL",
+     "cols": [
+      "branch_code",
+      "branch_name",
+      "txn_cnt"
+     ],
+     "rows": [
+      [
+       "BR1",
+       "Jaipur",
+       "1200"
+      ],
+      [
+       "BR2",
+       "Udaipur",
+       "950"
+      ],
+      [
+       "BR3",
+       "Kota",
+       "700"
+      ],
+      [
+       "BR4",
+       "Ajmer",
+       "450"
+      ],
+      [
+       "BR5",
+       "Bikaner",
+       "300"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "branch_code",
+     "branch_name",
+     "txn_cnt",
+     "exact_share",
+     "alloc_amt"
+    ],
+    "rows": [
+     [
+      "BR1",
+      "Jaipur",
+      "1200",
+      "33333.33",
+      "33333"
+     ],
+     [
+      "BR2",
+      "Udaipur",
+      "950",
+      "26388.89",
+      "26389"
+     ],
+     [
+      "BR3",
+      "Kota",
+      "700",
+      "19444.44",
+      "19445"
+     ],
+     [
+      "BR4",
+      "Ajmer",
+      "450",
+      "12500",
+      "12500"
+     ],
+     [
+      "BR5",
+      "Bikaner",
+      "300",
+      "8333.33",
+      "8333"
+     ]
+    ]
+   },
+   "output_note": "The floors add up to 99998, so the 2 leftover rupees go to Udaipur (.89) and Kota (.44). The allocations total exactly 100000.",
+   "task": "Allocate 100000 by txn_cnt share: give each branch the FLOOR of its exact share, then give the leftover rupees one each to the branches with the largest fractional parts (ties by branch_code). Show exact_share rounded to 2 decimals and alloc_amt.",
+   "hint": "Compute the exact share with SUM() OVER (), then rank branches by the fraction exact - FLOOR(exact) and compare the rank with 100000 minus the total of the floors.",
+   "solution": "WITH base AS (\n  SELECT branch_code, branch_name, txn_cnt,\n         100000 * txn_cnt / SUM(txn_cnt) OVER () AS exact\n  FROM   branch_txn_vol\n), fl AS (\n  SELECT b.*, FLOOR(exact) AS floor_amt,\n         exact - FLOOR(exact) AS frac\n  FROM   base b\n), rk AS (\n  SELECT f.*,\n         ROW_NUMBER() OVER (ORDER BY frac DESC, branch_code) AS rn,\n         100000 - SUM(floor_amt) OVER ()                   AS leftover\n  FROM   fl f\n)\nSELECT branch_code, branch_name, txn_cnt,\n       ROUND(exact, 2) AS exact_share,\n       floor_amt + CASE WHEN rn <= leftover THEN 1 ELSE 0 END AS alloc_amt\nFROM   rk\nORDER  BY branch_code;",
+   "simple": "Think of sharing 10 sweets among 3 friends: each gets 3, and 1 sweet is left over. You give the extra sweet to the friend who was closest to getting a 4th. Here each branch first gets the whole-rupee part of its share. The few rupees left over go, one each, to the branches with the biggest leftover paise, so the total is never short or extra.",
+   "remember": "Floor everyone, then hand leftovers to the biggest fractions.",
+   "why": "Rounding each share independently can make the total drift (here it would give 99999), which breaks GL balancing. The largest remainder method floors every share, computes the shortfall with SUM() OVER (), and assigns one unit to the top-N fractional parts via ROW_NUMBER, guaranteeing the exact total. The branch_code tie-breaker makes the result deterministic when fractions are equal.",
+   "tip": "When splitting money across rows I never trust ROUND alone; I floor, measure the leftover with a window SUM, and push it to the largest remainders so the total ties exactly."
   }
  ],
  "lessons": [
@@ -2416,6 +3335,17 @@
    "example": "WITH b AS (\n  SELECT 'Arun' cust, 90000 bal FROM dual UNION ALL\n  SELECT 'Bina', 90000 FROM dual UNION ALL\n  SELECT 'Chetan', 70000 FROM dual UNION ALL\n  SELECT 'Divya', 50000 FROM dual\n)\nSELECT cust, bal,\n       ROW_NUMBER() OVER (ORDER BY bal DESC, cust) AS rn,\n       RANK()       OVER (ORDER BY bal DESC)       AS rnk,\n       DENSE_RANK() OVER (ORDER BY bal DESC)       AS drnk\nFROM   b;\n-- Arun 90000 1 1 1 | Bina 90000 2 1 1 | Chetan 70000 3 3 2 | Divya 50000 4 4 3",
    "gotcha": "Using ROW_NUMBER = 1 to find 'the top customer' silently drops a customer who is tied for first place.",
    "line": "I pick ROW_NUMBER when I need exactly one row per group, RANK when ties should share a position with gaps, and DENSE_RANK for Nth-highest distinct values."
+  },
+  {
+   "id": "fl20261115",
+   "concept": "GROUP BY versus OVER (PARTITION BY)",
+   "why": "Interviewers often ask for a total next to each detail row, and choosing GROUP BY instead of an analytic function loses the detail rows.",
+   "simple": "Think of a class photo and a class report card. GROUP BY is the report card: one line per class with the total, and the children's names disappear. OVER (PARTITION BY) is the class photo with a sticker on each child showing the class total: every child is still there. Use GROUP BY for summaries and OVER when you need the details plus the total.",
+   "remember": "GROUP BY squashes rows; OVER keeps every row.",
+   "explain": "GROUP BY collapses all rows with the same key into one result row, so only grouped columns and aggregates can be selected. An analytic function such as SUM(amount) OVER (PARTITION BY branch) computes the same aggregate but returns it on every input row, without reducing the row count. Analytic functions are evaluated after WHERE, GROUP BY and HAVING but before the final ORDER BY, so they cannot be used in WHERE; wrap them in an inline view to filter. You can even combine both, for example SUM(SUM(amount)) OVER () to get a grand total next to grouped rows.",
+   "example": "WITH t AS (\n  SELECT 'Pune' branch, 'A1' acct, 5000 amt FROM dual UNION ALL\n  SELECT 'Pune', 'A2', 3000 FROM dual UNION ALL\n  SELECT 'Nagpur', 'A3', 7000 FROM dual\n)\nSELECT branch, acct, amt,\n       SUM(amt) OVER (PARTITION BY branch) AS branch_total,\n       ROUND(100 * amt / SUM(amt) OVER (PARTITION BY branch), 1) AS pct\nFROM   t\nORDER  BY branch, acct;\n-- Nagpur A3 7000 7000 100 | Pune A1 5000 8000 62.5 | Pune A2 3000 8000 37.5",
+   "gotcha": "Putting an analytic function in the WHERE clause raises ORA-30483; filter on it in an outer query instead.",
+   "line": "I use GROUP BY when I want one row per group, and SUM() OVER (PARTITION BY ...) when I need the group total alongside every detail row."
   }
  ]
 }
