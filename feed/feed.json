@@ -3300,6 +3300,902 @@
    "remember": "Floor everyone, then hand leftovers to the biggest fractions.",
    "why": "Rounding each share independently can make the total drift (here it would give 99999), which breaks GL balancing. The largest remainder method floors every share, computes the shortfall with SUM() OVER (), and assigns one unit to the top-N fractional parts via ROW_NUMBER, guaranteeing the exact total. The branch_code tie-breaker makes the result deterministic when fractions are equal.",
    "tip": "When splitting money across rows I never trust ROUND alone; I floor, measure the leftover with a window SUM, and push it to the largest remainders so the total ties exactly."
+  },
+  {
+   "id": "f20261116-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "COUNT(*) versus COUNT(column)",
+   "domain": "KYC/AML",
+   "title": "PAN coverage per branch",
+   "scenario": "Kavita Joshi in the KYC compliance team is preparing for an internal audit. The auditor wants to know, for each branch, how many customers there are and how many of them have a PAN on record.",
+   "schema": "KYC_CUSTOMER(cust_id VARCHAR2(10), cust_name VARCHAR2(60), branch VARCHAR2(30), pan_no VARCHAR2(10))\n-- pan_no is NULL when the customer has not submitted a PAN",
+   "data": [
+    {
+     "name": "KYC_CUSTOMER",
+     "cols": [
+      "cust_id",
+      "cust_name",
+      "branch",
+      "pan_no"
+     ],
+     "rows": [
+      [
+       "C201",
+       "Anil Kumar",
+       "Andheri",
+       "ABCPK1234F"
+      ],
+      [
+       "C202",
+       "Bhavna Shah",
+       "Andheri",
+       "NULL"
+      ],
+      [
+       "C203",
+       "Chetan Rao",
+       "Andheri",
+       "BKLPR5678Q"
+      ],
+      [
+       "C204",
+       "Divya Nair",
+       "Borivali",
+       "NULL"
+      ],
+      [
+       "C205",
+       "Eshan Mehta",
+       "Borivali",
+       "NULL"
+      ],
+      [
+       "C206",
+       "Farah Sheikh",
+       "Borivali",
+       "CDSPS9012L"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "branch",
+     "total_customers",
+     "with_pan"
+    ],
+    "rows": [
+     [
+      "Andheri",
+      "3",
+      "2"
+     ],
+     [
+      "Borivali",
+      "3",
+      "1"
+     ]
+    ]
+   },
+   "task": "For each branch show the total number of customers and the number with a PAN, sorted by branch.",
+   "hint": "COUNT(*) counts every row, but COUNT(pan_no) skips rows where pan_no is NULL.",
+   "solution": "SELECT branch,\n       COUNT(*)      AS total_customers,\n       COUNT(pan_no) AS with_pan\nFROM   kyc_customer\nGROUP  BY branch\nORDER  BY branch;",
+   "simple": "Think of a school register where some children have brought their photo and some have not. If you count names, you get everyone. If you count photos, you only count the children who brought one. COUNT(*) counts every row, like counting names. COUNT(pan_no) counts only the rows where a PAN is filled in, like counting photos.",
+   "remember": "COUNT(*) counts heads; COUNT(col) counts filled boxes.",
+   "why": "COUNT(*) counts rows regardless of content, while COUNT(expr) counts only rows where expr is not NULL. Both are computed in the same GROUP BY pass, so one query gives the total and the filled count side by side. This is a quick way to measure data completeness without writing a CASE expression.",
+   "tip": "I use COUNT(*) minus COUNT(column) to find how many rows are missing a value, because COUNT(column) ignores NULLs."
+  },
+  {
+   "id": "f20261116-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "UNION ALL to combine tables",
+   "domain": "Payments/NEFT-RTGS",
+   "title": "One list of NEFT and RTGS transfers",
+   "scenario": "Sanjay Kulkarni at a branch got a request from customer C510, whose chartered accountant wants one list of all outward fund transfers. NEFT and RTGS transfers are kept in two different tables.",
+   "schema": "NEFT_OUT(ref_no VARCHAR2(10), cust_id VARCHAR2(10), txn_date DATE, amount NUMBER(14,2), beneficiary VARCHAR2(60))\nRTGS_OUT(utr_no VARCHAR2(10), cust_id VARCHAR2(10), txn_date DATE, amount NUMBER(14,2), beneficiary VARCHAR2(60))\n-- amount in INR",
+   "data": [
+    {
+     "name": "NEFT_OUT",
+     "cols": [
+      "ref_no",
+      "cust_id",
+      "txn_date",
+      "amount",
+      "beneficiary"
+     ],
+     "rows": [
+      [
+       "N1001",
+       "C510",
+       "02-11-2026",
+       "25000",
+       "Ravi Traders"
+      ],
+      [
+       "N1002",
+       "C511",
+       "03-11-2026",
+       "8000",
+       "Asha Stores"
+      ],
+      [
+       "N1003",
+       "C510",
+       "05-11-2026",
+       "12500",
+       "LIC of India"
+      ]
+     ]
+    },
+    {
+     "name": "RTGS_OUT",
+     "cols": [
+      "utr_no",
+      "cust_id",
+      "txn_date",
+      "amount",
+      "beneficiary"
+     ],
+     "rows": [
+      [
+       "R2001",
+       "C510",
+       "04-11-2026",
+       "350000",
+       "Shree Builders"
+      ],
+      [
+       "R2002",
+       "C512",
+       "04-11-2026",
+       "500000",
+       "Metro Motors"
+      ],
+      [
+       "R2003",
+       "C510",
+       "07-11-2026",
+       "220000",
+       "Shree Builders"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "channel",
+     "ref_no",
+     "txn_date",
+     "amount",
+     "beneficiary"
+    ],
+    "rows": [
+     [
+      "NEFT",
+      "N1001",
+      "02-11-2026",
+      "25000",
+      "Ravi Traders"
+     ],
+     [
+      "RTGS",
+      "R2001",
+      "04-11-2026",
+      "350000",
+      "Shree Builders"
+     ],
+     [
+      "NEFT",
+      "N1003",
+      "05-11-2026",
+      "12500",
+      "LIC of India"
+     ],
+     [
+      "RTGS",
+      "R2003",
+      "07-11-2026",
+      "220000",
+      "Shree Builders"
+     ]
+    ]
+   },
+   "task": "List every outward transfer of customer C510 from both tables with a channel column ('NEFT' or 'RTGS'), oldest first.",
+   "hint": "Write one SELECT per table with the same number of columns, join them with UNION ALL, and put a single ORDER BY at the very end.",
+   "solution": "SELECT 'NEFT' AS channel, ref_no, txn_date, amount, beneficiary\nFROM   neft_out WHERE cust_id = 'C510'\nUNION ALL\nSELECT 'RTGS', utr_no, txn_date, amount, beneficiary\nFROM   rtgs_out WHERE cust_id = 'C510'\nORDER  BY txn_date;",
+   "simple": "Think of two shopping bills from two shops that you staple together into one long bill. UNION ALL does that: it puts the rows of the second query under the rows of the first. Both lists must have the same columns in the same order. The column names come from the first SELECT, and one ORDER BY at the end sorts the whole stapled list.",
+   "remember": "UNION ALL = staple two lists together, keep everything.",
+   "why": "UNION ALL appends result sets without a sort or duplicate check, so it is cheaper than UNION, which removes duplicates. Column names and data types are taken from the first branch, and the branches are matched by position, not by name. Only one ORDER BY is allowed and it applies to the combined result.",
+   "tip": "I prefer UNION ALL over UNION unless I really need duplicates removed, because UNION adds an extra sort or hash step."
+  },
+  {
+   "id": "f20261116-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Date-time boundary with LEFT JOIN",
+   "domain": "Insurance/Life",
+   "title": "Policies lapsed after the grace period",
+   "scenario": "Neha Bansal in life insurance renewals must send lapse letters for premiums not paid by the end of the grace period. A customer complained that his policy was marked lapsed even though he paid late at night on the last grace day, so she wants the check done correctly.",
+   "schema": "POLICY_DUE(policy_no VARCHAR2(10), holder VARCHAR2(60), due_date DATE, grace_days NUMBER(3))\n-- grace ends on due_date + grace_days (the whole of that day counts)\nPREMIUM_PAYMENT(pay_id VARCHAR2(10), policy_no VARCHAR2(10), pay_ts DATE, amount NUMBER(12,2))\n-- pay_ts holds date and time; at most one payment per policy; amount in INR",
+   "data": [
+    {
+     "name": "POLICY_DUE",
+     "cols": [
+      "policy_no",
+      "holder",
+      "due_date",
+      "grace_days"
+     ],
+     "rows": [
+      [
+       "LI501",
+       "Ramesh Iyer",
+       "01-10-2026",
+       "30"
+      ],
+      [
+       "LI502",
+       "Sunil Jain",
+       "05-10-2026",
+       "30"
+      ],
+      [
+       "LI503",
+       "Kiran Patil",
+       "10-10-2026",
+       "15"
+      ],
+      [
+       "LI504",
+       "Pooja Desai",
+       "15-10-2026",
+       "30"
+      ]
+     ]
+    },
+    {
+     "name": "PREMIUM_PAYMENT",
+     "cols": [
+      "pay_id",
+      "policy_no",
+      "pay_ts",
+      "amount"
+     ],
+     "rows": [
+      [
+       "P801",
+       "LI501",
+       "31-10-2026 22:40",
+       "24000"
+      ],
+      [
+       "P802",
+       "LI502",
+       "05-11-2026 09:15",
+       "18500"
+      ],
+      [
+       "P803",
+       "LI504",
+       "20-10-2026 11:00",
+       "32000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "policy_no",
+     "holder",
+     "grace_end",
+     "paid_on",
+     "status"
+    ],
+    "rows": [
+     [
+      "LI501",
+      "Ramesh Iyer",
+      "31-10-2026",
+      "31-10-2026 22:40",
+      "In force"
+     ],
+     [
+      "LI502",
+      "Sunil Jain",
+      "04-11-2026",
+      "05-11-2026 09:15",
+      "Lapsed"
+     ],
+     [
+      "LI503",
+      "Kiran Patil",
+      "25-10-2026",
+      "NULL",
+      "Lapsed"
+     ],
+     [
+      "LI504",
+      "Pooja Desai",
+      "14-11-2026",
+      "20-10-2026 11:00",
+      "In force"
+     ]
+    ]
+   },
+   "output_note": "LI501 paid at 22:40 on the last grace day, so it is in force. A filter like pay_ts <= grace_end would wrongly mark it lapsed because grace_end means midnight at the start of that day.",
+   "task": "For every policy show policy_no, holder, grace_end, paid_on and status: 'In force' if paid any time up to the end of the last grace day, otherwise 'Lapsed' (including policies with no payment).",
+   "hint": "Keep unpaid policies with a LEFT JOIN, and compare pay_ts with grace_end + 1 using < so the whole last day is included.",
+   "solution": "SELECT d.policy_no, d.holder,\n       d.due_date + d.grace_days AS grace_end,\n       p.pay_ts AS paid_on,\n       CASE WHEN p.pay_ts < d.due_date + d.grace_days + 1\n            THEN 'In force' ELSE 'Lapsed' END AS status\nFROM   policy_due d\nLEFT   JOIN premium_payment p ON p.policy_no = d.policy_no\nORDER  BY d.policy_no;",
+   "simple": "Think of a shop that says 'offer valid till 31 October'. You would expect to buy at 10 pm on 31 October and still get the offer. But in Oracle a plain date means midnight at the very start of that day, so 22:40 looks 'later' than 31 October. The fix is to say 'before 1 November' instead of 'on or before 31 October'. The LEFT JOIN keeps policies with no payment so they also show up as lapsed.",
+   "remember": "Whole last day? Use < next day, not <= that day.",
+   "why": "An Oracle DATE always carries a time; due_date + grace_days is that day at 00:00, so pay_ts <= grace_end excludes any payment after midnight. Using pay_ts < grace_end + 1 is a half-open range that covers the entire last day and stays index-friendly, unlike TRUNC(pay_ts). For LI503 the LEFT JOIN gives a NULL pay_ts, the comparison is unknown, and the CASE falls to ELSE 'Lapsed'.",
+   "tip": "For date ranges I always use a half-open range, col >= start AND col < end + 1, so times late in the last day are not lost."
+  },
+  {
+   "id": "f20261116-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "NULLIF to avoid divide by zero",
+   "domain": "Cards/Merchant acquiring",
+   "title": "Chargeback percentage per merchant",
+   "scenario": "Vikram Sethi in merchant acquiring risk reviews chargeback ratios every month because card networks penalise merchants with too many disputes. His report crashes with ORA-01476 because a new merchant has only declined transactions.",
+   "schema": "CARD_TXN(txn_id VARCHAR2(10), merchant_id VARCHAR2(10), amount NUMBER(12,2), status VARCHAR2(12))\n-- status: SETTLED, CHARGEBACK (a settled txn later disputed) or DECLINED; amount in INR",
+   "data": [
+    {
+     "name": "CARD_TXN",
+     "cols": [
+      "txn_id",
+      "merchant_id",
+      "amount",
+      "status"
+     ],
+     "rows": [
+      [
+       "T301",
+       "M01",
+       "450",
+       "SETTLED"
+      ],
+      [
+       "T302",
+       "M01",
+       "1200",
+       "SETTLED"
+      ],
+      [
+       "T303",
+       "M01",
+       "800",
+       "CHARGEBACK"
+      ],
+      [
+       "T304",
+       "M01",
+       "300",
+       "SETTLED"
+      ],
+      [
+       "T305",
+       "M02",
+       "45000",
+       "SETTLED"
+      ],
+      [
+       "T306",
+       "M02",
+       "62000",
+       "CHARGEBACK"
+      ],
+      [
+       "T307",
+       "M03",
+       "2500",
+       "DECLINED"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "merchant_id",
+     "approved_txns",
+     "chargebacks",
+     "cb_pct"
+    ],
+    "rows": [
+     [
+      "M01",
+      "4",
+      "1",
+      "25"
+     ],
+     [
+      "M02",
+      "2",
+      "1",
+      "50"
+     ],
+     [
+      "M03",
+      "0",
+      "0",
+      "NULL"
+     ]
+    ]
+   },
+   "output_note": "M03 has no approved transactions, so cb_pct is NULL instead of an ORA-01476 error.",
+   "task": "Per merchant show approved_txns (SETTLED or CHARGEBACK), chargebacks and cb_pct = chargebacks * 100 / approved_txns rounded to 2 decimals, without failing when a merchant has no approved transactions.",
+   "hint": "Wrap the divisor in NULLIF(..., 0): dividing by NULL gives NULL instead of an error.",
+   "solution": "SELECT merchant_id,\n       COUNT(CASE WHEN status IN ('SETTLED','CHARGEBACK') THEN 1 END) AS approved_txns,\n       COUNT(CASE WHEN status = 'CHARGEBACK' THEN 1 END) AS chargebacks,\n       ROUND(100 * COUNT(CASE WHEN status = 'CHARGEBACK' THEN 1 END)\n             / NULLIF(COUNT(CASE WHEN status IN ('SETTLED','CHARGEBACK') THEN 1 END), 0), 2) AS cb_pct\nFROM   card_txn\nGROUP  BY merchant_id\nORDER  BY merchant_id;",
+   "simple": "Think of sharing sweets among friends: if there are zero friends, you cannot divide, and a calculator shows an error. NULLIF(x, 0) says 'if x is zero, pretend it is blank'. Dividing by blank gives blank, not an error. So the new merchant with no approved sales simply shows an empty percentage, and the report keeps running.",
+   "remember": "NULLIF(x,0) = turn zero into blank before dividing.",
+   "why": "NULLIF(a, b) returns NULL when a = b, otherwise a, so NULLIF(divisor, 0) turns a zero divisor into NULL and any arithmetic with NULL yields NULL instead of ORA-01476. COUNT(CASE WHEN ... THEN 1 END) counts only matching rows because the CASE returns NULL otherwise. The CASE logic runs in the same GROUP BY pass, so one scan gives all three figures.",
+   "tip": "Whenever I divide by an aggregate I wrap it in NULLIF(..., 0), so a group with zero rows gives NULL rather than crashing the whole report."
+  },
+  {
+   "id": "f20261116-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Sessionization with LAG and running SUM",
+   "domain": "Fraud/Internet banking",
+   "title": "Group net banking clicks into sessions",
+   "scenario": "Arvind Menon in fraud analytics wants to see what each customer did in one sitting on net banking, because mule takeovers often add a beneficiary and move money within minutes. A new session starts when there is a gap of more than 30 minutes since the customer's previous event.",
+   "schema": "NETBANK_EVENT(cust_id VARCHAR2(10), event_ts DATE, action VARCHAR2(12), amount NUMBER(14,2))\n-- one row per action; amount in INR, 0 for non-money actions",
+   "data": [
+    {
+     "name": "NETBANK_EVENT",
+     "cols": [
+      "cust_id",
+      "event_ts",
+      "action",
+      "amount"
+     ],
+     "rows": [
+      [
+       "NB77",
+       "10-11-2026 10:00",
+       "LOGIN",
+       "0"
+      ],
+      [
+       "NB77",
+       "10-11-2026 10:05",
+       "ADD_BENEF",
+       "0"
+      ],
+      [
+       "NB77",
+       "10-11-2026 10:20",
+       "TRANSFER",
+       "95000"
+      ],
+      [
+       "NB77",
+       "10-11-2026 10:50",
+       "TRANSFER",
+       "95000"
+      ],
+      [
+       "NB77",
+       "10-11-2026 13:15",
+       "TRANSFER",
+       "4000"
+      ],
+      [
+       "NB88",
+       "10-11-2026 09:30",
+       "LOGIN",
+       "0"
+      ],
+      [
+       "NB88",
+       "10-11-2026 09:42",
+       "TRANSFER",
+       "12000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "session_no",
+     "session_start",
+     "session_end",
+     "events",
+     "amount_moved"
+    ],
+    "rows": [
+     [
+      "NB77",
+      "1",
+      "10-11-2026 10:00",
+      "10-11-2026 10:50",
+      "4",
+      "190000"
+     ],
+     [
+      "NB77",
+      "2",
+      "10-11-2026 13:15",
+      "10-11-2026 13:15",
+      "1",
+      "4000"
+     ],
+     [
+      "NB88",
+      "1",
+      "10-11-2026 09:30",
+      "10-11-2026 09:42",
+      "2",
+      "12000"
+     ]
+    ]
+   },
+   "output_note": "The 10:20 to 10:50 gap is exactly 30 minutes, so it stays in session 1; the gap to 13:15 is more than 30 minutes, so a new session starts.",
+   "task": "Number each customer's sessions and show session_start, session_end, number of events and total amount moved per session.",
+   "hint": "Flag a row with 1 when it starts a new session (no previous event, or previous event + 30 minutes is earlier), then a running SUM of the flag gives the session number.",
+   "solution": "WITH flagged AS (\n  SELECT cust_id, event_ts, amount,\n         CASE WHEN LAG(event_ts) OVER (PARTITION BY cust_id ORDER BY event_ts)\n                   + INTERVAL '30' MINUTE >= event_ts\n              THEN 0 ELSE 1 END AS new_session\n  FROM   netbank_event\n), sess AS (\n  SELECT f.*,\n         SUM(new_session) OVER (PARTITION BY cust_id ORDER BY event_ts) AS session_no\n  FROM   flagged f\n)\nSELECT cust_id, session_no,\n       MIN(event_ts) AS session_start,\n       MAX(event_ts) AS session_end,\n       COUNT(*)      AS events,\n       SUM(amount)   AS amount_moved\nFROM   sess\nGROUP  BY cust_id, session_no\nORDER  BY cust_id, session_no;",
+   "simple": "Think of a cricket match with breaks: if the players rest for more than 30 minutes, the scorer starts a new page in the scorebook. First we look at each action and ask 'was the last action more than 30 minutes ago?'. If yes, we put a 1 (new page), else 0. Then we add up those 1s as we go, which gives the page number, and finally we total each page.",
+   "remember": "Mark the breaks with 1, running total gives the session.",
+   "why": "LAG compares each event with the previous one for the same customer, and the CASE emits 1 at every session boundary, including the first row where LAG is NULL. A running SUM of those flags (default RANGE UNBOUNDED PRECEDING frame) assigns a stable session number that GROUP BY can use. Adding INTERVAL '30' MINUTE to a DATE avoids floating-point issues from comparing date differences with 30/1440.",
+   "tip": "For sessionization I flag boundaries with LAG and turn them into group ids with a running SUM, the same trick used for gaps and islands."
+  },
+  {
+   "id": "f20261116-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Transition matrix with PIVOT",
+   "domain": "Loans/NPA",
+   "title": "Asset class roll-rate matrix",
+   "scenario": "Rohit Agarwal in credit risk prepares a monthly roll-rate matrix for the risk committee, showing how loans moved between Standard, SMA-1, SMA-2 and NPA buckets. Loans closed during October have no October row and must show up as CLOSED, not vanish.",
+   "schema": "CLASS_SEP(loan_id VARCHAR2(10), asset_class VARCHAR2(6), outstanding NUMBER(14,2))\n-- classification as on 30-09-2026\nCLASS_OCT(loan_id VARCHAR2(10), asset_class VARCHAR2(6), outstanding NUMBER(14,2))\n-- classification as on 31-10-2026; asset_class STD, SMA1, SMA2 or NPA; outstanding in INR",
+   "data": [
+    {
+     "name": "CLASS_SEP",
+     "cols": [
+      "loan_id",
+      "asset_class",
+      "outstanding"
+     ],
+     "rows": [
+      [
+       "L901",
+       "STD",
+       "1200000"
+      ],
+      [
+       "L902",
+       "STD",
+       "850000"
+      ],
+      [
+       "L903",
+       "SMA1",
+       "430000"
+      ],
+      [
+       "L904",
+       "SMA1",
+       "610000"
+      ],
+      [
+       "L905",
+       "SMA2",
+       "275000"
+      ],
+      [
+       "L906",
+       "STD",
+       "95000"
+      ]
+     ]
+    },
+    {
+     "name": "CLASS_OCT",
+     "cols": [
+      "loan_id",
+      "asset_class",
+      "outstanding"
+     ],
+     "rows": [
+      [
+       "L901",
+       "STD",
+       "1185000"
+      ],
+      [
+       "L902",
+       "SMA1",
+       "850000"
+      ],
+      [
+       "L903",
+       "SMA2",
+       "430000"
+      ],
+      [
+       "L904",
+       "STD",
+       "598000"
+      ],
+      [
+       "L905",
+       "NPA",
+       "275000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "sep_class",
+     "std",
+     "sma1",
+     "sma2",
+     "npa",
+     "closed"
+    ],
+    "rows": [
+     [
+      "STD",
+      "1",
+      "1",
+      "0",
+      "0",
+      "1"
+     ],
+     [
+      "SMA1",
+      "1",
+      "0",
+      "1",
+      "0",
+      "0"
+     ],
+     [
+      "SMA2",
+      "0",
+      "0",
+      "0",
+      "1",
+      "0"
+     ]
+    ]
+   },
+   "task": "Build a matrix with one row per September class and one count column per October class (STD, SMA1, SMA2, NPA, CLOSED), rows ordered STD, SMA1, SMA2.",
+   "hint": "LEFT JOIN September to October, use NVL to label missing October rows as 'CLOSED', then PIVOT COUNT(*) on the October class.",
+   "solution": "SELECT *\nFROM  (SELECT s.asset_class AS sep_class,\n              NVL(o.asset_class, 'CLOSED') AS oct_class\n       FROM   class_sep s\n       LEFT   JOIN class_oct o ON o.loan_id = s.loan_id)\nPIVOT (COUNT(*) FOR oct_class IN ('STD' AS std, 'SMA1' AS sma1,\n                                  'SMA2' AS sma2, 'NPA' AS npa,\n                                  'CLOSED' AS closed))\nORDER BY DECODE(sep_class, 'STD', 1, 'SMA1', 2, 'SMA2', 3, 'NPA', 4);",
+   "simple": "Think of a class photo taken in September and again in October, where children may have changed sections. We make a table: rows are the September section, columns are the October section, and each box counts how many children moved that way. A child who left the school is put in a 'left' column instead of being forgotten. PIVOT turns the October section values into those columns.",
+   "remember": "Rows = where you were, columns = where you went.",
+   "why": "The LEFT JOIN keeps every September loan, and NVL maps the missing October side to 'CLOSED' so attrition is counted. PIVOT groups implicitly by every column of the source not mentioned in the PIVOT clause (here only sep_class) and returns 0 for COUNT where no rows exist. DECODE in ORDER BY imposes the business order of buckets instead of alphabetical order.",
+   "tip": "In a PIVOT I select only the columns I want as row keys in the inline view, because every other column becomes an implicit GROUP BY key."
+  },
+  {
+   "id": "f20261116-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "DML error logging (LOG ERRORS)",
+   "domain": "Mutual funds/Data migration",
+   "title": "Migrate MF transactions, log bad rows",
+   "scenario": "Swati Kapoor is migrating legacy mutual fund transactions into the new RTA platform. Some legacy rows break constraints, and she wants the good rows loaded in one INSERT while every bad row is captured with its Oracle error for the business to fix.",
+   "schema": "LEGACY_MF_TXN(txn_id VARCHAR2(10), folio_no VARCHAR2(10), scheme_code VARCHAR2(10), txn_type VARCHAR2(1), amount NUMBER(14,2))\n-- staging copy of the old system, no constraints\nMF_TXN(txn_id VARCHAR2(10) PRIMARY KEY, folio_no VARCHAR2(10) NOT NULL, scheme_code VARCHAR2(10), txn_type VARCHAR2(1) CHECK (txn_type IN ('P','R')), amount NUMBER(14,2) CHECK (amount > 0))\n-- P = purchase, R = redemption, amount in INR",
+   "data": [
+    {
+     "name": "LEGACY_MF_TXN",
+     "cols": [
+      "txn_id",
+      "folio_no",
+      "scheme_code",
+      "txn_type",
+      "amount"
+     ],
+     "rows": [
+      [
+       "M9001",
+       "F1001",
+       "HDFCTOP",
+       "P",
+       "5000"
+      ],
+      [
+       "M9002",
+       "NULL",
+       "SBIBLUE",
+       "P",
+       "10000"
+      ],
+      [
+       "M9003",
+       "F1002",
+       "AXISLT",
+       "R",
+       "-2500"
+      ],
+      [
+       "M9004",
+       "F1003",
+       "ICICIVAL",
+       "P",
+       "25000"
+      ],
+      [
+       "M9005",
+       "F1001",
+       "HDFCTOP",
+       "X",
+       "3000"
+      ],
+      [
+       "M9001",
+       "F1001",
+       "HDFCTOP",
+       "P",
+       "5000"
+      ]
+     ]
+    },
+    {
+     "name": "MF_TXN",
+     "cols": [
+      "txn_id",
+      "folio_no",
+      "scheme_code",
+      "txn_type",
+      "amount"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "ora_err_number$",
+     "ora_err_tag$",
+     "txn_id",
+     "folio_no",
+     "txn_type",
+     "amount"
+    ],
+    "rows": [
+     [
+      "1",
+      "MIG_1611",
+      "M9001",
+      "F1001",
+      "P",
+      "5000"
+     ],
+     [
+      "1400",
+      "MIG_1611",
+      "M9002",
+      "NULL",
+      "P",
+      "10000"
+     ],
+     [
+      "2290",
+      "MIG_1611",
+      "M9003",
+      "F1002",
+      "R",
+      "-2500"
+     ],
+     [
+      "2290",
+      "MIG_1611",
+      "M9005",
+      "F1001",
+      "X",
+      "3000"
+     ]
+    ]
+   },
+   "output_note": "ERR$_MF_TXN after the load. MF_TXN now holds 2 rows (M9001 and M9004). 1 = unique key (duplicate M9001), 1400 = NULL folio_no, 2290 = check constraint on amount or txn_type.",
+   "task": "Create an error log table for MF_TXN with DBMS_ERRLOG, load all rows from LEGACY_MF_TXN in a single INSERT that logs failing rows with the tag 'MIG_1611' instead of stopping, commit, and list the logged errors.",
+   "hint": "DBMS_ERRLOG.CREATE_ERROR_LOG creates ERR$_MF_TXN; add LOG ERRORS INTO err$_mf_txn ('MIG_1611') REJECT LIMIT UNLIMITED to the INSERT.",
+   "solution": "BEGIN\n  DBMS_ERRLOG.CREATE_ERROR_LOG(dml_table_name => 'MF_TXN');\nEND;\n/\n\nINSERT INTO mf_txn (txn_id, folio_no, scheme_code, txn_type, amount)\nSELECT txn_id, folio_no, scheme_code, txn_type, amount\nFROM   legacy_mf_txn\nLOG ERRORS INTO err$_mf_txn ('MIG_1611') REJECT LIMIT UNLIMITED;\n\nCOMMIT;\n\nSELECT ora_err_number$, ora_err_tag$, txn_id, folio_no, txn_type, amount\nFROM   err$_mf_txn\nORDER  BY txn_id;",
+   "simple": "Think of a teacher checking homework copies one by one. Without error logging, one bad copy makes her throw away the whole pile. With LOG ERRORS she keeps the good copies and puts each bad one in a separate tray with a note saying what was wrong. Here the good fund transactions go into MF_TXN, and the bad ones go into ERR$_MF_TXN with their Oracle error number.",
+   "remember": "LOG ERRORS = good rows in, bad rows aside.",
+   "why": "DML error logging lets a single set-based INSERT, UPDATE, MERGE or DELETE skip rows that raise errors such as NOT NULL, CHECK, unique or conversion failures and record them, with ORA_ERR_NUMBER$, ORA_ERR_MESG$ and the tag, in the ERR$_ table. Without it, one bad row rolls back the whole statement, forcing slow row-by-row loops. The error table columns are VARCHAR2(4000), so even values that failed conversion can be stored, and the log rows persist even if the main transaction is rolled back.",
+   "tip": "For migrations I use LOG ERRORS REJECT LIMIT UNLIMITED so the load stays set-based and the business gets a clean list of rejected rows with reasons."
+  },
+  {
+   "id": "f20261116-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "JSON_TABLE with NESTED PATH",
+   "domain": "Trading/Stock broking",
+   "title": "Flatten broker trade confirmations",
+   "scenario": "Deepak Shetty in the back office of a stock broking firm receives exchange trade confirmations from an API as JSON. One order can be filled in several parts, and he needs one row per fill for the contract note, while rejected orders with no fills must still be visible.",
+   "schema": "BROKER_CONFIRM(msg_id VARCHAR2(10), payload CLOB CHECK (payload IS JSON))\n-- payload keys: trade_id, symbol, side (B/S), optional fills array of {qty, price}; price in INR",
+   "data": [
+    {
+     "name": "BROKER_CONFIRM",
+     "cols": [
+      "msg_id",
+      "payload"
+     ],
+     "rows": [
+      [
+       "BC1",
+       "{\"trade_id\":\"TR501\",\"symbol\":\"TCS\",\"side\":\"B\",\"fills\":[{\"qty\":40,\"price\":4125.5},{\"qty\":10,\"price\":4126}]}"
+      ],
+      [
+       "BC2",
+       "{\"trade_id\":\"TR502\",\"symbol\":\"HDFCBANK\",\"side\":\"S\",\"fills\":[{\"qty\":200,\"price\":1712.35}]}"
+      ],
+      [
+       "BC3",
+       "{\"trade_id\":\"TR503\",\"symbol\":\"INFY\",\"side\":\"B\",\"status\":\"REJECTED\"}"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "msg_id",
+     "trade_id",
+     "symbol",
+     "side",
+     "fill_no",
+     "qty",
+     "price",
+     "fill_value"
+    ],
+    "rows": [
+     [
+      "BC1",
+      "TR501",
+      "TCS",
+      "B",
+      "1",
+      "40",
+      "4125.5",
+      "165020"
+     ],
+     [
+      "BC1",
+      "TR501",
+      "TCS",
+      "B",
+      "2",
+      "10",
+      "4126",
+      "41260"
+     ],
+     [
+      "BC2",
+      "TR502",
+      "HDFCBANK",
+      "S",
+      "1",
+      "200",
+      "1712.35",
+      "342470"
+     ],
+     [
+      "BC3",
+      "TR503",
+      "INFY",
+      "B",
+      "NULL",
+      "NULL",
+      "NULL",
+      "NULL"
+     ]
+    ]
+   },
+   "output_note": "BC3 has no fills array, but NESTED PATH behaves like an outer join, so the parent row still appears with NULL fill columns.",
+   "task": "Return one row per fill with msg_id, trade_id, symbol, side, fill_no (position in the array), qty, price and fill_value = qty * price, ordered by msg_id and fill_no.",
+   "hint": "Use JSON_TABLE with '$' for the order-level columns and NESTED PATH '$.fills[*]' with FOR ORDINALITY for the fills.",
+   "solution": "SELECT b.msg_id, j.trade_id, j.symbol, j.side,\n       j.fill_no, j.qty, j.price, j.qty * j.price AS fill_value\nFROM   broker_confirm b,\n       JSON_TABLE(b.payload, '$'\n         COLUMNS (\n           trade_id VARCHAR2(10) PATH '$.trade_id',\n           symbol   VARCHAR2(20) PATH '$.symbol',\n           side     VARCHAR2(1)  PATH '$.side',\n           NESTED PATH '$.fills[*]'\n             COLUMNS (\n               fill_no FOR ORDINALITY,\n               qty     NUMBER PATH '$.qty',\n               price   NUMBER PATH '$.price'\n             )\n         )) j\nORDER  BY b.msg_id, j.fill_no;",
+   "simple": "Think of a tiffin box with an outer lid and small boxes inside. JSON_TABLE opens the lid and reads the label on top (trade, share, buy or sell). NESTED PATH then opens each small box inside, one row per small box, and FOR ORDINALITY numbers them 1, 2, 3. If a tiffin has no small boxes, we still write down its label with empty values, so nothing goes missing.",
+   "remember": "JSON_TABLE opens the box; NESTED PATH opens boxes inside.",
+   "why": "JSON_TABLE projects JSON into relational columns and is implicitly lateral, so it can reference b.payload from the same FROM clause. A NESTED PATH produces one child row per array element and is joined to its parent with outer-join semantics, so documents without the array still return one row with NULL child columns. FOR ORDINALITY gives the element's position, which is handy for ordering fills.",
+   "tip": "For arrays inside JSON I use NESTED PATH in JSON_TABLE rather than calling JSON_TABLE twice, because it keeps parents without children."
   }
  ],
  "lessons": [
@@ -3346,6 +4242,17 @@
    "example": "WITH t AS (\n  SELECT 'Pune' branch, 'A1' acct, 5000 amt FROM dual UNION ALL\n  SELECT 'Pune', 'A2', 3000 FROM dual UNION ALL\n  SELECT 'Nagpur', 'A3', 7000 FROM dual\n)\nSELECT branch, acct, amt,\n       SUM(amt) OVER (PARTITION BY branch) AS branch_total,\n       ROUND(100 * amt / SUM(amt) OVER (PARTITION BY branch), 1) AS pct\nFROM   t\nORDER  BY branch, acct;\n-- Nagpur A3 7000 7000 100 | Pune A1 5000 8000 62.5 | Pune A2 3000 8000 37.5",
    "gotcha": "Putting an analytic function in the WHERE clause raises ORA-30483; filter on it in an outer query instead.",
    "line": "I use GROUP BY when I want one row per group, and SUM() OVER (PARTITION BY ...) when I need the group total alongside every detail row."
+  },
+  {
+   "id": "fl20261116",
+   "concept": "EXISTS versus IN",
+   "why": "Interviewers often ask when to use EXISTS or IN, and the NOT IN version silently returns nothing when the list has a NULL.",
+   "simple": "Think of a teacher asking 'is there at least one homework copy from Ravi in the pile?'. EXISTS stops looking as soon as it finds one copy, it just answers yes or no. IN first makes a list of names from the pile and checks if Ravi is on it. For finding matches both give the same answer. For 'not in the pile', a blank name on the list confuses NOT IN, but NOT EXISTS still works.",
+   "remember": "EXISTS asks 'any match?'; NOT EXISTS is NULL-safe.",
+   "explain": "EXISTS (correlated subquery) returns TRUE as soon as one matching row is found, and the select list inside it is ignored, so SELECT 1 is common. IN compares a value with the set returned by the subquery; for positive checks Oracle usually rewrites both into the same semi-join, so performance is often identical. The difference shows with negation: if the subquery returns any NULL, x NOT IN (...) is never TRUE and the query returns no rows, whereas NOT EXISTS is evaluated row by row and is unaffected. Oracle turns NOT EXISTS (and NOT IN on NOT NULL columns) into an anti-join.",
+   "example": "WITH acct AS (\n  SELECT 'A1' acct_no FROM dual UNION ALL\n  SELECT 'A2' FROM dual UNION ALL\n  SELECT 'A3' FROM dual\n), upi_txn AS (\n  SELECT 'A1' acct_no, 500 amt FROM dual UNION ALL\n  SELECT NULL, 900 FROM dual\n)\nSELECT a.acct_no,\n       CASE WHEN EXISTS (SELECT 1 FROM upi_txn u WHERE u.acct_no = a.acct_no)\n            THEN 'Uses UPI' ELSE 'No UPI' END AS upi_status\nFROM   acct a\nORDER  BY a.acct_no;\n-- A1 Uses UPI | A2 No UPI | A3 No UPI\n-- But WHERE acct_no NOT IN (SELECT acct_no FROM upi_txn) returns no rows because of the NULL.",
+   "gotcha": "NOT IN against a subquery that can return NULL gives an empty result, so use NOT EXISTS or add WHERE col IS NOT NULL inside.",
+   "line": "For positive checks IN and EXISTS usually get the same semi-join plan, but for exclusions I write NOT EXISTS because NOT IN breaks when the subquery returns a NULL."
   }
  ]
 }
