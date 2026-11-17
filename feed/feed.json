@@ -4196,6 +4196,878 @@
    "remember": "JSON_TABLE opens the box; NESTED PATH opens boxes inside.",
    "why": "JSON_TABLE projects JSON into relational columns and is implicitly lateral, so it can reference b.payload from the same FROM clause. A NESTED PATH produces one child row per array element and is joined to its parent with outer-join semantics, so documents without the array still return one row with NULL child columns. FOR ORDINALITY gives the element's position, which is handy for ordering fills.",
    "tip": "For arrays inside JSON I use NESTED PATH in JSON_TABLE rather than calling JSON_TABLE twice, because it keeps parents without children."
+  },
+  {
+   "id": "f20261117-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "MIN and MAX per group",
+   "domain": "Treasury",
+   "title": "Daily lowest and highest call rate",
+   "scenario": "Arvind Kulkarni on the treasury desk borrows and lends overnight in the call money market. Before the morning ALCO call he wants to see, for each day, the cheapest and the costliest rate at which deals were done.",
+   "schema": "CALL_MONEY_DEAL(deal_id VARCHAR2(10), deal_date DATE, counterparty VARCHAR2(40), amount_cr NUMBER(10,2), rate_pct NUMBER(5,2))\n-- amount_cr = deal amount in INR crore, rate_pct = annual interest rate in %",
+   "data": [
+    {
+     "name": "CALL_MONEY_DEAL",
+     "cols": [
+      "deal_id",
+      "deal_date",
+      "counterparty",
+      "amount_cr",
+      "rate_pct"
+     ],
+     "rows": [
+      [
+       "D501",
+       "02-11-2026",
+       "State Bank of India",
+       "500",
+       "6.4"
+      ],
+      [
+       "D502",
+       "02-11-2026",
+       "HDFC Bank",
+       "250",
+       "6.55"
+      ],
+      [
+       "D503",
+       "02-11-2026",
+       "Canara Bank",
+       "300",
+       "6.35"
+      ],
+      [
+       "D504",
+       "03-11-2026",
+       "ICICI Bank",
+       "400",
+       "6.5"
+      ],
+      [
+       "D505",
+       "03-11-2026",
+       "Axis Bank",
+       "200",
+       "6.7"
+      ],
+      [
+       "D506",
+       "03-11-2026",
+       "State Bank of India",
+       "350",
+       "6.45"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "deal_date",
+     "min_rate",
+     "max_rate"
+    ],
+    "rows": [
+     [
+      "02-11-2026",
+      "6.35",
+      "6.55"
+     ],
+     [
+      "03-11-2026",
+      "6.45",
+      "6.7"
+     ]
+    ]
+   },
+   "task": "For each deal date show the lowest and the highest rate_pct, sorted by date.",
+   "hint": "Group by deal_date and use MIN(rate_pct) and MAX(rate_pct) in the SELECT list.",
+   "solution": "SELECT deal_date,\n       MIN(rate_pct) AS min_rate,\n       MAX(rate_pct) AS max_rate\nFROM   call_money_deal\nGROUP  BY deal_date\nORDER  BY deal_date;",
+   "simple": "Think of a class where every child writes their height on the board each day. MIN finds the shortest child and MAX finds the tallest child. GROUP BY deal_date makes a separate little group for each day. So for every day we get the lowest rate and the highest rate in one line.",
+   "remember": "MIN = smallest, MAX = biggest, GROUP BY = one row per group.",
+   "why": "MIN and MAX are aggregate functions, so GROUP BY deal_date collapses all deals of a day into one row and computes both in a single scan. Like other aggregates they ignore NULL values, and they also work on dates and strings. Every non-aggregated column in the SELECT list must appear in GROUP BY.",
+   "tip": "MIN and MAX work on numbers, dates and text, and they skip NULLs just like SUM and AVG."
+  },
+  {
+   "id": "f20261117-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "IS NULL filter",
+   "domain": "Insurance",
+   "title": "Health claims still waiting for settlement",
+   "scenario": "Pooja Menon heads claims operations at a health insurer. IRDAI wants claims settled quickly, so every morning she needs the list of claims that have no settlement date yet.",
+   "schema": "HEALTH_CLAIM(claim_id VARCHAR2(10), policy_no VARCHAR2(12), claim_amt NUMBER(12,2), intimated_on DATE, settled_on DATE)\n-- claim_amt in INR, settled_on is NULL until the claim is paid",
+   "data": [
+    {
+     "name": "HEALTH_CLAIM",
+     "cols": [
+      "claim_id",
+      "policy_no",
+      "claim_amt",
+      "intimated_on",
+      "settled_on"
+     ],
+     "rows": [
+      [
+       "HC701",
+       "POL88001",
+       "45000",
+       "20-10-2026",
+       "28-10-2026"
+      ],
+      [
+       "HC702",
+       "POL88002",
+       "120000",
+       "02-11-2026",
+       "NULL"
+      ],
+      [
+       "HC703",
+       "POL88003",
+       "18500",
+       "05-11-2026",
+       "09-11-2026"
+      ],
+      [
+       "HC704",
+       "POL88004",
+       "260000",
+       "08-11-2026",
+       "NULL"
+      ],
+      [
+       "HC705",
+       "POL88001",
+       "32000",
+       "12-11-2026",
+       "NULL"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "claim_id",
+     "policy_no",
+     "claim_amt",
+     "intimated_on"
+    ],
+    "rows": [
+     [
+      "HC702",
+      "POL88002",
+      "120000",
+      "02-11-2026"
+     ],
+     [
+      "HC704",
+      "POL88004",
+      "260000",
+      "08-11-2026"
+     ],
+     [
+      "HC705",
+      "POL88001",
+      "32000",
+      "12-11-2026"
+     ]
+    ]
+   },
+   "task": "List the claims that are not settled yet, oldest intimation first.",
+   "hint": "settled_on = NULL is never true; write settled_on IS NULL instead.",
+   "solution": "SELECT claim_id, policy_no, claim_amt, intimated_on\nFROM   health_claim\nWHERE  settled_on IS NULL\nORDER  BY intimated_on;",
+   "simple": "Think of a school register where the 'returned book on' box is empty for some children. An empty box is not equal to anything, not even to another empty box. So asking 'is the box = empty?' never says yes. In SQL we must ask 'IS NULL', which means 'is this box empty?'. That gives us the claims with no settlement date.",
+   "remember": "Empty box? Ask IS NULL, never = NULL.",
+   "why": "NULL means unknown, so any comparison with NULL using =, <> or > evaluates to UNKNOWN, and WHERE keeps only rows that are TRUE. That is why WHERE settled_on = NULL returns no rows without raising an error. IS NULL and IS NOT NULL are the only predicates that test for missing values directly.",
+   "tip": "I never write = NULL; comparisons with NULL give UNKNOWN, so I use IS NULL or IS NOT NULL."
+  },
+  {
+   "id": "f20261117-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Age with MONTHS_BETWEEN",
+   "domain": "Core banking/Fixed deposits",
+   "title": "Senior citizen FD rate eligibility",
+   "scenario": "Nikhil Bhosale runs the fixed deposit product at a private bank. Customers aged 60 or more get an extra 0.50% on FDs, and he wants each customer's exact age on 17-11-2026 so the rate is right even for someone whose birthday is that very day.",
+   "schema": "FD_CUSTOMER(cust_id VARCHAR2(10), cust_name VARCHAR2(60), dob DATE)\n-- dob = date of birth",
+   "data": [
+    {
+     "name": "FD_CUSTOMER",
+     "cols": [
+      "cust_id",
+      "cust_name",
+      "dob"
+     ],
+     "rows": [
+      [
+       "C301",
+       "Ramesh Iyer",
+       "17-11-1966"
+      ],
+      [
+       "C302",
+       "Sunita Rao",
+       "18-11-1966"
+      ],
+      [
+       "C303",
+       "Mohan Das",
+       "05-03-1950"
+      ],
+      [
+       "C304",
+       "Neha Gupta",
+       "22-07-1990"
+      ],
+      [
+       "C305",
+       "Prakash Jain",
+       "30-11-1965"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "cust_name",
+     "age",
+     "category"
+    ],
+    "rows": [
+     [
+      "C301",
+      "Ramesh Iyer",
+      "60",
+      "Senior"
+     ],
+     [
+      "C302",
+      "Sunita Rao",
+      "59",
+      "Regular"
+     ],
+     [
+      "C303",
+      "Mohan Das",
+      "76",
+      "Senior"
+     ],
+     [
+      "C304",
+      "Neha Gupta",
+      "36",
+      "Regular"
+     ],
+     [
+      "C305",
+      "Prakash Jain",
+      "60",
+      "Senior"
+     ]
+    ]
+   },
+   "task": "Show each customer's age in completed years on 17-11-2026 and label them 'Senior' if the age is 60 or more, else 'Regular'.",
+   "hint": "TRUNC(MONTHS_BETWEEN(DATE '2026-11-17', dob) / 12) gives completed years; dividing days by 365 goes wrong around birthdays.",
+   "solution": "SELECT cust_id, cust_name,\n       TRUNC(MONTHS_BETWEEN(DATE '2026-11-17', dob) / 12) AS age,\n       CASE WHEN MONTHS_BETWEEN(DATE '2026-11-17', dob) >= 720\n            THEN 'Senior' ELSE 'Regular' END AS category\nFROM   fd_customer\nORDER  BY cust_id;",
+   "simple": "Think of counting birthdays on a calendar instead of counting days. If your birthday is today, you have just finished one more year. MONTHS_BETWEEN counts how many months have passed since you were born, and dividing by 12 gives years. TRUNC cuts off the half-finished year, so 59 and a bit stays 59. Ramesh turns 60 today and is Senior, but Sunita turns 60 tomorrow and is still Regular.",
+   "remember": "Age = TRUNC(MONTHS_BETWEEN(today, dob) / 12).",
+   "why": "MONTHS_BETWEEN returns a whole number when both dates fall on the same day of the month, so a birthday on the reference date gives exactly 720 months and age 60. Calculations like (date - dob)/365 drift because of leap years and can label someone 60 a day or two early or late. TRUNC rather than ROUND is needed because age counts only completed years.",
+   "tip": "For age I use TRUNC(MONTHS_BETWEEN(ref_date, dob)/12) because dividing days by 365 breaks around birthdays and leap years."
+  },
+  {
+   "id": "f20261117-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "UNPIVOT with INCLUDE NULLS",
+   "domain": "RBI reporting",
+   "title": "Turn branch return columns into rows",
+   "scenario": "Farhan Qureshi prepares the monthly branch return that feeds an RBI submission. The return table has one column per figure, but the validation tool needs one row per branch per figure, and a missing figure must still appear so the reviewer can chase the branch.",
+   "schema": "BRANCH_RETURN(branch_code VARCHAR2(6), deposits_cr NUMBER(12,2), advances_cr NUMBER(12,2), npa_cr NUMBER(12,2))\n-- October 2026 figures in INR crore; NULL = branch has not submitted that figure",
+   "data": [
+    {
+     "name": "BRANCH_RETURN",
+     "cols": [
+      "branch_code",
+      "deposits_cr",
+      "advances_cr",
+      "npa_cr"
+     ],
+     "rows": [
+      [
+       "B101",
+       "842.5",
+       "610",
+       "18.4"
+      ],
+      [
+       "B102",
+       "395",
+       "288.75",
+       "NULL"
+      ],
+      [
+       "B103",
+       "1210",
+       "975.2",
+       "31"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "branch_code",
+     "metric",
+     "value_cr"
+    ],
+    "rows": [
+     [
+      "B101",
+      "ADVANCES",
+      "610"
+     ],
+     [
+      "B101",
+      "DEPOSITS",
+      "842.5"
+     ],
+     [
+      "B101",
+      "NPA",
+      "18.4"
+     ],
+     [
+      "B102",
+      "ADVANCES",
+      "288.75"
+     ],
+     [
+      "B102",
+      "DEPOSITS",
+      "395"
+     ],
+     [
+      "B102",
+      "NPA",
+      "NULL"
+     ],
+     [
+      "B103",
+      "ADVANCES",
+      "975.2"
+     ],
+     [
+      "B103",
+      "DEPOSITS",
+      "1210"
+     ],
+     [
+      "B103",
+      "NPA",
+      "31"
+     ]
+    ]
+   },
+   "task": "Return branch_code, metric ('DEPOSITS', 'ADVANCES' or 'NPA') and value_cr, one row per branch per metric, keeping rows where the value is missing. Sort by branch_code and metric.",
+   "hint": "UNPIVOT drops NULL values by default; add INCLUDE NULLS to keep B102's missing NPA row.",
+   "solution": "SELECT branch_code, metric, value_cr\nFROM   branch_return\nUNPIVOT INCLUDE NULLS (\n  value_cr FOR metric IN (deposits_cr AS 'DEPOSITS',\n                          advances_cr AS 'ADVANCES',\n                          npa_cr      AS 'NPA')\n)\nORDER  BY branch_code, metric;",
+   "simple": "Think of a marks card where each subject is written side by side in one line. UNPIVOT rewrites it as a list, one line per subject, like 'Maths 80', 'Science 75'. Normally, if a subject has no mark, that line is quietly left out. INCLUDE NULLS keeps the empty line, so the teacher can see that a mark is missing.",
+   "remember": "UNPIVOT = columns to rows; INCLUDE NULLS keeps the blanks.",
+   "why": "UNPIVOT rotates the listed columns into two columns: one holding the value and one holding a label for the source column. By default it uses EXCLUDE NULLS, which silently removes rows whose value is NULL, so a missing regulatory figure would vanish instead of being flagged. Before UNPIVOT existed this was done with UNION ALL of one SELECT per column, which scans the table once per column.",
+   "tip": "UNPIVOT excludes NULLs by default, so for validation reports I add INCLUDE NULLS so missing figures stay visible."
+  },
+  {
+   "id": "f20261117-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Window frame excluding current row",
+   "domain": "Cards/Fraud",
+   "title": "Flag card spends far above recent average",
+   "scenario": "Meera Pillai in the card fraud team wants a simple velocity rule: a swipe is suspicious if it is more than 3 times the average of that card's previous 3 swipes. The current swipe must not be part of its own average, and a card's first swipe has no history.",
+   "schema": "CARD_TXN(txn_id VARCHAR2(10), card_no VARCHAR2(16), txn_time DATE, amount NUMBER(12,2))\n-- card_no is masked, amount in INR, txn_time includes the time",
+   "data": [
+    {
+     "name": "CARD_TXN",
+     "cols": [
+      "txn_id",
+      "card_no",
+      "txn_time",
+      "amount"
+     ],
+     "rows": [
+      [
+       "T801",
+       "XXXX1234",
+       "01-11-2026 10:00",
+       "1200"
+      ],
+      [
+       "T802",
+       "XXXX1234",
+       "03-11-2026 13:30",
+       "800"
+      ],
+      [
+       "T803",
+       "XXXX1234",
+       "05-11-2026 19:10",
+       "1000"
+      ],
+      [
+       "T804",
+       "XXXX1234",
+       "06-11-2026 23:45",
+       "9500"
+      ],
+      [
+       "T805",
+       "XXXX1234",
+       "07-11-2026 09:00",
+       "1500"
+      ],
+      [
+       "T806",
+       "XXXX5678",
+       "02-11-2026 11:00",
+       "25000"
+      ],
+      [
+       "T807",
+       "XXXX5678",
+       "04-11-2026 16:20",
+       "80000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "txn_id",
+     "card_no",
+     "amount",
+     "prev3_avg",
+     "suspicious"
+    ],
+    "rows": [
+     [
+      "T801",
+      "XXXX1234",
+      "1200",
+      "NULL",
+      "N"
+     ],
+     [
+      "T802",
+      "XXXX1234",
+      "800",
+      "1200",
+      "N"
+     ],
+     [
+      "T803",
+      "XXXX1234",
+      "1000",
+      "1000",
+      "N"
+     ],
+     [
+      "T804",
+      "XXXX1234",
+      "9500",
+      "1000",
+      "Y"
+     ],
+     [
+      "T805",
+      "XXXX1234",
+      "1500",
+      "3766.67",
+      "N"
+     ],
+     [
+      "T806",
+      "XXXX5678",
+      "25000",
+      "NULL",
+      "N"
+     ],
+     [
+      "T807",
+      "XXXX5678",
+      "80000",
+      "25000",
+      "Y"
+     ]
+    ]
+   },
+   "task": "For every transaction show the average of the same card's previous 3 transactions (rounded to 2 decimals) and a flag 'Y' when amount is more than 3 times that average, else 'N'.",
+   "hint": "Use AVG(amount) OVER (PARTITION BY card_no ORDER BY txn_time ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING) so the frame stops just before the current row.",
+   "solution": "SELECT txn_id, card_no, amount,\n       ROUND(prev3_avg, 2) AS prev3_avg,\n       CASE WHEN amount > 3 * prev3_avg THEN 'Y' ELSE 'N' END AS suspicious\nFROM  (SELECT t.*,\n              AVG(amount) OVER (PARTITION BY card_no ORDER BY txn_time\n                                ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING) AS prev3_avg\n       FROM   card_txn t)\nORDER  BY card_no, txn_time;",
+   "simple": "Think of checking your shopping bills in a passbook. For each new bill, you cover it with your hand and look only at the 3 bills just above it. You work out their average and ask, 'is this new bill more than 3 times that?'. The very first bill has nothing above it, so there is no average and it is not flagged.",
+   "remember": "1 PRECEDING ends the frame just before me.",
+   "why": "The frame ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING excludes the current row, so a large swipe cannot dilute its own baseline. Near the start of a partition the frame holds fewer than 3 rows (T807 averages only T806) and for the first row it is empty, so AVG returns NULL and the comparison is UNKNOWN, which falls to the ELSE branch. ROWS is used rather than RANGE so the frame counts physical rows, not time distance.",
+   "tip": "To compare a value with its own history I end the frame at 1 PRECEDING, otherwise the current row pollutes the baseline."
+  },
+  {
+   "id": "f20261117-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "CONNECT_BY_ROOT subtree totals",
+   "domain": "GL reconciliation",
+   "title": "Roll balances up the GL tree",
+   "scenario": "Sandeep Agarwal in finance control reconciles the trial balance with the balance sheet heads. The chart of accounts is a tree, balances sit mostly on leaf GLs (and sometimes on a parent by mistake), and he needs every GL's total including all accounts below it.",
+   "schema": "GL_ACCOUNT(gl_code VARCHAR2(6), gl_name VARCHAR2(40), parent_gl VARCHAR2(6))\n-- parent_gl is NULL for the top account\nGL_BALANCE(gl_code VARCHAR2(6), balance NUMBER(16,2))\n-- closing balance in INR posted directly to that GL",
+   "data": [
+    {
+     "name": "GL_ACCOUNT",
+     "cols": [
+      "gl_code",
+      "gl_name",
+      "parent_gl"
+     ],
+     "rows": [
+      [
+       "1000",
+       "Assets",
+       "NULL"
+      ],
+      [
+       "1100",
+       "Loans and Advances",
+       "1000"
+      ],
+      [
+       "1110",
+       "Home Loans",
+       "1100"
+      ],
+      [
+       "1120",
+       "Personal Loans",
+       "1100"
+      ],
+      [
+       "1200",
+       "Investments",
+       "1000"
+      ],
+      [
+       "1210",
+       "Government Securities",
+       "1200"
+      ]
+     ]
+    },
+    {
+     "name": "GL_BALANCE",
+     "cols": [
+      "gl_code",
+      "balance"
+     ],
+     "rows": [
+      [
+       "1110",
+       "820000000"
+      ],
+      [
+       "1120",
+       "310000000"
+      ],
+      [
+       "1200",
+       "15000000"
+      ],
+      [
+       "1210",
+       "560000000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "gl_code",
+     "gl_name",
+     "total_balance"
+    ],
+    "rows": [
+     [
+      "1000",
+      "Assets",
+      "1705000000"
+     ],
+     [
+      "1100",
+      "Loans and Advances",
+      "1130000000"
+     ],
+     [
+      "1110",
+      "Home Loans",
+      "820000000"
+     ],
+     [
+      "1120",
+      "Personal Loans",
+      "310000000"
+     ],
+     [
+      "1200",
+      "Investments",
+      "575000000"
+     ],
+     [
+      "1210",
+      "Government Securities",
+      "560000000"
+     ]
+    ]
+   },
+   "task": "For every GL account show its total balance: its own posted balance plus the balances of all accounts below it at any depth. Sort by gl_code.",
+   "hint": "Run CONNECT BY without START WITH so every account becomes a root, keep CONNECT_BY_ROOT gl_code, then LEFT JOIN balances and group by the root.",
+   "solution": "SELECT a.gl_code, a.gl_name,\n       SUM(NVL(b.balance, 0)) AS total_balance\nFROM  (SELECT CONNECT_BY_ROOT gl_code AS root_gl, gl_code\n       FROM   gl_account\n       CONNECT BY PRIOR gl_code = parent_gl) t\nJOIN   gl_account a ON a.gl_code = t.root_gl\nLEFT JOIN gl_balance b ON b.gl_code = t.gl_code\nGROUP  BY a.gl_code, a.gl_name\nORDER  BY a.gl_code;",
+   "simple": "Think of cupboard drawers inside bigger drawers. To know how much money is in a big drawer, you add its own coins plus the coins in every small drawer inside it. The query starts a walk from every drawer, writes down where the walk started, and collects every drawer it reaches. Then it adds up the coins for each starting drawer.",
+   "remember": "CONNECT_BY_ROOT = remember where the walk started.",
+   "why": "Omitting START WITH makes every row a root, so the hierarchy is expanded once per account and each descendant row carries CONNECT_BY_ROOT, the root it was reached from. Grouping by that root sums a whole subtree, including balances posted directly on non-leaf GLs like 1200. The LEFT JOIN with NVL keeps accounts whose own row has no balance.",
+   "tip": "For subtree totals I use CONNECT BY without START WITH and group by CONNECT_BY_ROOT, which gives every node its full rolled-up balance in one query."
+  },
+  {
+   "id": "f20261117-7",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Fast refresh materialized view",
+   "domain": "Trading/Broking",
+   "title": "Live client positions with a materialized view",
+   "scenario": "Rahul Saxena runs risk at a stock broker. The margin screen recalculates net positions from the full TRADE table every few seconds and is slowing down, so he wants a materialized view that keeps net quantity per client and stock and updates itself on every commit.",
+   "schema": "TRADE(trade_id VARCHAR2(10), trade_date DATE, client_id VARCHAR2(8), symbol VARCHAR2(12), side VARCHAR2(1), qty NUMBER(10), price NUMBER(12,2))\n-- side B = buy, S = sell; price in INR per share",
+   "data": [
+    {
+     "name": "TRADE",
+     "cols": [
+      "trade_id",
+      "trade_date",
+      "client_id",
+      "symbol",
+      "side",
+      "qty",
+      "price"
+     ],
+     "rows": [
+      [
+       "TR01",
+       "16-11-2026",
+       "CL01",
+       "INFY",
+       "B",
+       "100",
+       "1520.5"
+      ],
+      [
+       "TR02",
+       "16-11-2026",
+       "CL01",
+       "INFY",
+       "S",
+       "40",
+       "1535"
+      ],
+      [
+       "TR03",
+       "16-11-2026",
+       "CL01",
+       "TCS",
+       "B",
+       "20",
+       "4110"
+      ],
+      [
+       "TR04",
+       "16-11-2026",
+       "CL02",
+       "HDFCBANK",
+       "B",
+       "50",
+       "1650"
+      ],
+      [
+       "TR05",
+       "17-11-2026",
+       "CL02",
+       "HDFCBANK",
+       "S",
+       "50",
+       "1672.25"
+      ],
+      [
+       "TR06",
+       "17-11-2026",
+       "CL02",
+       "SBIN",
+       "B",
+       "200",
+       "812.4"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "client_id",
+     "symbol",
+     "net_qty",
+     "trade_cnt"
+    ],
+    "rows": [
+     [
+      "CL01",
+      "INFY",
+      "60",
+      "2"
+     ],
+     [
+      "CL01",
+      "TCS",
+      "20",
+      "1"
+     ],
+     [
+      "CL02",
+      "HDFCBANK",
+      "0",
+      "2"
+     ],
+     [
+      "CL02",
+      "SBIN",
+      "200",
+      "1"
+     ]
+    ]
+   },
+   "output_note": "CLIENT_POSITION_MV right after it is built. CL02 HDFCBANK stays with net 0 because the group still has trades. When a new trade commits, only the changed group is updated using the MV log.",
+   "task": "Create a materialized view log on TRADE and a REFRESH FAST ON COMMIT materialized view CLIENT_POSITION_MV with net quantity (buys minus sells) and trade count per client and symbol, then query it.",
+   "hint": "For a fast-refreshable aggregate MV, SUM(expr) must be accompanied by COUNT(expr) and COUNT(*), and the log needs ROWID, SEQUENCE, the used columns and INCLUDING NEW VALUES.",
+   "solution": "CREATE MATERIALIZED VIEW LOG ON trade\n  WITH ROWID, SEQUENCE (client_id, symbol, side, qty)\n  INCLUDING NEW VALUES;\n\nCREATE MATERIALIZED VIEW client_position_mv\n  BUILD IMMEDIATE\n  REFRESH FAST ON COMMIT\nAS\nSELECT client_id, symbol,\n       SUM(CASE WHEN side = 'B' THEN qty ELSE -qty END)   AS net_qty,\n       COUNT(CASE WHEN side = 'B' THEN qty ELSE -qty END) AS net_qty_cnt,\n       COUNT(*)                                           AS trade_cnt\nFROM   trade\nGROUP  BY client_id, symbol;\n\nSELECT client_id, symbol, net_qty, trade_cnt\nFROM   client_position_mv\nORDER  BY client_id, symbol;",
+   "simple": "Think of a piggy bank with a small notebook beside it. Instead of counting every coin again each time, you write down each coin you add or take out, and then just fix the total. The MV log is that notebook, and the materialized view is the saved total. REFRESH FAST ON COMMIT means the total is fixed the moment a trade is saved.",
+   "remember": "MV log notes the changes; fast refresh fixes only those.",
+   "why": "A materialized view stores the query result as a table, so the margin screen reads a few summary rows instead of aggregating all trades. The MV log records changed rows, and with COUNT(*) and COUNT(expr) present Oracle can apply inserts, updates and deletes incrementally, even removing a group when its count reaches zero. ON COMMIT adds a little work to each trade commit, so for very high trade volumes ON DEMAND refresh at short intervals may be chosen instead; DBMS_MVIEW.EXPLAIN_MVIEW shows whether fast refresh is possible.",
+   "tip": "Before promising fast refresh I check DBMS_MVIEW.EXPLAIN_MVIEW, and I always add COUNT(*) and COUNT(expr) next to SUM so Oracle can refresh incrementally."
+  },
+  {
+   "id": "f20261117-8",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "SKIP LOCKED with BULK COLLECT LIMIT",
+   "domain": "Payments/NEFT",
+   "title": "Parallel workers picking NEFT payments",
+   "scenario": "Ankita Deshmukh supports the outward NEFT engine, where several worker sessions pick pending payments from one table. Worker W1 has already locked N901 and N902 and not committed yet; worker W2 must take the next 3 free payments without waiting and without touching W1's rows.",
+   "schema": "NEFT_OUTWARD(pay_id VARCHAR2(10), amount NUMBER(14,2), status VARCHAR2(10), worker_id VARCHAR2(5))\n-- status PENDING, SENT or FAILED; amount in INR; worker_id = session that sent it",
+   "data": [
+    {
+     "name": "NEFT_OUTWARD",
+     "cols": [
+      "pay_id",
+      "amount",
+      "status",
+      "worker_id"
+     ],
+     "rows": [
+      [
+       "N901",
+       "75000",
+       "PENDING",
+       "NULL"
+      ],
+      [
+       "N902",
+       "210000",
+       "PENDING",
+       "NULL"
+      ],
+      [
+       "N903",
+       "15000",
+       "PENDING",
+       "NULL"
+      ],
+      [
+       "N904",
+       "48000",
+       "FAILED",
+       "NULL"
+      ],
+      [
+       "N905",
+       "990000",
+       "PENDING",
+       "NULL"
+      ],
+      [
+       "N906",
+       "5600",
+       "PENDING",
+       "NULL"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "pay_id",
+     "amount",
+     "status",
+     "worker_id"
+    ],
+    "rows": [
+     [
+      "N901",
+      "75000",
+      "PENDING",
+      "NULL"
+     ],
+     [
+      "N902",
+      "210000",
+      "PENDING",
+      "NULL"
+     ],
+     [
+      "N903",
+      "15000",
+      "SENT",
+      "W2"
+     ],
+     [
+      "N904",
+      "48000",
+      "FAILED",
+      "NULL"
+     ],
+     [
+      "N905",
+      "990000",
+      "SENT",
+      "W2"
+     ],
+     [
+      "N906",
+      "5600",
+      "SENT",
+      "W2"
+     ]
+    ]
+   },
+   "output_note": "NEFT_OUTWARD after W2's block commits (W1 still holds N901 and N902). With WHERE ROWNUM <= 3 instead of LIMIT 3, W2 would get only N903, because ROWNUM would pick N901-N903 first and then skip the two locked ones.",
+   "task": "Write W2's PL/SQL block: lock up to 3 PENDING payments in pay_id order, skipping rows locked by other sessions, mark them SENT with worker_id 'W2', and commit.",
+   "hint": "Open a FOR UPDATE SKIP LOCKED cursor and FETCH ... BULK COLLECT LIMIT 3; do not use ROWNUM <= 3, because ROWNUM is applied before locked rows are skipped.",
+   "solution": "DECLARE\n  CURSOR c_pay IS\n    SELECT pay_id\n    FROM   neft_outward\n    WHERE  status = 'PENDING'\n    ORDER  BY pay_id\n    FOR UPDATE SKIP LOCKED;\n  TYPE t_ids IS TABLE OF neft_outward.pay_id%TYPE;\n  l_ids t_ids;\nBEGIN\n  OPEN c_pay;\n  FETCH c_pay BULK COLLECT INTO l_ids LIMIT 3;\n  CLOSE c_pay;\n\n  FORALL i IN 1 .. l_ids.COUNT\n    UPDATE neft_outward\n    SET    status = 'SENT', worker_id = 'W2'\n    WHERE  pay_id = l_ids(i);\n\n  COMMIT;\nEND;\n/",
+   "simple": "Think of children picking homework copies from a pile to check. If a friend is already holding a copy, you do not stand and wait, you just take the next free one. SKIP LOCKED does exactly that for table rows. LIMIT 3 means 'keep picking until you have 3 free copies', so W2 gets N903, N905 and N906.",
+   "remember": "SKIP LOCKED = take the next free one, don't wait.",
+   "why": "FOR UPDATE SKIP LOCKED locks rows as they are fetched and silently passes over rows locked by other sessions, so many workers can drain one queue table without blocking each other. Because ROWNUM (or FETCH FIRST) is evaluated before the lock attempt, a ROWNUM <= 3 filter can return fewer rows than asked when some are locked, so the batch size must be controlled with BULK COLLECT LIMIT on the open cursor. The locks are held until COMMIT, so closing the cursor before the FORALL update is safe.",
+   "tip": "For queue tables I use FOR UPDATE SKIP LOCKED with BULK COLLECT LIMIT, not ROWNUM, because ROWNUM is applied before locked rows are skipped."
   }
  ],
  "lessons": [
@@ -4253,6 +5125,17 @@
    "example": "WITH acct AS (\n  SELECT 'A1' acct_no FROM dual UNION ALL\n  SELECT 'A2' FROM dual UNION ALL\n  SELECT 'A3' FROM dual\n), upi_txn AS (\n  SELECT 'A1' acct_no, 500 amt FROM dual UNION ALL\n  SELECT NULL, 900 FROM dual\n)\nSELECT a.acct_no,\n       CASE WHEN EXISTS (SELECT 1 FROM upi_txn u WHERE u.acct_no = a.acct_no)\n            THEN 'Uses UPI' ELSE 'No UPI' END AS upi_status\nFROM   acct a\nORDER  BY a.acct_no;\n-- A1 Uses UPI | A2 No UPI | A3 No UPI\n-- But WHERE acct_no NOT IN (SELECT acct_no FROM upi_txn) returns no rows because of the NULL.",
    "gotcha": "NOT IN against a subquery that can return NULL gives an empty result, so use NOT EXISTS or add WHERE col IS NOT NULL inside.",
    "line": "For positive checks IN and EXISTS usually get the same semi-join plan, but for exclusions I write NOT EXISTS because NOT IN breaks when the subquery returns a NULL."
+  },
+  {
+   "id": "fl20261117",
+   "concept": "NVL, NVL2 and COALESCE",
+   "why": "Interviewers like asking the difference between NVL and COALESCE, and getting it right shows you understand NULL handling and performance.",
+   "simple": "Think of a shopping bill where some prices are blank. NVL says 'if the box is empty, write this instead'. NVL2 asks 'is the box filled?' and writes one word for yes and another for no. COALESCE looks along a row of boxes and takes the first one that is filled. All three help you put something sensible where a blank would be.",
+   "remember": "NVL = one backup, COALESCE = first filled box.",
+   "explain": "NVL(a, b) returns b when a is NULL and always evaluates both arguments, converting b to the data type of a. NVL2(a, b, c) returns b when a is NOT NULL and c when it is NULL, which is handy for flags. COALESCE(a, b, c, ...) is ANSI standard, accepts any number of arguments, returns the first non-NULL one and stops evaluating as soon as it finds it (short-circuit). COALESCE requires all arguments to be of the same data type family, so COALESCE(number_col, 'NA') raises ORA-00932 where NVL would try an implicit conversion.",
+   "example": "WITH acct AS (\n  SELECT 'A1' acct_no, 5000 od_limit, CAST(NULL AS NUMBER) temp_limit FROM dual UNION ALL\n  SELECT 'A2', NULL, 20000 FROM dual UNION ALL\n  SELECT 'A3', NULL, NULL FROM dual\n)\nSELECT acct_no,\n       NVL(od_limit, 0)                   AS od_or_zero,\n       NVL2(od_limit, 'Has OD', 'No OD')  AS od_flag,\n       COALESCE(temp_limit, od_limit, 0)  AS effective_limit\nFROM   acct\nORDER  BY acct_no;\n-- A1 5000 Has OD 5000 | A2 0 No OD 20000 | A3 0 No OD 0",
+   "gotcha": "NVL always evaluates its second argument, so NVL(col, slow_function()) calls the function for every row, while COALESCE calls it only when col is NULL.",
+   "line": "I prefer COALESCE because it is ANSI, takes many arguments and short-circuits, and I use NVL2 when I need a different value for filled and empty cases."
   }
  ]
 }
