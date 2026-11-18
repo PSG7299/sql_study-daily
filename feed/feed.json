@@ -5068,6 +5068,814 @@
    "remember": "SKIP LOCKED = take the next free one, don't wait.",
    "why": "FOR UPDATE SKIP LOCKED locks rows as they are fetched and silently passes over rows locked by other sessions, so many workers can drain one queue table without blocking each other. Because ROWNUM (or FETCH FIRST) is evaluated before the lock attempt, a ROWNUM <= 3 filter can return fewer rows than asked when some are locked, so the batch size must be controlled with BULK COLLECT LIMIT on the open cursor. The locks are held until COMMIT, so closing the cursor before the FORALL update is safe.",
    "tip": "For queue tables I use FOR UPDATE SKIP LOCKED with BULK COLLECT LIMIT, not ROWNUM, because ROWNUM is applied before locked rows are skipped."
+  },
+  {
+   "id": "f20261118-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "TO_CHAR month grouping",
+   "domain": "Payments/UPI",
+   "title": "Monthly UPI count and value",
+   "scenario": "Rahul Iyer in the digital payments team sends NPCI-style monthly volume numbers to management. He wants the number and total value of successful UPI payments for each month.",
+   "schema": "UPI_TXN(txn_id VARCHAR2(10), txn_time DATE, payer_vpa VARCHAR2(40), amount NUMBER(12,2), status VARCHAR2(10))\n-- txn_time has date and time, amount in INR, status SUCCESS or FAILED",
+   "data": [
+    {
+     "name": "UPI_TXN",
+     "cols": [
+      "txn_id",
+      "txn_time",
+      "payer_vpa",
+      "amount",
+      "status"
+     ],
+     "rows": [
+      [
+       "U101",
+       "05-08-2026 10:15",
+       "ravi@okhdfc",
+       "1200",
+       "SUCCESS"
+      ],
+      [
+       "U102",
+       "19-08-2026 18:40",
+       "meena@oksbi",
+       "450",
+       "SUCCESS"
+      ],
+      [
+       "U103",
+       "31-08-2026 23:55",
+       "ravi@okhdfc",
+       "3000",
+       "FAILED"
+      ],
+      [
+       "U104",
+       "01-09-2026 00:05",
+       "arjun@okicici",
+       "799",
+       "SUCCESS"
+      ],
+      [
+       "U105",
+       "14-09-2026 13:20",
+       "meena@oksbi",
+       "2500",
+       "SUCCESS"
+      ],
+      [
+       "U106",
+       "30-09-2026 21:10",
+       "ravi@okhdfc",
+       "150",
+       "SUCCESS"
+      ],
+      [
+       "U107",
+       "02-10-2026 09:00",
+       "arjun@okicici",
+       "5000",
+       "SUCCESS"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "txn_month",
+     "txn_count",
+     "total_amt"
+    ],
+    "rows": [
+     [
+      "2026-08",
+      "2",
+      "1650"
+     ],
+     [
+      "2026-09",
+      "3",
+      "3449"
+     ],
+     [
+      "2026-10",
+      "1",
+      "5000"
+     ]
+    ]
+   },
+   "task": "For each month show the month as 'YYYY-MM', the count of SUCCESS payments and their total amount, oldest month first.",
+   "hint": "Use TO_CHAR(txn_time, 'YYYY-MM') both in the SELECT list and in GROUP BY.",
+   "solution": "SELECT TO_CHAR(txn_time, 'YYYY-MM') AS txn_month,\n       COUNT(*)                     AS txn_count,\n       SUM(amount)                  AS total_amt\nFROM   upi_txn\nWHERE  status = 'SUCCESS'\nGROUP  BY TO_CHAR(txn_time, 'YYYY-MM')\nORDER  BY txn_month;",
+   "simple": "Think of a passbook where every line has a full date like 19 August 2026. If you only look at the month part, all August lines fall into one August pile. TO_CHAR(txn_time, 'YYYY-MM') cuts the date down to just year and month. GROUP BY then makes one pile per month, and COUNT and SUM tell how many and how much.",
+   "remember": "Cut the date to 'YYYY-MM', then group the piles.",
+   "why": "TO_CHAR with a 'YYYY-MM' mask turns every DATE in a month into the same string, so GROUP BY on that expression gives one row per month. The same expression must appear in GROUP BY because the column alias is not visible there in Oracle 19c. 'YYYY-MM' strings also sort in calendar order, unlike 'MON-YYYY'.",
+   "tip": "For monthly reports I group by TRUNC(date,'MM') or TO_CHAR(date,'YYYY-MM'), never by 'MON-YY', because that sorts alphabetically."
+  },
+  {
+   "id": "f20261118-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "UPPER and TRIM cleanup",
+   "domain": "KYC",
+   "title": "Customer count per city, cleaned",
+   "scenario": "Shalini Rao runs the KYC re-verification drive and needs customers per city to plan staff. Branches typed the city in different ways, like ' Mumbai', 'MUMBAI' and 'mumbai ', so a plain GROUP BY shows the same city many times.",
+   "schema": "KYC_CUSTOMER(cust_id VARCHAR2(10), cust_name VARCHAR2(60), city VARCHAR2(40))\n-- city typed by branch staff, may have extra spaces or mixed case",
+   "data": [
+    {
+     "name": "KYC_CUSTOMER",
+     "cols": [
+      "cust_id",
+      "cust_name",
+      "city"
+     ],
+     "rows": [
+      [
+       "C101",
+       "Rohit Shetty",
+       " Mumbai"
+      ],
+      [
+       "C102",
+       "Sneha Patil",
+       "MUMBAI"
+      ],
+      [
+       "C103",
+       "Imran Shaikh",
+       "mumbai "
+      ],
+      [
+       "C104",
+       "Kavya Joshi",
+       "Pune"
+      ],
+      [
+       "C105",
+       "Vikram Gaikwad",
+       "pune"
+      ],
+      [
+       "C106",
+       "Neha Arora",
+       "Delhi"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "city",
+     "customers"
+    ],
+    "rows": [
+     [
+      "MUMBAI",
+      "3"
+     ],
+     [
+      "PUNE",
+      "2"
+     ],
+     [
+      "DELHI",
+      "1"
+     ]
+    ]
+   },
+   "task": "Count customers per city, treating different letter case and extra spaces as the same city. Show the city in capitals, biggest count first.",
+   "hint": "Group by UPPER(TRIM(city)) so ' Mumbai' and 'mumbai ' become the same 'MUMBAI'.",
+   "solution": "SELECT UPPER(TRIM(city)) AS city,\n       COUNT(*)          AS customers\nFROM   kyc_customer\nGROUP  BY UPPER(TRIM(city))\nORDER  BY customers DESC, city;",
+   "simple": "Think of a school register where one teacher writes ' Mumbai', another writes 'MUMBAI' and a third writes 'mumbai '. To a computer these look like three different words. TRIM cuts off the extra spaces at the start and end. UPPER turns every letter into a capital letter. After that they all say 'MUMBAI', so GROUP BY counts them together.",
+   "remember": "TRIM the spaces, UPPER the letters, then count.",
+   "why": "String comparison in Oracle is case-sensitive and counts leading and trailing spaces, so ' Mumbai' and 'MUMBAI' land in different groups. Grouping by the expression UPPER(TRIM(city)) normalises the value before grouping. In migrations the better fix is to clean the column once, or add a check constraint, instead of normalising in every query.",
+   "tip": "When counts look split, I check for case and space differences with GROUP BY UPPER(TRIM(col)) and then clean the source data."
+  },
+  {
+   "id": "f20261118-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "TRUNC date-time comparison",
+   "domain": "Loans/EMI",
+   "title": "On-time EMIs when payments have times",
+   "scenario": "Deepak Nair in retail loan collections reports how many EMIs were paid on time for the bureau update. An EMI paid at any time on the due date is on time, but his first query counted the 18:30 payment on 05-09-2026 as late.",
+   "schema": "EMI_PAYMENT(loan_id VARCHAR2(10), emi_amt NUMBER(12,2), due_date DATE, paid_on DATE)\n-- due_date has no time (midnight), paid_on has date and time of payment, amounts in INR",
+   "data": [
+    {
+     "name": "EMI_PAYMENT",
+     "cols": [
+      "loan_id",
+      "emi_amt",
+      "due_date",
+      "paid_on"
+     ],
+     "rows": [
+      [
+       "HL01",
+       "25000",
+       "05-08-2026",
+       "04-08-2026 11:00"
+      ],
+      [
+       "HL01",
+       "25000",
+       "05-09-2026",
+       "05-09-2026 18:30"
+      ],
+      [
+       "HL01",
+       "25000",
+       "05-10-2026",
+       "07-10-2026 10:00"
+      ],
+      [
+       "PL02",
+       "8000",
+       "10-08-2026",
+       "10-08-2026 09:15"
+      ],
+      [
+       "PL02",
+       "8000",
+       "10-09-2026",
+       "09-09-2026 20:00"
+      ],
+      [
+       "PL02",
+       "8000",
+       "10-10-2026",
+       "11-10-2026 00:10"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "on_time_emis",
+     "late_emis"
+    ],
+    "rows": [
+     [
+      "HL01",
+      "2",
+      "1"
+     ],
+     [
+      "PL02",
+      "2",
+      "1"
+     ]
+    ]
+   },
+   "output_note": "A naive paid_on <= due_date would give only 1 on-time EMI per loan, because 05-09-2026 18:30 and 10-08-2026 09:15 are later than midnight of the due date.",
+   "task": "For each loan count EMIs paid on or before the due date (any time that day counts) and EMIs paid late.",
+   "hint": "Remove the time part with TRUNC(paid_on) before comparing it with due_date.",
+   "solution": "SELECT loan_id,\n       SUM(CASE WHEN TRUNC(paid_on) <= due_date THEN 1 ELSE 0 END) AS on_time_emis,\n       SUM(CASE WHEN TRUNC(paid_on) >  due_date THEN 1 ELSE 0 END) AS late_emis\nFROM   emi_payment\nGROUP  BY loan_id\nORDER  BY loan_id;",
+   "simple": "Think of a stopwatch that starts at midnight. Oracle stores the due date as 'the very first second of 5 September'. A payment at 6:30 in the evening is many hours after that first second, so a plain comparison calls it late. TRUNC rubs out the clock time and keeps only the day. Then 5 September equals 5 September and the EMI is on time.",
+   "remember": "Dates hide a clock; TRUNC rubs the clock off.",
+   "why": "An Oracle DATE always carries hours, minutes and seconds, and a date literal or date-only value means 00:00:00. So paid_on <= due_date is false for any payment made later on the due day. TRUNC(paid_on) compares whole days; in a WHERE clause on an indexed column, paid_on < due_date + 1 gives the same result and keeps the index usable.",
+   "tip": "Every Oracle DATE has a time part, so for 'same day' checks I use TRUNC or a < date + 1 range."
+  },
+  {
+   "id": "f20261118-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "MEDIAN versus AVG",
+   "domain": "Mutual funds",
+   "title": "Typical SIP amount per scheme",
+   "scenario": "Farhan Qureshi in the AMC's product team wants the typical monthly SIP per scheme for a distributor presentation. One HNI's ₹50,000 SIP pulls the average far above what most investors pay, and one scheme has an even number of SIPs.",
+   "schema": "SIP_MANDATE(scheme_code VARCHAR2(10), investor_id VARCHAR2(10), sip_amount NUMBER(10,2))\n-- one active SIP per row, sip_amount = monthly instalment in INR",
+   "data": [
+    {
+     "name": "SIP_MANDATE",
+     "cols": [
+      "scheme_code",
+      "investor_id",
+      "sip_amount"
+     ],
+     "rows": [
+      [
+       "AXBLUE",
+       "I1",
+       "1000"
+      ],
+      [
+       "AXBLUE",
+       "I2",
+       "2000"
+      ],
+      [
+       "AXBLUE",
+       "I3",
+       "5000"
+      ],
+      [
+       "AXBLUE",
+       "I4",
+       "50000"
+      ],
+      [
+       "SBISML",
+       "I5",
+       "500"
+      ],
+      [
+       "SBISML",
+       "I6",
+       "1500"
+      ],
+      [
+       "SBISML",
+       "I7",
+       "10000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "scheme_code",
+     "avg_sip",
+     "median_sip"
+    ],
+    "rows": [
+     [
+      "AXBLUE",
+      "14500",
+      "3500"
+     ],
+     [
+      "SBISML",
+      "4000",
+      "1500"
+     ]
+    ]
+   },
+   "output_note": "AXBLUE has 4 SIPs, so the median is the average of the two middle values (2000 and 5000) = 3500.",
+   "task": "For each scheme show the average SIP (rounded to whole rupees) and the median SIP.",
+   "hint": "Oracle has a MEDIAN aggregate; with an even count it averages the two middle values.",
+   "solution": "SELECT scheme_code,\n       ROUND(AVG(sip_amount)) AS avg_sip,\n       MEDIAN(sip_amount)     AS median_sip\nFROM   sip_mandate\nGROUP  BY scheme_code\nORDER  BY scheme_code;",
+   "simple": "Think of a class photo where children stand in a line from shortest to tallest. The median is the child standing in the middle. If there are 4 children, there is no single middle, so you take the halfway point between the two in the middle. One very tall child changes the average a lot, but hardly moves the middle. That is why the median shows the 'typical' SIP better.",
+   "remember": "Median = the middle of the line, not the average.",
+   "why": "AVG is pulled by outliers, so one ₹50,000 SIP makes AXBLUE look like a ₹14,500 scheme. MEDIAN sorts the values in each group and returns the middle one, or the mean of the two middle values when the count is even; it is the same as PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sip_amount). Like other aggregates it ignores NULLs and can also be used as an analytic function with OVER (PARTITION BY ...).",
+   "tip": "When data is skewed, like loan sizes or SIP amounts, I report MEDIAN or PERCENTILE_CONT(0.5) along with AVG."
+  },
+  {
+   "id": "f20261118-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Running total with reset",
+   "domain": "Cash management",
+   "title": "Split salary file into capped batches",
+   "scenario": "Manoj Pillai in corporate cash management sends a client's salary file to NEFT in batches. The client's maker-checker rule says no batch may exceed ₹3,00,000, so rows must be packed in file order and a new batch starts as soon as the next row would cross the cap.",
+   "schema": "SALARY_PAYOUT(file_seq NUMBER, emp_id VARCHAR2(10), net_pay NUMBER(12,2))\n-- file_seq = row order in the client's file, net_pay in INR, every row is <= 300000",
+   "data": [
+    {
+     "name": "SALARY_PAYOUT",
+     "cols": [
+      "file_seq",
+      "emp_id",
+      "net_pay"
+     ],
+     "rows": [
+      [
+       "1",
+       "E01",
+       "120000"
+      ],
+      [
+       "2",
+       "E02",
+       "95000"
+      ],
+      [
+       "3",
+       "E03",
+       "70000"
+      ],
+      [
+       "4",
+       "E04",
+       "150000"
+      ],
+      [
+       "5",
+       "E05",
+       "110000"
+      ],
+      [
+       "6",
+       "E06",
+       "80000"
+      ],
+      [
+       "7",
+       "E07",
+       "200000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "file_seq",
+     "emp_id",
+     "net_pay",
+     "batch_no",
+     "batch_total"
+    ],
+    "rows": [
+     [
+      "1",
+      "E01",
+      "120000",
+      "1",
+      "285000"
+     ],
+     [
+      "2",
+      "E02",
+      "95000",
+      "1",
+      "285000"
+     ],
+     [
+      "3",
+      "E03",
+      "70000",
+      "1",
+      "285000"
+     ],
+     [
+      "4",
+      "E04",
+      "150000",
+      "2",
+      "260000"
+     ],
+     [
+      "5",
+      "E05",
+      "110000",
+      "2",
+      "260000"
+     ],
+     [
+      "6",
+      "E06",
+      "80000",
+      "3",
+      "280000"
+     ],
+     [
+      "7",
+      "E07",
+      "200000",
+      "3",
+      "280000"
+     ]
+    ]
+   },
+   "task": "Give each row a batch number so that rows stay in file_seq order and each batch total stays at or below 300000. Show the final total of each batch on every row.",
+   "hint": "A plain running SUM cannot restart; use MATCH_RECOGNIZE with PATTERN (a+) and DEFINE a AS SUM(a.net_pay) <= 300000 (or a recursive WITH).",
+   "solution": "SELECT file_seq, emp_id, net_pay, batch_no, batch_total\nFROM   salary_payout\nMATCH_RECOGNIZE (\n  ORDER BY file_seq\n  MEASURES MATCH_NUMBER()     AS batch_no,\n           FINAL SUM(net_pay) AS batch_total\n  ALL ROWS PER MATCH\n  PATTERN (a+)\n  DEFINE a AS SUM(a.net_pay) <= 300000\n)\nORDER  BY file_seq;",
+   "simple": "Think of filling school bags with books, where each bag can hold only 3 kg. You put books in one by one in order. When the next book would make the bag too heavy, you close that bag and start a new one. MATCH_RECOGNIZE does this: it keeps adding rows while the total stays under the cap, then starts a fresh batch. MATCH_NUMBER tells which bag each row went into.",
+   "remember": "Bag full? Close it, start a new bag.",
+   "why": "A windowed SUM cannot reset, because whether a row starts a new batch depends on the running total of the current batch, which depends on earlier decisions. In MATCH_RECOGNIZE the DEFINE condition SUM(a.net_pay) is evaluated as a running sum over the rows already mapped in the current match, so the greedy a+ stops just before the cap is crossed and the next match starts there. FINAL SUM gives the whole batch total on every row with ALL ROWS PER MATCH, while the default RUNNING semantics would show a running total.",
+   "tip": "Capped running totals that reset need MATCH_RECOGNIZE or a recursive WITH, because analytic SUM cannot restart based on its own result."
+  },
+  {
+   "id": "f20261118-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Partitioned outer join densify",
+   "domain": "RBI reporting",
+   "title": "Daily cash grid with missing reports",
+   "scenario": "Lakshmi Venkatesh compiles the currency chest balance return for RBI, which needs a row for every branch for every day. Some branches skipped a day, and a normal outer join to a calendar cannot show which branch missed which date.",
+   "schema": "BRANCH_CASH(branch_code VARCHAR2(10), bal_date DATE, cash_balance NUMBER(15,2))\n-- one row per branch per reported day, bal_date has no time, cash_balance in INR",
+   "data": [
+    {
+     "name": "BRANCH_CASH",
+     "cols": [
+      "branch_code",
+      "bal_date",
+      "cash_balance"
+     ],
+     "rows": [
+      [
+       "CHN01",
+       "02-11-2026",
+       "4250000"
+      ],
+      [
+       "CHN01",
+       "03-11-2026",
+       "3980000"
+      ],
+      [
+       "CHN01",
+       "05-11-2026",
+       "4410000"
+      ],
+      [
+       "MUM01",
+       "02-11-2026",
+       "12500000"
+      ],
+      [
+       "MUM01",
+       "04-11-2026",
+       "11800000"
+      ],
+      [
+       "MUM01",
+       "05-11-2026",
+       "13100000"
+      ],
+      [
+       "MUM01",
+       "06-11-2026",
+       "12750000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "branch_code",
+     "rpt_date",
+     "cash_balance",
+     "status"
+    ],
+    "rows": [
+     [
+      "CHN01",
+      "02-11-2026",
+      "4250000",
+      "REPORTED"
+     ],
+     [
+      "CHN01",
+      "03-11-2026",
+      "3980000",
+      "REPORTED"
+     ],
+     [
+      "CHN01",
+      "04-11-2026",
+      "NULL",
+      "MISSING"
+     ],
+     [
+      "CHN01",
+      "05-11-2026",
+      "4410000",
+      "REPORTED"
+     ],
+     [
+      "CHN01",
+      "06-11-2026",
+      "NULL",
+      "MISSING"
+     ],
+     [
+      "MUM01",
+      "02-11-2026",
+      "12500000",
+      "REPORTED"
+     ],
+     [
+      "MUM01",
+      "03-11-2026",
+      "NULL",
+      "MISSING"
+     ],
+     [
+      "MUM01",
+      "04-11-2026",
+      "11800000",
+      "REPORTED"
+     ],
+     [
+      "MUM01",
+      "05-11-2026",
+      "13100000",
+      "REPORTED"
+     ],
+     [
+      "MUM01",
+      "06-11-2026",
+      "12750000",
+      "REPORTED"
+     ]
+    ]
+   },
+   "task": "For every branch and every date from 02-11-2026 to 06-11-2026 show the cash balance and a status of REPORTED or MISSING.",
+   "hint": "Build a 5-day calendar with CONNECT BY LEVEL in a WITH clause, then join it using PARTITION BY (branch_code) RIGHT OUTER JOIN.",
+   "solution": "WITH cal AS (\n  SELECT DATE '2026-11-02' + LEVEL - 1 AS rpt_date\n  FROM   dual\n  CONNECT BY LEVEL <= 5\n)\nSELECT b.branch_code,\n       c.rpt_date,\n       b.cash_balance,\n       CASE WHEN b.bal_date IS NULL THEN 'MISSING' ELSE 'REPORTED' END AS status\nFROM   branch_cash b PARTITION BY (b.branch_code)\n       RIGHT OUTER JOIN cal c\n       ON (b.bal_date = c.rpt_date)\nORDER  BY b.branch_code, c.rpt_date;",
+   "simple": "Think of a school attendance register with every child's name down the side and every date across the top. Some boxes are empty because the child was absent. A partitioned outer join draws the full grid for each branch, one row per branch per day. Where the branch sent nothing, the box stays empty and we write MISSING.",
+   "remember": "PARTITION BY join = full register grid for each branch.",
+   "why": "A plain outer join to the calendar fills gaps only once for the whole table, so a date reported by any branch never appears as missing for another. PARTITION BY (branch_code) on the outer-joined side makes Oracle repeat the outer join for each branch partition, producing the branch × date grid and filling branch_code even on the generated rows. It avoids a manual CROSS JOIN of distinct branches with the calendar.",
+   "tip": "To densify sparse data per entity I use a partitioned outer join, which is Oracle's built-in way to fill gaps per partition."
+  },
+  {
+   "id": "f20261118-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "Optimistic locking with version",
+   "domain": "Core banking",
+   "title": "Stop lost updates on UPI limits",
+   "scenario": "Gaurav Malhotra maintains the branch screen where staff change a customer's daily UPI limit. Teller T1 and teller T2 both opened C100 at version 3; T1 saved first, and T2 must not silently overwrite T1's change with a stale screen.",
+   "schema": "CUST_LIMIT(cust_id VARCHAR2(10), daily_upi_limit NUMBER(12,2), version_no NUMBER, updated_by VARCHAR2(10))\n-- daily_upi_limit in INR, version_no increases by 1 on every change",
+   "data": [
+    {
+     "name": "CUST_LIMIT",
+     "cols": [
+      "cust_id",
+      "daily_upi_limit",
+      "version_no",
+      "updated_by"
+     ],
+     "rows": [
+      [
+       "C100",
+       "100000",
+       "4",
+       "T1"
+      ],
+      [
+       "C101",
+       "50000",
+       "1",
+       "SYSTEM"
+      ],
+      [
+       "C102",
+       "25000",
+       "2",
+       "T3"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "daily_upi_limit",
+     "version_no",
+     "updated_by"
+    ],
+    "rows": [
+     [
+      "C100",
+      "100000",
+      "4",
+      "T1"
+     ],
+     [
+      "C101",
+      "75000",
+      "2",
+      "T2"
+     ],
+     [
+      "C102",
+      "25000",
+      "2",
+      "T3"
+     ]
+    ]
+   },
+   "output_note": "CUST_LIMIT after the test block. The first call commits C101; the second call raises ORA-20001: Record changed by another user. Please refresh and retry. C100 keeps T1's value.",
+   "task": "Write procedure update_upi_limit(cust_id, new_limit, read_version, user) that updates only if the version is still the one the screen read, raises ORA-20001 otherwise, and commits on success. Then T2 calls it for C101 (read version 1, new limit 75000) and for C100 (read version 3, new limit 200000).",
+   "hint": "Put version_no = p_read_version in the UPDATE's WHERE clause and check SQL%ROWCOUNT right after it.",
+   "solution": "CREATE OR REPLACE PROCEDURE update_upi_limit (\n  p_cust_id      IN cust_limit.cust_id%TYPE,\n  p_new_limit    IN cust_limit.daily_upi_limit%TYPE,\n  p_read_version IN cust_limit.version_no%TYPE,\n  p_user         IN cust_limit.updated_by%TYPE\n) AS\nBEGIN\n  UPDATE cust_limit\n  SET    daily_upi_limit = p_new_limit,\n         version_no      = version_no + 1,\n         updated_by      = p_user\n  WHERE  cust_id    = p_cust_id\n  AND    version_no = p_read_version;\n\n  IF SQL%ROWCOUNT = 0 THEN\n    RAISE_APPLICATION_ERROR(-20001,\n      'Record changed by another user. Please refresh and retry.');\n  END IF;\n\n  COMMIT;\nEND update_upi_limit;\n/\n\nBEGIN\n  update_upi_limit('C101', 75000, 1, 'T2');\n  update_upi_limit('C100', 200000, 3, 'T2');\nEND;\n/",
+   "simple": "Think of a shared class notebook with a page number written at the top that goes up every time someone edits it. You copy page 3 to your desk to make changes. When you come back, you check: is it still page 3? If a friend already changed it to page 4, you must not scribble over their work, so you stop and read it again. The version number in the WHERE clause is that page check.",
+   "remember": "Save only if the version is still what I read.",
+   "why": "Optimistic locking avoids holding row locks while a user looks at a screen: the row is read with its version, and the later UPDATE includes version_no = :read_version, so it updates zero rows if anyone changed it in between. SQL%ROWCOUNT = 0 then signals a conflict and the procedure raises a user-defined error instead of losing T1's update. Pessimistic SELECT ... FOR UPDATE is better for short server-side transactions like transfers, while version columns suit web and teller screens with think time.",
+   "tip": "For screens with user think time I use optimistic locking with a version column and SQL%ROWCOUNT, and SELECT FOR UPDATE only for short server-side transactions."
+  },
+  {
+   "id": "f20261118-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Conditional INSERT FIRST",
+   "domain": "AML",
+   "title": "Route cash deposits to CTR and review",
+   "scenario": "Sunita Bhattacharya in the AML cell prepares the Cash Transaction Report for FIU-IND. From one day's cash transactions, amounts of ₹10 lakh or more go to the CTR table, and amounts from ₹9 lakh up to just below ₹10 lakh go to a near-threshold table for structuring review, each row to only one table.",
+   "schema": "CASH_TXN(txn_id VARCHAR2(10), cust_id VARCHAR2(10), txn_type VARCHAR2(10), amount NUMBER(14,2), txn_date DATE)\nCTR_REPORT(txn_id VARCHAR2(10), cust_id VARCHAR2(10), amount NUMBER(14,2))\nNEAR_THRESHOLD(txn_id VARCHAR2(10), cust_id VARCHAR2(10), amount NUMBER(14,2))\n-- amounts in INR, txn_type CASH_DEP or CASH_WDL",
+   "data": [
+    {
+     "name": "CASH_TXN",
+     "cols": [
+      "txn_id",
+      "cust_id",
+      "txn_type",
+      "amount",
+      "txn_date"
+     ],
+     "rows": [
+      [
+       "CT01",
+       "C501",
+       "CASH_DEP",
+       "1000000",
+       "16-11-2026"
+      ],
+      [
+       "CT02",
+       "C502",
+       "CASH_DEP",
+       "950000",
+       "16-11-2026"
+      ],
+      [
+       "CT03",
+       "C503",
+       "CASH_WDL",
+       "45000",
+       "16-11-2026"
+      ],
+      [
+       "CT04",
+       "C501",
+       "CASH_DEP",
+       "2500000",
+       "16-11-2026"
+      ],
+      [
+       "CT05",
+       "C504",
+       "CASH_DEP",
+       "990000",
+       "15-11-2026"
+      ],
+      [
+       "CT06",
+       "C505",
+       "CASH_DEP",
+       "899999",
+       "16-11-2026"
+      ]
+     ]
+    },
+    {
+     "name": "CTR_REPORT",
+     "cols": [
+      "txn_id",
+      "cust_id",
+      "amount"
+     ],
+     "rows": []
+    },
+    {
+     "name": "NEAR_THRESHOLD",
+     "cols": [
+      "txn_id",
+      "cust_id",
+      "amount"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "target_table",
+     "txn_id",
+     "cust_id",
+     "amount"
+    ],
+    "rows": [
+     [
+      "CTR_REPORT",
+      "CT01",
+      "C501",
+      "1000000"
+     ],
+     [
+      "CTR_REPORT",
+      "CT04",
+      "C501",
+      "2500000"
+     ],
+     [
+      "NEAR_THRESHOLD",
+      "CT02",
+      "C502",
+      "950000"
+     ]
+    ]
+   },
+   "output_note": "Rows in CTR_REPORT and NEAR_THRESHOLD after the insert, shown together. CT01 (exactly 10 lakh) goes only to CTR_REPORT because INSERT FIRST stops at the first true WHEN; with INSERT ALL it would also land in NEAR_THRESHOLD. CT05 is from 15-11-2026 and CT06 is below 9 lakh.",
+   "task": "In one statement, insert the 16-11-2026 cash transactions into CTR_REPORT (amount >= 1000000) or NEAR_THRESHOLD (amount >= 900000), so each row goes to at most one table.",
+   "hint": "Use INSERT FIRST with the 10 lakh WHEN clause written before the 9 lakh one.",
+   "solution": "INSERT FIRST\n  WHEN amount >= 1000000 THEN\n    INTO ctr_report (txn_id, cust_id, amount)\n    VALUES (txn_id, cust_id, amount)\n  WHEN amount >= 900000 THEN\n    INTO near_threshold (txn_id, cust_id, amount)\n    VALUES (txn_id, cust_id, amount)\nSELECT txn_id, cust_id, amount\nFROM   cash_txn\nWHERE  txn_date = DATE '2026-11-16';",
+   "simple": "Think of a post office sorting letters into cupboard drawers. Each letter is checked against rules from top to bottom: 'very big? put it in drawer 1', 'almost big? put it in drawer 2'. With INSERT FIRST, once a letter goes into a drawer, the sorter stops checking it. So a ₹10 lakh deposit goes only into the CTR drawer, not into both.",
+   "remember": "INSERT FIRST = first matching drawer only; ALL = every drawer.",
+   "why": "A multi-table insert reads the source query once and routes each row to one or more tables, which is faster and more consistent than separate INSERT ... SELECT statements. INSERT ALL evaluates every WHEN clause, so a row can go to several tables, while INSERT FIRST stops at the first true condition, so clause order matters. The whole statement is atomic, and an ELSE INTO branch can catch rows that match nothing.",
+   "tip": "To split one source into several targets I use a multi-table INSERT, choosing INSERT FIRST when each row must go to exactly one table."
   }
  ],
  "lessons": [
@@ -5136,6 +5944,17 @@
    "example": "WITH acct AS (\n  SELECT 'A1' acct_no, 5000 od_limit, CAST(NULL AS NUMBER) temp_limit FROM dual UNION ALL\n  SELECT 'A2', NULL, 20000 FROM dual UNION ALL\n  SELECT 'A3', NULL, NULL FROM dual\n)\nSELECT acct_no,\n       NVL(od_limit, 0)                   AS od_or_zero,\n       NVL2(od_limit, 'Has OD', 'No OD')  AS od_flag,\n       COALESCE(temp_limit, od_limit, 0)  AS effective_limit\nFROM   acct\nORDER  BY acct_no;\n-- A1 5000 Has OD 5000 | A2 0 No OD 20000 | A3 0 No OD 0",
    "gotcha": "NVL always evaluates its second argument, so NVL(col, slow_function()) calls the function for every row, while COALESCE calls it only when col is NULL.",
    "line": "I prefer COALESCE because it is ANSI, takes many arguments and short-circuits, and I use NVL2 when I need a different value for filled and empty cases."
+  },
+  {
+   "id": "fl20261118",
+   "concept": "Bind variables and hard parsing",
+   "why": "Banks run the same query millions of times, and interviewers ask about bind variables to see if you can avoid a common cause of slow, CPU-hungry databases.",
+   "simple": "Think of a shopping bill printed from a template where only the name and amount change. If the shop designed a brand-new bill layout for every customer, it would be very slow. A literal like acct_no = 'A1' makes Oracle plan a new query each time. A bind variable like acct_no = :acct lets Oracle reuse the same plan and just fill in the blank.",
+   "remember": "Same query, new value? Use a :bind, reuse the plan.",
+   "explain": "Before running a SQL statement Oracle parses it and builds an execution plan, and a hard parse (syntax check, optimisation, plan creation) is expensive and takes shared pool latches. If the SQL text differs only by a literal value, each version is a new statement and needs its own hard parse, filling the shared pool with near-duplicates. With a bind variable the text stays the same, so later executions are soft parses that reuse the cached cursor; static SQL in PL/SQL binds variables automatically, and dynamic SQL should use EXECUTE IMMEDIATE ... USING. Bind variables also prevent SQL injection, because the value is never part of the SQL text.",
+   "example": "VARIABLE acct VARCHAR2(10)\nEXEC :acct := 'A2'\n\nWITH account AS (\n  SELECT 'A1' acct_no, 52000 balance FROM dual UNION ALL\n  SELECT 'A2', 18500 FROM dual UNION ALL\n  SELECT 'A3', 730000 FROM dual\n)\nSELECT acct_no, balance\nFROM   account\nWHERE  acct_no = :acct;\n-- A2 18500 ; change :acct and rerun, the same cursor is reused",
+   "gotcha": "Concatenating values into dynamic SQL ('... WHERE acct_no = ''' || p_acct || '''') gives a new hard parse per value and opens a SQL injection hole, so use USING binds instead.",
+   "line": "I use bind variables so repeated statements are soft-parsed and share one cursor, which saves CPU and protects against SQL injection."
   }
  ]
 }
