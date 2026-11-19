@@ -1,0 +1,118 @@
+a01|A|sql|Running total with window frame|Core banking
+a02|A|sql|Gaps and islands|Loans and NPA
+a03|A|sql|RANGE window with interval|Fraud detection
+a04|M|sql|Top-N per group with ties|Deposits
+a05|M|sql|De-duplicate with ROW_NUMBER|Payments
+a06|A|sql|MERGE upsert|End-of-day batch
+a07|A|sql|FULL OUTER JOIN reconciliation|GL reconciliation
+a08|M|sql|LAG for period-over-period change|Mutual funds
+a09|A|sql|Hierarchical query|Approvals
+a10|M|sql|PIVOT|Payments
+a11|A|sql|ROLLUP and GROUPING|Loans
+a12|M|sql|KEEP (DENSE_RANK LAST)|KYC
+a13|A|sql|Moving average|Trading
+a14|A|sql|MATCH_RECOGNIZE|Liquidity monitoring
+a15|M|sql|LAG to detect reactivation|Dormant accounts
+a16|A|sql|Cumulative share|Customer analytics
+a17|A|sql|LEAD for interval length|Interest accrual
+p01|A|plsql|BULK COLLECT and FORALL with SAVE EXCEPTIONS|Batch processing
+p02|A|plsql|Row locking with SELECT FOR UPDATE|Funds transfer
+p03|A|plsql|Autonomous transaction|Audit trail
+p04|A|plsql|Compound trigger for mutating table|Withdrawal limits
+c01|M|sql|CASE buckets with aggregation|Collections
+c02|M|sql|NOT IN and NULL trap|Cross-sell
+c03|E|sql|Index-friendly date filter|Reporting
+c04|M|sql|Outer join with aggregation|Dormancy
+c05|E|sql|HAVING with COUNT DISTINCT|Customer engagement
+c06|E|sql|Set operators|KYC compliance
+c07|E|sql|Conditional aggregation|Statements
+c08|M|sql|Self-join|Reversals
+c09|M|sql|Correlated UPDATE with EXISTS|NPA classification
+c10|E|sql|Join with date arithmetic|Loans
+e01|E|sql|GROUP BY with COUNT|Branch banking
+e02|E|sql|ORDER BY with FETCH FIRST|Deposits
+e03|E|sql|INNER JOIN|Customer service
+e04|E|sql|CASE expression|Account services
+e05|E|sql|NVL for missing values|Account opening
+e06|E|sql|WHERE with IN|Payments
+e07|E|sql|HAVING after GROUP BY|Customer analytics
+e08|E|sql|SUM with GROUP BY on dates|Branch banking
+f20261112-1|A|sql|Recursive WITH schedule|Loans/EMI
+f20261112-2|A|sql|GROUPING SETS with GROUPING_ID|RBI reporting
+f20261112-3|A|plsql|Dynamic SQL with binds|KYC/AML
+f20261112-4|A|sql|LAST_VALUE IGNORE NULLS fill|Treasury
+f20261112-5|M|sql|Month-end date arithmetic|Cards
+f20261112-6|M|sql|NULL-safe mismatch with LNNVL|UPI/Fraud
+f20261113-1|E|sql|LIKE pattern match|Core banking/NRI
+f20261113-2|E|sql|Subquery with AVG|Mutual funds/SIP
+f20261113-3|M|sql|NTILE spend bands|Credit cards
+f20261113-4|M|sql|RATIO_TO_REPORT share|NEFT/Payments
+f20261113-5|A|plsql|Associative array reconciliation|GL reconciliation
+f20261113-6|A|sql|Merging overlapping date ranges|Health insurance
+f20261113-7|A|sql|MATCH_RECOGNIZE time-bound pattern|AML/Cash structuring
+f20261113-8|A|sql|FIFO allocation with running sums|Equity trading/Capital gains
+f20261114-1|E|sql|COALESCE first non-null|Insurance/Claims
+f20261114-2|E|sql|BETWEEN range filter|RTGS/Payments
+f20261114-3|M|sql|DENSE_RANK Nth highest|Equity trading/Surveillance
+f20261114-4|M|sql|LISTAGG with DISTINCT|KYC/Onboarding
+f20261114-5|A|plsql|SAVEPOINT partial rollback|Loans/EMI collection
+f20261114-6|A|sql|CUBE cross-tab totals|Cards/MIS
+f20261114-7|A|sql|MERGE with DELETE WHERE|Fixed deposits/Core banking
+f20261114-8|A|sql|Missing ranges with LEAD|GL audit/Concurrent audit
+f20261115-1|E|sql|SELECT DISTINCT|Cards/Fraud
+f20261115-2|E|sql|ADD_MONTHS date function|Deposits/Fixed deposits
+f20261115-3|M|sql|LEFT JOIN filter in ON|Payments/NEFT
+f20261115-4|M|sql|Running MAX drawdown|Mutual funds
+f20261115-5|A|plsql|Pipelined table function|Insurance/Life
+f20261115-6|A|sql|Recursive WITH cycle chain|Fraud/UPI money mules
+f20261115-7|A|sql|OUTER APPLY as-of lookup|Trading/Equity
+f20261115-8|A|sql|Largest remainder rounding allocation|GL/Cost allocation
+f20261116-1|E|sql|COUNT(*) versus COUNT(column)|KYC/AML
+f20261116-2|E|sql|UNION ALL to combine tables|Payments/NEFT-RTGS
+f20261116-3|M|sql|Date-time boundary with LEFT JOIN|Insurance/Life
+f20261116-4|M|sql|NULLIF to avoid divide by zero|Cards/Merchant acquiring
+f20261116-5|A|sql|Sessionization with LAG and running SUM|Fraud/Internet banking
+f20261116-6|A|sql|Transition matrix with PIVOT|Loans/NPA
+f20261116-7|A|plsql|DML error logging (LOG ERRORS)|Mutual funds/Data migration
+f20261116-8|A|sql|JSON_TABLE with NESTED PATH|Trading/Stock broking
+f20261117-1|E|sql|MIN and MAX per group|Treasury
+f20261117-2|E|sql|IS NULL filter|Insurance
+f20261117-3|M|sql|Age with MONTHS_BETWEEN|Core banking/Fixed deposits
+f20261117-4|M|sql|UNPIVOT with INCLUDE NULLS|RBI reporting
+f20261117-5|A|sql|Window frame excluding current row|Cards/Fraud
+f20261117-6|A|sql|CONNECT_BY_ROOT subtree totals|GL reconciliation
+f20261117-7|A|sql|Fast refresh materialized view|Trading/Broking
+f20261117-8|A|plsql|SKIP LOCKED with BULK COLLECT LIMIT|Payments/NEFT
+f20261118-1|E|sql|TO_CHAR month grouping|Payments/UPI
+f20261118-2|E|sql|UPPER and TRIM cleanup|KYC
+f20261118-3|M|sql|TRUNC date-time comparison|Loans/EMI
+f20261118-4|M|sql|MEDIAN versus AVG|Mutual funds
+f20261118-5|A|sql|Running total with reset|Cash management
+f20261118-6|A|sql|Partitioned outer join densify|RBI reporting
+f20261118-7|A|plsql|Optimistic locking with version|Core banking
+f20261118-8|A|sql|Conditional INSERT FIRST|AML
+f20261119-1|E|sql|EXTRACT year grouping|Insurance
+f20261119-2|E|sql|ORDER BY with NULLS LAST|Treasury
+f20261119-3|M|sql|Date difference in minutes|Payments/RTGS
+f20261119-4|M|sql|CUME_DIST percentile|Mutual funds
+f20261119-5|A|plsql|UPDATE RETURNING BULK COLLECT|Loans/NPA
+f20261119-6|A|sql|Split CSV with CONNECT BY|KYC/AML
+f20261119-7|A|sql|Pairwise matching with ROW_NUMBER|Cards
+f20261119-8|A|sql|Tiered slab computation|Core banking
+f20261119-9|A|sql|Repeated payments with LAG|Payments/UPI TECH:Repeated Payments
+l01|lesson|ROWS versus RANGE window frames
+l02|lesson|Partition pruning
+l03|lesson|SELECT FOR UPDATE SKIP LOCKED
+l04|lesson|NULL in aggregates and comparisons
+l05|lesson|Reading an execution plan
+l06|lesson|Exception handling and error propagation
+l07|lesson|Materialized views for reporting
+l08|lesson|Collections in PL/SQL
+fl20261112|lesson|LAST_VALUE and the default frame
+fl20261113|lesson|ROWNUM versus ORDER BY
+fl20261114|lesson|ROW_NUMBER, RANK and DENSE_RANK
+fl20261115|lesson|GROUP BY versus OVER (PARTITION BY)
+fl20261116|lesson|EXISTS versus IN
+fl20261117|lesson|NVL, NVL2 and COALESCE
+fl20261118|lesson|Bind variables and hard parsing
+fl20261119|lesson|When Oracle can use a B-tree index

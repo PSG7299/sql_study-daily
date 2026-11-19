@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths-ignore:
       - 'feed/**'
+      - 'scripts/**'
+      - 'concepts_index.txt'
+      - 'RULES.md'
+      - 'README.md'
   workflow_dispatch:
 
 permissions:
