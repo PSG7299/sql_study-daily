@@ -5876,6 +5876,921 @@
    "remember": "INSERT FIRST = first matching drawer only; ALL = every drawer.",
    "why": "A multi-table insert reads the source query once and routes each row to one or more tables, which is faster and more consistent than separate INSERT ... SELECT statements. INSERT ALL evaluates every WHEN clause, so a row can go to several tables, while INSERT FIRST stops at the first true condition, so clause order matters. The whole statement is atomic, and an ELSE INTO branch can catch rows that match nothing.",
    "tip": "To split one source into several targets I use a multi-table INSERT, choosing INSERT FIRST when each row must go to exactly one table."
+  },
+  {
+   "id": "f20261119-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "EXTRACT year grouping",
+   "domain": "Insurance",
+   "title": "Life policies issued each year",
+   "scenario": "Kavita Menon in the life insurance operations team is preparing a board slide on business growth. She wants to know how many term policies were issued in each calendar year and the total sum assured.",
+   "schema": "POLICY(policy_no VARCHAR2(10), holder_name VARCHAR2(50), plan_type VARCHAR2(20), issue_date DATE, sum_assured NUMBER(14,2))\n-- issue_date is the day the policy started, sum_assured in INR",
+   "data": [
+    {
+     "name": "POLICY",
+     "cols": [
+      "policy_no",
+      "holder_name",
+      "plan_type",
+      "issue_date",
+      "sum_assured"
+     ],
+     "rows": [
+      [
+       "P1001",
+       "Anil Verma",
+       "TERM",
+       "14-06-2024",
+       "5000000"
+      ],
+      [
+       "P1002",
+       "Sneha Pillai",
+       "TERM",
+       "02-11-2024",
+       "10000000"
+      ],
+      [
+       "P1003",
+       "Rohit Das",
+       "TERM",
+       "31-12-2025",
+       "7500000"
+      ],
+      [
+       "P1004",
+       "Farah Khan",
+       "TERM",
+       "01-01-2026",
+       "2500000"
+      ],
+      [
+       "P1005",
+       "Vikram Rao",
+       "TERM",
+       "18-03-2026",
+       "10000000"
+      ],
+      [
+       "P1006",
+       "Lata Joshi",
+       "TERM",
+       "09-09-2026",
+       "5000000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "issue_year",
+     "policies",
+     "total_sum_assured"
+    ],
+    "rows": [
+     [
+      "2024",
+      "2",
+      "15000000"
+     ],
+     [
+      "2025",
+      "1",
+      "7500000"
+     ],
+     [
+      "2026",
+      "3",
+      "17500000"
+     ]
+    ]
+   },
+   "task": "Show each issue year, the number of policies and the total sum assured, oldest year first.",
+   "hint": "EXTRACT(YEAR FROM issue_date) gives just the year number; group by that same expression.",
+   "solution": "SELECT EXTRACT(YEAR FROM issue_date) AS issue_year,\n       COUNT(*)                       AS policies,\n       SUM(sum_assured)               AS total_sum_assured\nFROM   policy\nGROUP  BY EXTRACT(YEAR FROM issue_date)\nORDER  BY issue_year;",
+   "simple": "Think of a school register where each student has a full birthday like 31 December 2015. If you only look at the year, you can put everyone born in 2015 in one group. EXTRACT(YEAR FROM issue_date) picks out only the year from the date. GROUP BY then makes one group per year, and COUNT and SUM tell how many policies and how much money.",
+   "remember": "EXTRACT the year, then group by it.",
+   "why": "EXTRACT(YEAR FROM date) returns a NUMBER, so all dates in a calendar year collapse to one value and GROUP BY produces one row per year. The expression must be repeated in GROUP BY because Oracle 19c does not allow the SELECT alias there, although ORDER BY can use the alias. Note that 31-12-2025 and 01-01-2026 land in different groups, which is exactly what a calendar-year report needs.",
+   "tip": "For calendar-year totals I group by EXTRACT(YEAR FROM date); for financial-year reports in India I first shift the date with ADD_MONTHS(date, -3)."
+  },
+  {
+   "id": "f20261119-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "ORDER BY with NULLS LAST",
+   "domain": "Treasury",
+   "title": "Bonds by maturity, perpetuals last",
+   "scenario": "Deepak Agarwal on the treasury desk reviews the bank's bond holdings every morning. He wants the longest-dated bonds at the top, but perpetual bonds (which have no maturity date) must go to the bottom of the list, not the top.",
+   "schema": "BOND_HOLDING(isin VARCHAR2(12), issuer VARCHAR2(40), face_value NUMBER(16,2), coupon_pct NUMBER(5,2), maturity_date DATE)\n-- face_value in INR, maturity_date is NULL for perpetual bonds",
+   "data": [
+    {
+     "name": "BOND_HOLDING",
+     "cols": [
+      "isin",
+      "issuer",
+      "face_value",
+      "coupon_pct",
+      "maturity_date"
+     ],
+     "rows": [
+      [
+       "IN0020230045",
+       "GOI 7.18% 2033",
+       "500000000",
+       "7.18",
+       "14-08-2033"
+      ],
+      [
+       "INE062A08256",
+       "SBI AT1 Perpetual",
+       "100000000",
+       "7.72",
+       "NULL"
+      ],
+      [
+       "IN0020220011",
+       "GOI 7.26% 2032",
+       "250000000",
+       "7.26",
+       "22-08-2032"
+      ],
+      [
+       "INE040A08377",
+       "HDFC Bank AT1 Perpetual",
+       "50000000",
+       "8.1",
+       "NULL"
+      ],
+      [
+       "IN0020240019",
+       "GOI 7.10% 2034",
+       "300000000",
+       "7.1",
+       "08-04-2034"
+      ],
+      [
+       "INE020B08DH8",
+       "REC 7.55% 2028",
+       "150000000",
+       "7.55",
+       "11-05-2028"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "isin",
+     "issuer",
+     "maturity_date"
+    ],
+    "rows": [
+     [
+      "IN0020240019",
+      "GOI 7.10% 2034",
+      "08-04-2034"
+     ],
+     [
+      "IN0020230045",
+      "GOI 7.18% 2033",
+      "14-08-2033"
+     ],
+     [
+      "IN0020220011",
+      "GOI 7.26% 2032",
+      "22-08-2032"
+     ],
+     [
+      "INE020B08DH8",
+      "REC 7.55% 2028",
+      "11-05-2028"
+     ],
+     [
+      "INE040A08377",
+      "HDFC Bank AT1 Perpetual",
+      "NULL"
+     ],
+     [
+      "INE062A08256",
+      "SBI AT1 Perpetual",
+      "NULL"
+     ]
+    ]
+   },
+   "task": "List isin, issuer and maturity_date with the latest maturity first and perpetual bonds (NULL maturity) at the end (ties by isin).",
+   "hint": "Add NULLS LAST after DESC, because Oracle puts NULLs first by default in a descending sort.",
+   "solution": "SELECT isin, issuer, maturity_date\nFROM   bond_holding\nORDER  BY maturity_date DESC NULLS LAST, isin;",
+   "simple": "Imagine lining up friends from tallest to shortest, but two friends have not been measured yet. Oracle thinks an unknown height is 'bigger than everyone', so in a tallest-first line it puts them at the front. NULLS LAST tells Oracle: put the unknown ones at the back of the line. Here, perpetual bonds have no maturity date, so they go to the bottom.",
+   "remember": "DESC puts NULLs on top; add NULLS LAST.",
+   "why": "Oracle treats NULL as higher than any value when sorting, so ORDER BY ... ASC puts NULLs last and ORDER BY ... DESC puts NULLs first by default. NULLS FIRST / NULLS LAST overrides that placement without changing the sort direction of real values. It is cleaner than tricks like NVL(maturity_date, DATE '1900-01-01'), which hide the intent.",
+   "tip": "I always state NULLS FIRST or NULLS LAST explicitly in reports, because Oracle's default flips between ASC and DESC."
+  },
+  {
+   "id": "f20261119-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Date difference in minutes",
+   "domain": "Payments/RTGS",
+   "title": "RTGS settlement time SLA check",
+   "scenario": "Sunita Bhatt in payment operations must report RTGS payments that took more than 30 minutes to settle, as customers complain about high-value transfers. Some payments are still pending, and one crossed midnight because RTGS now runs 24x7.",
+   "schema": "RTGS_TXN(utr VARCHAR2(22), sender_acct VARCHAR2(16), amount NUMBER(16,2), initiated_at DATE, settled_at DATE)\n-- both columns have date and time, settled_at is NULL while pending, amount in INR",
+   "data": [
+    {
+     "name": "RTGS_TXN",
+     "cols": [
+      "utr",
+      "sender_acct",
+      "amount",
+      "initiated_at",
+      "settled_at"
+     ],
+     "rows": [
+      [
+       "UTR2611190001",
+       "50100012345",
+       "500000",
+       "18-11-2026 10:00",
+       "18-11-2026 10:12"
+      ],
+      [
+       "UTR2611190002",
+       "50100067890",
+       "2500000",
+       "18-11-2026 11:20",
+       "18-11-2026 11:50"
+      ],
+      [
+       "UTR2611190003",
+       "50100011111",
+       "1200000",
+       "18-11-2026 15:05",
+       "18-11-2026 15:48"
+      ],
+      [
+       "UTR2611190004",
+       "50100022222",
+       "800000",
+       "18-11-2026 23:45",
+       "19-11-2026 00:31"
+      ],
+      [
+       "UTR2611190005",
+       "50100033333",
+       "3000000",
+       "19-11-2026 09:40",
+       "NULL"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "utr",
+     "amount",
+     "mins_taken",
+     "sla_status"
+    ],
+    "rows": [
+     [
+      "UTR2611190001",
+      "500000",
+      "12",
+      "ON TIME"
+     ],
+     [
+      "UTR2611190002",
+      "2500000",
+      "30",
+      "ON TIME"
+     ],
+     [
+      "UTR2611190003",
+      "1200000",
+      "43",
+      "DELAYED"
+     ],
+     [
+      "UTR2611190004",
+      "800000",
+      "46",
+      "DELAYED"
+     ],
+     [
+      "UTR2611190005",
+      "3000000",
+      "NULL",
+      "PENDING"
+     ]
+    ]
+   },
+   "task": "For each payment show utr, amount, minutes taken and a status: 'PENDING' if not settled, 'DELAYED' if more than 30 minutes, otherwise 'ON TIME'.",
+   "hint": "Subtracting two DATEs gives days, so multiply by 24*60 to get minutes.",
+   "solution": "SELECT utr,\n       amount,\n       ROUND((settled_at - initiated_at) * 24 * 60) AS mins_taken,\n       CASE\n         WHEN settled_at IS NULL THEN 'PENDING'\n         WHEN (settled_at - initiated_at) * 24 * 60 > 30 THEN 'DELAYED'\n         ELSE 'ON TIME'\n       END AS sla_status\nFROM   rtgs_txn\nORDER  BY utr;",
+   "simple": "Think of a stopwatch: you note the start time and the stop time, and the gap is how long the race took. In Oracle, stop date minus start date gives the gap in days, like 0.5 for half a day. Multiply by 24 to get hours and by 60 more to get minutes. If the stopwatch was never stopped (settled_at is empty), we call it PENDING instead of guessing.",
+   "remember": "Date minus date = days; times 1440 = minutes.",
+   "why": "DATE - DATE in Oracle returns a NUMBER of days including the fraction, so multiplying by 1440 converts it to minutes and naturally handles payments that cross midnight. When settled_at is NULL the difference is NULL, so the CASE checks IS NULL first; otherwise the NULL comparison would fall to ELSE and wrongly show 'ON TIME'. Exactly 30 minutes is not greater than 30, so UTR...0002 is on time.",
+   "tip": "For DATE columns I use (d2 - d1) * 1440 for minutes, and for TIMESTAMP columns I use EXTRACT on the INTERVAL result."
+  },
+  {
+   "id": "f20261119-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "CUME_DIST percentile",
+   "domain": "Mutual funds",
+   "title": "Percentile of each fund in category",
+   "scenario": "Nikhil Saxena in the AMC's product team wants to tell distributors where each scheme stands within its SEBI category on 1-year returns. Two large-cap schemes have exactly the same return, and they must get the same percentile.",
+   "schema": "FUND_RETURN(scheme_code VARCHAR2(10), scheme_name VARCHAR2(50), category VARCHAR2(20), return_1y NUMBER(6,2))\n-- return_1y is the 1-year return in percent",
+   "data": [
+    {
+     "name": "FUND_RETURN",
+     "cols": [
+      "scheme_code",
+      "scheme_name",
+      "category",
+      "return_1y"
+     ],
+     "rows": [
+      [
+       "LC01",
+       "Bluechip Growth",
+       "Large Cap",
+       "14.2"
+      ],
+      [
+       "LC02",
+       "Nifty 100 Index",
+       "Large Cap",
+       "12.5"
+      ],
+      [
+       "LC03",
+       "Frontline Equity",
+       "Large Cap",
+       "12.5"
+      ],
+      [
+       "LC04",
+       "Top 100 Fund",
+       "Large Cap",
+       "10.8"
+      ],
+      [
+       "MC01",
+       "Emerging Leaders",
+       "Mid Cap",
+       "22.4"
+      ],
+      [
+       "MC02",
+       "Midcap Opportunities",
+       "Mid Cap",
+       "18.9"
+      ],
+      [
+       "MC03",
+       "Value Midcap",
+       "Mid Cap",
+       "25.1"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "category",
+     "scheme_code",
+     "return_1y",
+     "percentile"
+    ],
+    "rows": [
+     [
+      "Large Cap",
+      "LC01",
+      "14.2",
+      "100"
+     ],
+     [
+      "Large Cap",
+      "LC02",
+      "12.5",
+      "75"
+     ],
+     [
+      "Large Cap",
+      "LC03",
+      "12.5",
+      "75"
+     ],
+     [
+      "Large Cap",
+      "LC04",
+      "10.8",
+      "25"
+     ],
+     [
+      "Mid Cap",
+      "MC03",
+      "25.1",
+      "100"
+     ],
+     [
+      "Mid Cap",
+      "MC01",
+      "22.4",
+      "67"
+     ],
+     [
+      "Mid Cap",
+      "MC02",
+      "18.9",
+      "33"
+     ]
+    ]
+   },
+   "task": "For each scheme show category, scheme_code, return_1y and its percentile within the category as a whole number (share of schemes in the category with the same or lower return), best return first within each category.",
+   "hint": "CUME_DIST() OVER (PARTITION BY category ORDER BY return_1y) returns a fraction between 0 and 1; multiply by 100 and ROUND.",
+   "solution": "SELECT category,\n       scheme_code,\n       return_1y,\n       ROUND(CUME_DIST() OVER (PARTITION BY category\n                               ORDER BY return_1y) * 100) AS percentile\nFROM   fund_return\nORDER  BY category, return_1y DESC, scheme_code;",
+   "simple": "Imagine your class gets test marks and you ask: how many kids scored the same as me or less? If 3 out of 4 kids did, you are at 75 percent. CUME_DIST does this count for each fund inside its own group (Large Cap or Mid Cap). Two funds with the same return are like two kids with the same marks, so they get the same answer.",
+   "remember": "CUME_DIST = share of rows at or below me.",
+   "why": "CUME_DIST computes (number of rows with value <= current value) / (rows in partition), so peers with equal ORDER BY values share the same result, here 75 for both 12.5% schemes. PERCENT_RANK instead computes (rank - 1) / (rows - 1) and starts at 0, so pick the one whose definition matches the business statement. PARTITION BY category keeps the comparison within each SEBI category.",
+   "tip": "For 'top X percent' questions I use CUME_DIST or PERCENT_RANK and explain how each treats ties, instead of hand-coding counts."
+  },
+  {
+   "id": "f20261119-5",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "UPDATE RETURNING BULK COLLECT",
+   "domain": "Loans/NPA",
+   "title": "Mark NPAs and audit in bulk",
+   "scenario": "Prakash Kulkarni runs the month-end NPA job for the MSME loan book. Loans that are more than 90 days past due must become NPA with a 15% provision, and the exact loans and provisions changed must go into an audit table without a second query on LOAN_ACCT.",
+   "schema": "LOAN_ACCT(loan_id VARCHAR2(10), borrower VARCHAR2(50), outstanding NUMBER(14,2), dpd NUMBER, status VARCHAR2(5), provision NUMBER(14,2))\n-- status STD or NPA, dpd = days past due, amounts in INR\nNPA_AUDIT(loan_id VARCHAR2(10), provision NUMBER(14,2), marked_on DATE)\n-- one row per loan newly marked NPA",
+   "data": [
+    {
+     "name": "LOAN_ACCT",
+     "cols": [
+      "loan_id",
+      "borrower",
+      "outstanding",
+      "dpd",
+      "status",
+      "provision"
+     ],
+     "rows": [
+      [
+       "L201",
+       "Sharma Traders",
+       "1200000",
+       "95",
+       "STD",
+       "0"
+      ],
+      [
+       "L202",
+       "Rao Textiles",
+       "850000",
+       "90",
+       "STD",
+       "0"
+      ],
+      [
+       "L203",
+       "Kumar Agro",
+       "430000",
+       "130",
+       "STD",
+       "0"
+      ],
+      [
+       "L204",
+       "Bose Pharma",
+       "2000000",
+       "30",
+       "STD",
+       "0"
+      ],
+      [
+       "L205",
+       "Iyer Exports",
+       "600000",
+       "210",
+       "NPA",
+       "90000"
+      ]
+     ]
+    },
+    {
+     "name": "NPA_AUDIT",
+     "cols": [
+      "loan_id",
+      "provision",
+      "marked_on"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "provision",
+     "marked_on"
+    ],
+    "rows": [
+     [
+      "L201",
+      "180000",
+      "19-11-2026"
+     ],
+     [
+      "L203",
+      "64500",
+      "19-11-2026"
+     ]
+    ]
+   },
+   "output_note": "NPA_AUDIT after the block. LOAN_ACCT now shows L201 and L203 as NPA with provisions 180000 and 64500; L202 (exactly 90 dpd) stays STD and L205 was already NPA. DBMS_OUTPUT prints '2 loans marked NPA'.",
+   "task": "Write an anonymous block that marks STD loans with dpd > 90 as NPA with provision = ROUND(outstanding * 0.15), captures the changed loan_ids and provisions with RETURNING BULK COLLECT, inserts them into NPA_AUDIT with FORALL dated 19-11-2026, and commits.",
+   "hint": "Put RETURNING loan_id, provision BULK COLLECT INTO two nested tables at the end of the UPDATE, then FORALL over 1 .. l_ids.COUNT.",
+   "solution": "DECLARE\n  TYPE t_id   IS TABLE OF loan_acct.loan_id%TYPE;\n  TYPE t_prov IS TABLE OF loan_acct.provision%TYPE;\n  l_ids  t_id;\n  l_prov t_prov;\nBEGIN\n  UPDATE loan_acct\n  SET    status    = 'NPA',\n         provision = ROUND(outstanding * 0.15)\n  WHERE  status = 'STD'\n  AND    dpd    > 90\n  RETURNING loan_id, provision BULK COLLECT INTO l_ids, l_prov;\n\n  FORALL i IN 1 .. l_ids.COUNT\n    INSERT INTO npa_audit (loan_id, provision, marked_on)\n    VALUES (l_ids(i), l_prov(i), DATE '2026-11-19');\n\n  DBMS_OUTPUT.PUT_LINE(l_ids.COUNT || ' loans marked NPA');\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a teacher who stamps 'late' on some homework and, while stamping, writes each name on a list. She does not walk around the class a second time to find who got stamped. RETURNING ... BULK COLLECT is that list: the UPDATE changes the rows and hands back their ids and new values in one go. FORALL then writes the whole list into the audit table in one trip.",
+   "remember": "Change rows and catch what changed in one trip.",
+   "why": "RETURNING ... BULK COLLECT INTO fills collections with the post-update values of every affected row, so there is no re-query and no risk of picking up rows changed by another session in between. FORALL sends all audit inserts to the SQL engine in one context switch, and with an empty collection the 1 .. 0 range simply does nothing. The returned provision is the new value (180000 and 64500), and dpd = 90 is not > 90, so L202 stays standard.",
+   "tip": "When I need the keys or new values of rows I just updated, I use RETURNING BULK COLLECT INTO instead of a second SELECT, then FORALL for the follow-up DML."
+  },
+  {
+   "id": "f20261119-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Split CSV with CONNECT BY",
+   "domain": "KYC/AML",
+   "title": "Split legacy KYC document lists",
+   "scenario": "Ritu Chawla is migrating KYC data from a legacy core banking system where all documents a customer submitted are stored in one comma-separated column. The new KYC table needs one row per document, and some lists have spaces after commas or are empty.",
+   "schema": "LEGACY_KYC(cust_id VARCHAR2(10), cust_name VARCHAR2(50), doc_list VARCHAR2(200))\n-- doc_list like 'PAN,AADHAAR'; NULL when no document was captured",
+   "data": [
+    {
+     "name": "LEGACY_KYC",
+     "cols": [
+      "cust_id",
+      "cust_name",
+      "doc_list"
+     ],
+     "rows": [
+      [
+       "C501",
+       "Manoj Tiwari",
+       "PAN,AADHAAR"
+      ],
+      [
+       "C502",
+       "Priya Nair",
+       "PAN, PASSPORT, VOTER ID"
+      ],
+      [
+       "C503",
+       "Salim Shaikh",
+       "NULL"
+      ],
+      [
+       "C504",
+       "Geeta Rawat",
+       "AADHAAR"
+      ],
+      [
+       "C505",
+       "Arvind Sen",
+       "PAN,AADHAAR,DL"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "doc_seq",
+     "doc_type"
+    ],
+    "rows": [
+     [
+      "C501",
+      "1",
+      "PAN"
+     ],
+     [
+      "C501",
+      "2",
+      "AADHAAR"
+     ],
+     [
+      "C502",
+      "1",
+      "PAN"
+     ],
+     [
+      "C502",
+      "2",
+      "PASSPORT"
+     ],
+     [
+      "C502",
+      "3",
+      "VOTER ID"
+     ],
+     [
+      "C504",
+      "1",
+      "AADHAAR"
+     ],
+     [
+      "C505",
+      "1",
+      "PAN"
+     ],
+     [
+      "C505",
+      "2",
+      "AADHAAR"
+     ],
+     [
+      "C505",
+      "3",
+      "DL"
+     ]
+    ]
+   },
+   "task": "Return cust_id, doc_seq (position in the list) and doc_type (trimmed) with one row per document, skipping customers with no list, ordered by cust_id and doc_seq.",
+   "hint": "Use CROSS APPLY with a CONNECT BY LEVEL <= REGEXP_COUNT(doc_list, ',') + 1 row generator, and REGEXP_SUBSTR(doc_list, '[^,]+', 1, level) to pick each piece.",
+   "solution": "SELECT k.cust_id,\n       d.doc_seq,\n       TRIM(REGEXP_SUBSTR(k.doc_list, '[^,]+', 1, d.doc_seq)) AS doc_type\nFROM   legacy_kyc k\nCROSS  APPLY (SELECT LEVEL AS doc_seq\n              FROM   dual\n              CONNECT BY LEVEL <= REGEXP_COUNT(k.doc_list, ',') + 1) d\nWHERE  k.doc_list IS NOT NULL\nORDER  BY k.cust_id, d.doc_seq;",
+   "simple": "Imagine a shopping bill where someone wrote 'milk, bread, eggs' on one line, and you need each item on its own line. First you count the commas to know how many items there are (2 commas = 3 items). Then you make that many numbered lines and pick item 1, item 2, item 3. TRIM removes the extra spaces. If the line is empty, there is nothing to copy.",
+   "remember": "Count commas plus one, then pick piece number LEVEL.",
+   "why": "REGEXP_COUNT(doc_list, ',') + 1 gives the number of elements, and the correlated CROSS APPLY runs a CONNECT BY LEVEL generator per customer, avoiding the classic cross-row explosion of a plain CONNECT BY over a multi-row table. CONNECT BY always returns the root row even when LEVEL <= NULL is false, so a NULL list would produce one NULL document unless filtered with doc_list IS NOT NULL. REGEXP_SUBSTR with '[^,]+' and occurrence = doc_seq extracts each piece, and TRIM cleans the leading spaces.",
+   "tip": "To split delimited strings per row in 19c I use CROSS APPLY with CONNECT BY LEVEL, or a PRIOR SYS_GUID() trick in older versions, so rows do not multiply across customers."
+  },
+  {
+   "id": "f20261119-7",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Pairwise matching with ROW_NUMBER",
+   "domain": "Cards",
+   "title": "Match card authorisations to settlements",
+   "scenario": "Harish Reddy reconciles debit card authorisations with the scheme settlement file every day. A customer often has two authorisations of the same amount (two Rs 250 metro top-ups) but only one has settled, so a simple join on card and amount double-matches.",
+   "schema": "CARD_AUTH(auth_id VARCHAR2(10), card_no VARCHAR2(16), amount NUMBER(12,2), auth_time DATE)\n-- card_no is masked, amount in INR, auth_time has date and time\nCARD_SETTLE(settle_id VARCHAR2(10), card_no VARCHAR2(16), amount NUMBER(12,2), settle_date DATE)\n-- one row per settled transaction from the card scheme",
+   "data": [
+    {
+     "name": "CARD_AUTH",
+     "cols": [
+      "auth_id",
+      "card_no",
+      "amount",
+      "auth_time"
+     ],
+     "rows": [
+      [
+       "A1",
+       "XXXX1001",
+       "250",
+       "10-11-2026 08:10"
+      ],
+      [
+       "A2",
+       "XXXX1001",
+       "250",
+       "10-11-2026 18:45"
+      ],
+      [
+       "A3",
+       "XXXX1001",
+       "1899",
+       "11-11-2026 13:00"
+      ],
+      [
+       "A4",
+       "XXXX2002",
+       "5400",
+       "11-11-2026 20:15"
+      ],
+      [
+       "A5",
+       "XXXX2002",
+       "750",
+       "12-11-2026 09:30"
+      ]
+     ]
+    },
+    {
+     "name": "CARD_SETTLE",
+     "cols": [
+      "settle_id",
+      "card_no",
+      "amount",
+      "settle_date"
+     ],
+     "rows": [
+      [
+       "S1",
+       "XXXX1001",
+       "250",
+       "11-11-2026"
+      ],
+      [
+       "S2",
+       "XXXX1001",
+       "1899",
+       "12-11-2026"
+      ],
+      [
+       "S3",
+       "XXXX2002",
+       "5400",
+       "12-11-2026"
+      ],
+      [
+       "S4",
+       "XXXX2002",
+       "1200",
+       "13-11-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "card_no",
+     "amount",
+     "auth_id",
+     "settle_id",
+     "recon_status"
+    ],
+    "rows": [
+     [
+      "XXXX1001",
+      "250",
+      "A1",
+      "S1",
+      "MATCHED"
+     ],
+     [
+      "XXXX1001",
+      "250",
+      "A2",
+      "NULL",
+      "AUTH ONLY"
+     ],
+     [
+      "XXXX1001",
+      "1899",
+      "A3",
+      "S2",
+      "MATCHED"
+     ],
+     [
+      "XXXX2002",
+      "750",
+      "A5",
+      "NULL",
+      "AUTH ONLY"
+     ],
+     [
+      "XXXX2002",
+      "1200",
+      "NULL",
+      "S4",
+      "SETTLE ONLY"
+     ],
+     [
+      "XXXX2002",
+      "5400",
+      "A4",
+      "S3",
+      "MATCHED"
+     ]
+    ]
+   },
+   "task": "Pair the 1st authorisation of a card and amount with the 1st settlement of that card and amount, the 2nd with the 2nd, and so on (oldest first). Show card_no, amount, auth_id, settle_id and recon_status MATCHED, AUTH ONLY or SETTLE ONLY.",
+   "hint": "Number rows with ROW_NUMBER() OVER (PARTITION BY card_no, amount ORDER BY time) on both sides, then FULL OUTER JOIN on card_no, amount and that number.",
+   "solution": "WITH a AS (\n  SELECT auth_id, card_no, amount,\n         ROW_NUMBER() OVER (PARTITION BY card_no, amount\n                            ORDER BY auth_time, auth_id) AS rn\n  FROM   card_auth\n), s AS (\n  SELECT settle_id, card_no, amount,\n         ROW_NUMBER() OVER (PARTITION BY card_no, amount\n                            ORDER BY settle_date, settle_id) AS rn\n  FROM   card_settle\n)\nSELECT COALESCE(a.card_no, s.card_no) AS card_no,\n       COALESCE(a.amount,  s.amount)  AS amount,\n       a.auth_id,\n       s.settle_id,\n       CASE\n         WHEN a.auth_id IS NULL   THEN 'SETTLE ONLY'\n         WHEN s.settle_id IS NULL THEN 'AUTH ONLY'\n         ELSE 'MATCHED'\n       END AS recon_status\nFROM   a\nFULL   OUTER JOIN s\n       ON  s.card_no = a.card_no\n       AND s.amount  = a.amount\n       AND s.rn      = a.rn\nORDER  BY 1, 2, COALESCE(a.rn, s.rn);",
+   "simple": "Think of a school dance where boys and girls with the same shirt colour must pair up. If there are two red-shirt boys but one red-shirt girl, both boys cannot dance with her. So you number them: red boy 1 dances with red girl 1, and red boy 2 waits alone. ROW_NUMBER gives each row its number inside its group (same card, same amount). Then we join on that number too, so nobody is matched twice.",
+   "remember": "Number each side, then join on the number too.",
+   "why": "Joining only on card_no and amount is a many-to-many join, so one settlement would match both Rs 250 authorisations and look fully reconciled. Adding ROW_NUMBER per (card_no, amount) ordered by time turns duplicates into distinct keys, giving one-to-one pairs in FIFO order. The FULL OUTER JOIN then exposes both sides' leftovers: A2 and A5 are unsettled authorisations and S4 is a settlement without an authorisation (for example a force post).",
+   "tip": "When reconciling records with duplicate keys I add ROW_NUMBER per key on both sides and join on it, so matches are one-to-one and leftovers show up in a FULL OUTER JOIN."
+  },
+  {
+   "id": "f20261119-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Tiered slab computation",
+   "domain": "Core banking",
+   "title": "Savings interest on tiered rate slabs",
+   "scenario": "Meera Krishnan in the deposits product team is testing a new savings scheme where each part of the balance earns its own rate: up to Rs 1 lakh at 2.7%, the next Rs 4 lakh at 3%, and anything above Rs 5 lakh at 3.5%. She wants the yearly interest and effective rate per account from the slab table, not hard-coded numbers.",
+   "schema": "SB_BALANCE(acct_no VARCHAR2(12), cust_name VARCHAR2(50), eod_balance NUMBER(14,2))\n-- end-of-day balance in INR\nRATE_SLAB(slab_from NUMBER(14,2), slab_to NUMBER(14,2), rate_pct NUMBER(5,2))\n-- balance portion above slab_from up to slab_to earns rate_pct; slab_to NULL = no upper limit",
+   "data": [
+    {
+     "name": "SB_BALANCE",
+     "cols": [
+      "acct_no",
+      "cust_name",
+      "eod_balance"
+     ],
+     "rows": [
+      [
+       "SB1001",
+       "Ajay Mehta",
+       "75000"
+      ],
+      [
+       "SB1002",
+       "Pooja Shah",
+       "100000"
+      ],
+      [
+       "SB1003",
+       "Ramesh Gupta",
+       "350000"
+      ],
+      [
+       "SB1004",
+       "Nandini Rao",
+       "500000"
+      ],
+      [
+       "SB1005",
+       "Imran Qureshi",
+       "1200000"
+      ]
+     ]
+    },
+    {
+     "name": "RATE_SLAB",
+     "cols": [
+      "slab_from",
+      "slab_to",
+      "rate_pct"
+     ],
+     "rows": [
+      [
+       "0",
+       "100000",
+       "2.7"
+      ],
+      [
+       "100000",
+       "500000",
+       "3"
+      ],
+      [
+       "500000",
+       "NULL",
+       "3.5"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "acct_no",
+     "eod_balance",
+     "annual_interest",
+     "effective_rate"
+    ],
+    "rows": [
+     [
+      "SB1001",
+      "75000",
+      "2025",
+      "2.7"
+     ],
+     [
+      "SB1002",
+      "100000",
+      "2700",
+      "2.7"
+     ],
+     [
+      "SB1003",
+      "350000",
+      "10200",
+      "2.91"
+     ],
+     [
+      "SB1004",
+      "500000",
+      "14700",
+      "2.94"
+     ],
+     [
+      "SB1005",
+      "1200000",
+      "39200",
+      "3.27"
+     ]
+    ]
+   },
+   "task": "For each account show acct_no, eod_balance, annual_interest (sum over slabs of the balance portion in that slab times its rate) and effective_rate = interest * 100 / balance rounded to 2 decimals, assuming the balance stays the same for a year.",
+   "hint": "Join each account to every slab whose slab_from is below the balance, and take LEAST(balance, NVL(slab_to, balance)) - slab_from as the portion in that slab.",
+   "solution": "SELECT a.acct_no,\n       a.eod_balance,\n       SUM((LEAST(a.eod_balance, NVL(s.slab_to, a.eod_balance)) - s.slab_from)\n           * s.rate_pct / 100) AS annual_interest,\n       ROUND(SUM((LEAST(a.eod_balance, NVL(s.slab_to, a.eod_balance)) - s.slab_from)\n           * s.rate_pct / 100) * 100 / a.eod_balance, 2) AS effective_rate\nFROM   sb_balance a\nJOIN   rate_slab  s\n       ON a.eod_balance > s.slab_from\nGROUP  BY a.acct_no, a.eod_balance\nORDER  BY a.acct_no;",
+   "simple": "Think of a staircase of cupboard drawers: the first drawer holds up to Rs 1 lakh, the second holds the next Rs 4 lakh, and the top drawer holds the rest. You fill drawers from the bottom, and each drawer pays its own interest rate. For every drawer we work out how much money is inside it and multiply by its rate. Adding the drawers gives the total interest.",
+   "remember": "Fill slabs bottom up; each slab pays only its part.",
+   "why": "The join condition eod_balance > slab_from attaches only the slabs the balance actually reaches, and LEAST(balance, NVL(slab_to, balance)) - slab_from caps the portion at the slab width, with NVL handling the open-ended top slab. Summing portion * rate after GROUP BY gives the marginal (tiered) interest, which differs from applying one rate to the whole balance: Rs 12 lakh earns 39200, an effective 3.27%, not 3.5%. Keeping slabs in a table means a rate change is a data update, not a code release.",
+   "tip": "For slab-based interest, TDS or charges I join to a slab table and use LEAST/GREATEST to cap each portion, so rate changes need no code change."
   }
  ],
  "lessons": [
@@ -5955,6 +6870,17 @@
    "example": "VARIABLE acct VARCHAR2(10)\nEXEC :acct := 'A2'\n\nWITH account AS (\n  SELECT 'A1' acct_no, 52000 balance FROM dual UNION ALL\n  SELECT 'A2', 18500 FROM dual UNION ALL\n  SELECT 'A3', 730000 FROM dual\n)\nSELECT acct_no, balance\nFROM   account\nWHERE  acct_no = :acct;\n-- A2 18500 ; change :acct and rerun, the same cursor is reused",
    "gotcha": "Concatenating values into dynamic SQL ('... WHERE acct_no = ''' || p_acct || '''') gives a new hard parse per value and opens a SQL injection hole, so use USING binds instead.",
    "line": "I use bind variables so repeated statements are soft-parsed and share one cursor, which saves CPU and protects against SQL injection."
+  },
+  {
+   "id": "fl20261119",
+   "concept": "When Oracle can use a B-tree index",
+   "why": "Bank tables hold crores of rows, and interviewers check whether you know why a query on an indexed column can still scan the whole table.",
+   "simple": "Think of the index at the back of a textbook: words are listed A to Z with page numbers, so you jump straight to the page. If you ask 'find words that end in -tion', the A-to-Z list cannot help and you must read every page. An Oracle index works the same way on the column's real stored values. If you change the column first (wrap it in a function, or compare text to a number), Oracle cannot use the list and reads the whole table.",
+   "remember": "Leave the indexed column bare; change the value instead.",
+   "explain": "A B-tree index stores column values in sorted order with ROWIDs, so Oracle can do an index range scan when the predicate compares the bare column with =, <, >, BETWEEN or a LIKE with a fixed prefix. Wrapping the column in a function such as TRUNC(txn_date) or UPPER(name), a leading wildcard LIKE '%1001', or an implicit conversion (acct_no VARCHAR2 compared with the number 1001 becomes TO_NUMBER(acct_no) = 1001) hides the stored values, so the optimizer cannot use a normal index. The fix is to rewrite the predicate on the value side (txn_date >= :d AND txn_date < :d + 1, acct_no = '1001') or create a function-based index on the exact expression. Even a usable index may be skipped if the query returns a large share of rows, because a full scan with multiblock reads is then cheaper.",
+   "example": "WITH txn AS (\n  SELECT '1001' acct_no, TO_DATE('31-03-2026 10:15','DD-MM-YYYY HH24:MI') txn_date, 5000 amount FROM dual UNION ALL\n  SELECT '1001', TO_DATE('31-03-2026 18:40','DD-MM-YYYY HH24:MI'), 1200 FROM dual UNION ALL\n  SELECT '1002', TO_DATE('01-04-2026 09:05','DD-MM-YYYY HH24:MI'), 800 FROM dual\n)\nSELECT acct_no, txn_date, amount\nFROM   txn\nWHERE  acct_no  = '1001'                  -- not acct_no = 1001\nAND    txn_date >= DATE '2026-03-31'       -- not TRUNC(txn_date) = ...\nAND    txn_date <  DATE '2026-04-01';\n-- returns the two rows of 31-03-2026 for account 1001",
+   "gotcha": "Comparing a VARCHAR2 column to a number makes Oracle apply TO_NUMBER to every row's column, which silently disables the index and can even raise ORA-01722 on non-numeric values.",
+   "line": "I keep indexed columns bare in WHERE clauses, match data types to avoid implicit conversion, and use function-based indexes only when the expression cannot be moved to the value side."
   }
  ]
 }
