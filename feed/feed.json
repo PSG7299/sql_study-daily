@@ -5972,7 +5972,37 @@
    "simple": "Think of a school register where each student has a full birthday like 31 December 2015. If you only look at the year, you can put everyone born in 2015 in one group. EXTRACT(YEAR FROM issue_date) picks out only the year from the date. GROUP BY then makes one group per year, and COUNT and SUM tell how many policies and how much money.",
    "remember": "EXTRACT the year, then group by it.",
    "why": "EXTRACT(YEAR FROM date) returns a NUMBER, so all dates in a calendar year collapse to one value and GROUP BY produces one row per year. The expression must be repeated in GROUP BY because Oracle 19c does not allow the SELECT alias there, although ORDER BY can use the alias. Note that 31-12-2025 and 01-01-2026 land in different groups, which is exactly what a calendar-year report needs.",
-   "tip": "For calendar-year totals I group by EXTRACT(YEAR FROM date); for financial-year reports in India I first shift the date with ADD_MONTHS(date, -3)."
+   "tip": "For calendar-year totals I group by EXTRACT(YEAR FROM date); for financial-year reports in India I first shift the date with ADD_MONTHS(date, -3).",
+   "steps": [
+    {
+     "say": "Step one. EXTRACT YEAR pulls only the year out of the issue date.",
+     "lines": [
+      1,
+      1
+     ]
+    },
+    {
+     "say": "COUNT star counts the policies, and SUM adds the sum assured.",
+     "lines": [
+      2,
+      3
+     ]
+    },
+    {
+     "say": "Step two. GROUP BY the same year expression, so each year becomes one row.",
+     "lines": [
+      5,
+      5
+     ]
+    },
+    {
+     "say": "Finally, ORDER BY issue year shows the oldest year first.",
+     "lines": [
+      6,
+      6
+     ]
+    }
+   ]
   },
   {
    "id": "f20261119-2",
@@ -6190,7 +6220,37 @@
    "simple": "Think of a stopwatch: you note the start time and the stop time, and the gap is how long the race took. In Oracle, stop date minus start date gives the gap in days, like 0.5 for half a day. Multiply by 24 to get hours and by 60 more to get minutes. If the stopwatch was never stopped (settled_at is empty), we call it PENDING instead of guessing.",
    "remember": "Date minus date = days; times 1440 = minutes.",
    "why": "DATE - DATE in Oracle returns a NUMBER of days including the fraction, so multiplying by 1440 converts it to minutes and naturally handles payments that cross midnight. When settled_at is NULL the difference is NULL, so the CASE checks IS NULL first; otherwise the NULL comparison would fall to ELSE and wrongly show 'ON TIME'. Exactly 30 minutes is not greater than 30, so UTR...0002 is on time.",
-   "tip": "For DATE columns I use (d2 - d1) * 1440 for minutes, and for TIMESTAMP columns I use EXTRACT on the INTERVAL result."
+   "tip": "For DATE columns I use (d2 - d1) * 1440 for minutes, and for TIMESTAMP columns I use EXTRACT on the INTERVAL result.",
+   "steps": [
+    {
+     "say": "Step one. Settled at minus initiated at gives days. Times twenty-four, times sixty, gives minutes.",
+     "lines": [
+      3,
+      3
+     ]
+    },
+    {
+     "say": "Step two. CASE checks IS NULL first, so pending payments say PENDING.",
+     "lines": [
+      4,
+      5
+     ]
+    },
+    {
+     "say": "If the minutes are more than thirty, the status is DELAYED.",
+     "lines": [
+      6,
+      6
+     ]
+    },
+    {
+     "say": "Otherwise, it is ON TIME.",
+     "lines": [
+      7,
+      8
+     ]
+    }
+   ]
   },
   {
    "id": "f20261119-4",
@@ -6415,7 +6475,44 @@
    "simple": "Think of a teacher who stamps 'late' on some homework and, while stamping, writes each name on a list. She does not walk around the class a second time to find who got stamped. RETURNING ... BULK COLLECT is that list: the UPDATE changes the rows and hands back their ids and new values in one go. FORALL then writes the whole list into the audit table in one trip.",
    "remember": "Change rows and catch what changed in one trip.",
    "why": "RETURNING ... BULK COLLECT INTO fills collections with the post-update values of every affected row, so there is no re-query and no risk of picking up rows changed by another session in between. FORALL sends all audit inserts to the SQL engine in one context switch, and with an empty collection the 1 .. 0 range simply does nothing. The returned provision is the new value (180000 and 64500), and dpd = 90 is not > 90, so L202 stays standard.",
-   "tip": "When I need the keys or new values of rows I just updated, I use RETURNING BULK COLLECT INTO instead of a second SELECT, then FORALL for the follow-up DML."
+   "tip": "When I need the keys or new values of rows I just updated, I use RETURNING BULK COLLECT INTO instead of a second SELECT, then FORALL for the follow-up DML.",
+   "steps": [
+    {
+     "say": "Step one. We declare two collections, to hold loan ids and provisions.",
+     "lines": [
+      2,
+      5
+     ]
+    },
+    {
+     "say": "Step two. The UPDATE marks overdue standard loans as N.P.A. and sets a fifteen percent provision.",
+     "lines": [
+      7,
+      11
+     ]
+    },
+    {
+     "say": "RETURNING BULK COLLECT hands back the changed ids and provisions in one go.",
+     "lines": [
+      12,
+      12
+     ]
+    },
+    {
+     "say": "Step three. FORALL inserts the whole list into the audit table in one trip.",
+     "lines": [
+      14,
+      16
+     ]
+    },
+    {
+     "say": "Finally, we print the count and commit.",
+     "lines": [
+      18,
+      19
+     ]
+    }
+   ]
   },
   {
    "id": "f20261119-6",
@@ -6791,6 +6888,165 @@
    "remember": "Fill slabs bottom up; each slab pays only its part.",
    "why": "The join condition eod_balance > slab_from attaches only the slabs the balance actually reaches, and LEAST(balance, NVL(slab_to, balance)) - slab_from caps the portion at the slab width, with NVL handling the open-ended top slab. Summing portion * rate after GROUP BY gives the marginal (tiered) interest, which differs from applying one rate to the whole balance: Rs 12 lakh earns 39200, an effective 3.27%, not 3.5%. Keeping slabs in a table means a rate change is a data update, not a code release.",
    "tip": "For slab-based interest, TDS or charges I join to a slab table and use LEAST/GREATEST to cap each portion, so rate changes need no code change."
+  },
+  {
+   "id": "f20261119-9",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Repeated payments with LAG",
+   "domain": "Payments/UPI",
+   "title": "Catch accidental duplicate UPI payments",
+   "scenario": "Customers of a payments bank complain that a slow app made them pay the same shop twice. The fraud team, led by Kavita Rao, wants to list every payment that repeats an earlier one: same payer, same payee and same amount within 10 minutes.",
+   "schema": "UPI_TXN(txn_id VARCHAR2(10), payer_vpa VARCHAR2(40), payee_vpa VARCHAR2(40), amount NUMBER(12,2), txn_time DATE)\n-- txn_time has date and time, amount in INR",
+   "data": [
+    {
+     "name": "UPI_TXN",
+     "cols": [
+      "txn_id",
+      "payer_vpa",
+      "payee_vpa",
+      "amount",
+      "txn_time"
+     ],
+     "rows": [
+      [
+       "T01",
+       "ravi@okhdfc",
+       "bigbazaar@icici",
+       "1500",
+       "19-11-2026 10:00"
+      ],
+      [
+       "T02",
+       "ravi@okhdfc",
+       "bigbazaar@icici",
+       "1500",
+       "19-11-2026 10:04"
+      ],
+      [
+       "T03",
+       "ravi@okhdfc",
+       "bigbazaar@icici",
+       "1500",
+       "19-11-2026 10:30"
+      ],
+      [
+       "T04",
+       "meera@oksbi",
+       "swiggy@axis",
+       "450",
+       "19-11-2026 12:10"
+      ],
+      [
+       "T05",
+       "meera@oksbi",
+       "swiggy@axis",
+       "460",
+       "19-11-2026 12:12"
+      ],
+      [
+       "T06",
+       "arjun@ybl",
+       "irctc@sbi",
+       "2300",
+       "19-11-2026 18:00"
+      ],
+      [
+       "T07",
+       "arjun@ybl",
+       "irctc@sbi",
+       "2300",
+       "19-11-2026 18:10"
+      ],
+      [
+       "T08",
+       "arjun@ybl",
+       "irctc@sbi",
+       "2300",
+       "19-11-2026 18:15"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "txn_id",
+     "payer_vpa",
+     "amount",
+     "mins_gap"
+    ],
+    "rows": [
+     [
+      "T02",
+      "ravi@okhdfc",
+      "1500",
+      "4"
+     ],
+     [
+      "T07",
+      "arjun@ybl",
+      "2300",
+      "10"
+     ],
+     [
+      "T08",
+      "arjun@ybl",
+      "2300",
+      "5"
+     ]
+    ]
+   },
+   "output_note": "T03 came 26 minutes after T02, and T05 has a different amount, so they are not repeats. T07 is exactly 10 minutes, which counts.",
+   "task": "List each repeated payment: txn_id, payer_vpa, amount and the minutes since the previous identical payment (same payer, payee and amount), when that gap is 10 minutes or less.",
+   "hint": "LAG with PARTITION BY payer, payee and amount gives the previous identical payment's time.",
+   "solution": "SELECT txn_id, payer_vpa, amount,\n       ROUND((txn_time - prev_time) * 1440) AS mins_gap\nFROM (\n  SELECT t.*,\n         LAG(txn_time) OVER (\n           PARTITION BY payer_vpa, payee_vpa, amount\n           ORDER BY txn_time) AS prev_time\n  FROM upi_txn t\n)\nWHERE (txn_time - prev_time) * 1440 <= 10\nORDER BY txn_id;",
+   "simple": "Imagine every payment stands in a queue with its twins: same payer, same shop, same amount. Each payment looks at the twin just before it in the queue. If that twin paid less than 10 minutes earlier, this payment is a repeat. LAG is how a row looks at the row just before it.",
+   "remember": "LAG looks one row back inside each PARTITION.",
+   "why": "LAG(txn_time) OVER (PARTITION BY payer_vpa, payee_vpa, amount ORDER BY txn_time) returns the previous identical payment's time, NULL for the first one. The gap in days times 1440 gives minutes. The filter must be in an outer query because window functions cannot be used in WHERE. The first payment of each group has NULL prev_time and drops out automatically.",
+   "tip": "Window functions run after WHERE, so I filter on them in an outer query or a CTE.",
+   "tech": {
+    "pattern": "Repeated Payments",
+    "company": "Stripe",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   },
+   "steps": [
+    {
+     "say": "Step one. Inside, LAG looks at the previous payment's time.",
+     "lines": [
+      4,
+      7
+     ]
+    },
+    {
+     "say": "PARTITION BY makes groups of twins: same payer, same payee, same amount.",
+     "lines": [
+      6,
+      6
+     ]
+    },
+    {
+     "say": "ORDER BY time, so the previous row really is the earlier payment.",
+     "lines": [
+      7,
+      7
+     ]
+    },
+    {
+     "say": "Step two. Outside, keep only rows where the gap is ten minutes or less. Days times fourteen forty gives minutes.",
+     "lines": [
+      10,
+      10
+     ]
+    },
+    {
+     "say": "We filter outside, because window functions are not allowed in WHERE.",
+     "lines": [
+      3,
+      10
+     ]
+    }
+   ]
   }
  ],
  "lessons": [
