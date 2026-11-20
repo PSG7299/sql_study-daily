@@ -11,7 +11,7 @@ fragile, so easy questions must be genuinely easy. Each question also becomes a 
 - 2 × `"lvl":"M"`: realistic, one twist (NULL, tie, date boundary, LEFT JOIN, ROW_NUMBER/RANK, LAG, simple PIVOT).
 - 4 × `"lvl":"A"`: window frames, gaps and islands, MATCH_RECOGNIZE, recursive WITH, ROLLUP/CUBE/GROUPING SETS,
   MERGE, bulk PL/SQL, collections, dynamic SQL with binds, autonomous transactions, locking, compound triggers,
-  partitioning, materialized views. At least 1 has `"kind":"plsql"`.
+  partitioning, materialized views. At least 2 have `"kind":"plsql"` (one becomes the weekday Short, the other goes into the Sunday long video).
 - Exactly 1 of the 8 (usually an A sql) is a **tech-interview** question: an ORIGINAL question built on a
   pattern known to be asked at tech/fintech companies (DataLemur / LeetCode SQL lists), e.g. second-highest
   salary, Nth transaction per user, repeated payments within N minutes, consecutive years/days (islands),
