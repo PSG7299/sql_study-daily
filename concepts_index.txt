@@ -100,6 +100,14 @@ f20261119-6|A|sql|Split CSV with CONNECT BY|KYC/AML
 f20261119-7|A|sql|Pairwise matching with ROW_NUMBER|Cards
 f20261119-8|A|sql|Tiered slab computation|Core banking
 f20261119-9|A|sql|Repeated payments with LAG|Payments/UPI TECH:Repeated Payments
+f20261120-1|E|sql|BETWEEN inclusive range|Mutual funds/SIP
+f20261120-2|E|sql|LEFT JOIN anti-join|Loans/EMI
+f20261120-3|M|sql|FIRST_VALUE with DESC for latest|Core banking/Savings
+f20261120-4|M|sql|LISTAGG DISTINCT ordered list|Remittance/Forex LRS
+f20261120-5|A|sql|Month-over-month retention with EXISTS|Digital banking/Mobile app TECH:Active User Retention
+f20261120-6|A|plsql|FORALL INDICES OF sparse collection|Cards/Fraud
+f20261120-7|A|sql|Peak overlap with +1/-1 events|Cards/Contact centre
+f20261120-8|A|sql|Recursive WITH running average cost|Trading/Demat
 l01|lesson|ROWS versus RANGE window frames
 l02|lesson|Partition pruning
 l03|lesson|SELECT FOR UPDATE SKIP LOCKED
@@ -116,3 +124,4 @@ fl20261116|lesson|EXISTS versus IN
 fl20261117|lesson|NVL, NVL2 and COALESCE
 fl20261118|lesson|Bind variables and hard parsing
 fl20261119|lesson|When Oracle can use a B-tree index
+fl20261120|lesson|Composite index column order

@@ -7047,6 +7047,946 @@
      ]
     }
    ]
+  },
+  {
+   "id": "f20261120-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "BETWEEN inclusive range",
+   "domain": "Mutual funds/SIP",
+   "title": "Find mid-size SIP mandates",
+   "scenario": "Ritu Sharma at an AMC is launching a reminder campaign for mid-size SIP investors. She wants every SIP whose monthly amount is from 1,000 to 5,000 INR, both ends included.",
+   "schema": "SIP_MANDATE(sip_id VARCHAR2(5), investor VARCHAR2(30), fund VARCHAR2(30), monthly_amt NUMBER(12,2))\n-- monthly_amt in INR",
+   "data": [
+    {
+     "name": "SIP_MANDATE",
+     "cols": [
+      "sip_id",
+      "investor",
+      "fund",
+      "monthly_amt"
+     ],
+     "rows": [
+      [
+       "S1",
+       "Asha",
+       "Bluechip Fund",
+       "500"
+      ],
+      [
+       "S2",
+       "Rohit",
+       "Midcap Fund",
+       "1000"
+      ],
+      [
+       "S3",
+       "Neha",
+       "Index Fund",
+       "2500"
+      ],
+      [
+       "S4",
+       "Imran",
+       "Bluechip Fund",
+       "5000"
+      ],
+      [
+       "S5",
+       "Pooja",
+       "Smallcap Fund",
+       "7500"
+      ],
+      [
+       "S6",
+       "Vikram",
+       "Index Fund",
+       "4999.50"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "sip_id",
+     "investor",
+     "monthly_amt"
+    ],
+    "rows": [
+     [
+      "S2",
+      "Rohit",
+      "1000"
+     ],
+     [
+      "S3",
+      "Neha",
+      "2500"
+     ],
+     [
+      "S6",
+      "Vikram",
+      "4999.50"
+     ],
+     [
+      "S4",
+      "Imran",
+      "5000"
+     ]
+    ]
+   },
+   "output_note": "S2 (exactly 1,000) and S4 (exactly 5,000) are included because BETWEEN includes both ends.",
+   "task": "Show sip_id, investor and monthly_amt for SIPs with monthly_amt from 1,000 to 5,000 inclusive, smallest amount first.",
+   "hint": "BETWEEN low AND high includes both low and high.",
+   "solution": "SELECT sip_id, investor, monthly_amt\nFROM sip_mandate\nWHERE monthly_amt BETWEEN 1000 AND 5000\nORDER BY monthly_amt;",
+   "simple": "Think of a ride at a fair that allows kids from 100 cm to 150 cm tall. A kid who is exactly 100 cm or exactly 150 cm can still ride. BETWEEN works the same way: it keeps values from the low number to the high number, including both edges.",
+   "remember": "BETWEEN keeps both edges: low and high are in.",
+   "why": "monthly_amt BETWEEN 1000 AND 5000 is the same as monthly_amt >= 1000 AND monthly_amt <= 5000. The low value must come first; BETWEEN 5000 AND 1000 returns no rows. ORDER BY monthly_amt sorts ascending by default.",
+   "tip": "BETWEEN is inclusive on both sides, so for dates with time I prefer >= start AND < next day.",
+   "steps": [
+    {
+     "say": "Step one. Pick the three columns we want to show.",
+     "find": "SELECT sip_id, investor, monthly_amt"
+    },
+    {
+     "say": "Step two. BETWEEN keeps amounts from one thousand to five thousand, and both edges count.",
+     "find": "WHERE monthly_amt BETWEEN 1000 AND 5000"
+    },
+    {
+     "say": "Finally, sort from the smallest amount to the biggest.",
+     "find": "ORDER BY monthly_amt"
+    }
+   ]
+  },
+  {
+   "id": "f20261120-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "LEFT JOIN anti-join",
+   "domain": "Loans/EMI",
+   "title": "Loans with no November EMI",
+   "scenario": "Sandeep Nair in the retail loans team must call borrowers whose November EMI has not arrived. The November payments file is loaded into its own table.",
+   "schema": "LOAN(loan_id VARCHAR2(5), borrower VARCHAR2(30), emi_amt NUMBER(10))\nEMI_PAYMENT_NOV(pay_id VARCHAR2(5), loan_id VARCHAR2(5), pay_date DATE, amount NUMBER(10))\n-- one row per payment received in November, amounts in INR",
+   "data": [
+    {
+     "name": "LOAN",
+     "cols": [
+      "loan_id",
+      "borrower",
+      "emi_amt"
+     ],
+     "rows": [
+      [
+       "L101",
+       "Suresh",
+       "12500"
+      ],
+      [
+       "L102",
+       "Kavya",
+       "8400"
+      ],
+      [
+       "L103",
+       "Manoj",
+       "21000"
+      ],
+      [
+       "L104",
+       "Farah",
+       "6300"
+      ],
+      [
+       "L105",
+       "Gopal",
+       "15750"
+      ]
+     ]
+    },
+    {
+     "name": "EMI_PAYMENT_NOV",
+     "cols": [
+      "pay_id",
+      "loan_id",
+      "pay_date",
+      "amount"
+     ],
+     "rows": [
+      [
+       "P1",
+       "L101",
+       "05-11-2026",
+       "12500"
+      ],
+      [
+       "P2",
+       "L103",
+       "05-11-2026",
+       "21000"
+      ],
+      [
+       "P3",
+       "L103",
+       "06-11-2026",
+       "21000"
+      ],
+      [
+       "P4",
+       "L105",
+       "07-11-2026",
+       "15750"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "borrower",
+     "emi_amt"
+    ],
+    "rows": [
+     [
+      "L102",
+      "Kavya",
+      "8400"
+     ],
+     [
+      "L104",
+      "Farah",
+      "6300"
+     ]
+    ]
+   },
+   "output_note": "L103 paid twice but still appears only in the matched side, so it is not listed.",
+   "task": "List loan_id, borrower and emi_amt of loans that have no row in EMI_PAYMENT_NOV, ordered by loan_id.",
+   "hint": "LEFT JOIN the payments and keep rows where the payment side is NULL.",
+   "solution": "SELECT l.loan_id, l.borrower, l.emi_amt\nFROM loan l\nLEFT JOIN emi_payment_nov p ON p.loan_id = l.loan_id\nWHERE p.pay_id IS NULL\nORDER BY l.loan_id;",
+   "simple": "Imagine a class register and a pile of homework sheets. You put each sheet next to the student's name. The names with an empty space next to them did not hand in homework. LEFT JOIN keeps every loan, and IS NULL picks the loans with nothing next to them.",
+   "remember": "LEFT JOIN plus IS NULL = who is missing.",
+   "why": "LEFT JOIN keeps every LOAN row and fills payment columns with NULL when no match exists. Filtering WHERE p.pay_id IS NULL keeps only unmatched loans. Test a NOT NULL column of the right table, such as its key, so a real NULL value is not mistaken for a missing row.",
+   "tip": "For 'rows with no match' I use LEFT JOIN ... IS NULL or NOT EXISTS, never NOT IN on a nullable column.",
+   "steps": [
+    {
+     "say": "Step one. Start from the loan table, so every loan is in the list.",
+     "find": "FROM loan l"
+    },
+    {
+     "say": "Step two. LEFT JOIN the November payments. Loans with no payment get empty payment columns.",
+     "find": "LEFT JOIN emi_payment_nov p"
+    },
+    {
+     "say": "Finally, keep only rows where the payment is empty. Those borrowers have not paid.",
+     "find": "WHERE p.pay_id IS NULL"
+    }
+   ]
+  },
+  {
+   "id": "f20261120-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "FIRST_VALUE with DESC for latest",
+   "domain": "Core banking/Savings",
+   "title": "First and latest balance per account",
+   "scenario": "Anjali Menon, a branch manager, reviews savings accounts for November. For each account she wants the balance after its first transaction and after its latest transaction. Rows were loaded out of time order.",
+   "schema": "ACCT_TXN(txn_id VARCHAR2(5), acct_no VARCHAR2(10), txn_time DATE, balance_after NUMBER(12))\n-- txn_time has date and time, balance in INR",
+   "data": [
+    {
+     "name": "ACCT_TXN",
+     "cols": [
+      "txn_id",
+      "acct_no",
+      "txn_time",
+      "balance_after"
+     ],
+     "rows": [
+      [
+       "X1",
+       "SB1001",
+       "03-11-2026 09:15",
+       "42000"
+      ],
+      [
+       "X2",
+       "SB1001",
+       "03-11-2026 17:40",
+       "38500"
+      ],
+      [
+       "X3",
+       "SB1001",
+       "18-11-2026 11:05",
+       "51200"
+      ],
+      [
+       "X4",
+       "SB2002",
+       "02-11-2026 10:00",
+       "9000"
+      ],
+      [
+       "X5",
+       "SB2002",
+       "12-11-2026 14:30",
+       "15500"
+      ],
+      [
+       "X6",
+       "SB2002",
+       "12-11-2026 09:10",
+       "11000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "acct_no",
+     "first_bal",
+     "last_bal"
+    ],
+    "rows": [
+     [
+      "SB1001",
+      "42000",
+      "51200"
+     ],
+     [
+      "SB2002",
+      "9000",
+      "15500"
+     ]
+    ]
+   },
+   "output_note": "For SB2002, X6 has the highest txn_id but happened earlier (09:10) than X5 (14:30), so the latest balance is 15,500.",
+   "task": "For each acct_no show first_bal (balance_after of the earliest txn_time) and last_bal (balance_after of the latest txn_time), one row per account.",
+   "hint": "FIRST_VALUE ordered DESC gives the last row without worrying about the window frame.",
+   "solution": "SELECT DISTINCT acct_no,\n       FIRST_VALUE(balance_after) OVER (\n         PARTITION BY acct_no ORDER BY txn_time) AS first_bal,\n       FIRST_VALUE(balance_after) OVER (\n         PARTITION BY acct_no ORDER BY txn_time DESC) AS last_bal\nFROM acct_txn\nORDER BY acct_no;",
+   "simple": "Think of a passbook where each line shows the balance after that entry. The first line shows where the month started and the last line shows where it is now. FIRST_VALUE reads the top line. If we flip the passbook upside down, FIRST_VALUE reads the latest line instead.",
+   "remember": "Latest value? FIRST_VALUE with ORDER BY DESC.",
+   "why": "FIRST_VALUE returns the first row of the ordered partition, which is safe with the default frame. LAST_VALUE with ORDER BY uses the frame ending at the current row, so it would just return the current row's value. Ordering DESC and taking FIRST_VALUE avoids that trap, and DISTINCT collapses the repeated rows to one per account.",
+   "tip": "I avoid LAST_VALUE with the default frame; FIRST_VALUE with reversed ORDER BY gives the latest value safely.",
+   "steps": [
+    {
+     "say": "Step one. FIRST_VALUE, ordered by time, reads the balance of the earliest transaction for each account.",
+     "find": "FIRST_VALUE(balance_after) OVER (",
+     "to": "PARTITION BY acct_no ORDER BY txn_time) AS first_bal"
+    },
+    {
+     "say": "Step two. Same function, but ordered newest first. Now the first row is the latest transaction.",
+     "find": "PARTITION BY acct_no ORDER BY txn_time DESC"
+    },
+    {
+     "say": "Finally, DISTINCT squeezes the repeated rows into one row per account.",
+     "find": "SELECT DISTINCT acct_no"
+    }
+   ]
+  },
+  {
+   "id": "f20261120-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "LISTAGG DISTINCT ordered list",
+   "domain": "Remittance/Forex LRS",
+   "title": "Countries each customer remitted to",
+   "scenario": "Under the RBI Liberalised Remittance Scheme, compliance officer Harish Kulkarni reviews outward remittances. For each customer he wants the number of remittances and a clean, alphabetical list of destination countries without repeats.",
+   "schema": "OUTWARD_REMIT(remit_id VARCHAR2(5), cust_id VARCHAR2(5), country VARCHAR2(20), amount_inr NUMBER(12))\n-- country may be NULL when not yet captured",
+   "data": [
+    {
+     "name": "OUTWARD_REMIT",
+     "cols": [
+      "remit_id",
+      "cust_id",
+      "country",
+      "amount_inr"
+     ],
+     "rows": [
+      [
+       "R1",
+       "C11",
+       "USA",
+       "250000"
+      ],
+      [
+       "R2",
+       "C11",
+       "UK",
+       "180000"
+      ],
+      [
+       "R3",
+       "C11",
+       "USA",
+       "90000"
+      ],
+      [
+       "R4",
+       "C12",
+       "UAE",
+       "60000"
+      ],
+      [
+       "R5",
+       "C12",
+       "NULL",
+       "40000"
+      ],
+      [
+       "R6",
+       "C13",
+       "Canada",
+       "300000"
+      ],
+      [
+       "R7",
+       "C13",
+       "Australia",
+       "120000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "remit_cnt",
+     "countries"
+    ],
+    "rows": [
+     [
+      "C11",
+      "3",
+      "UK, USA"
+     ],
+     [
+      "C12",
+      "2",
+      "UAE"
+     ],
+     [
+      "C13",
+      "2",
+      "Australia, Canada"
+     ]
+    ]
+   },
+   "output_note": "USA appears once for C11 thanks to DISTINCT. C12's NULL country is skipped by LISTAGG but still counted by COUNT(*).",
+   "task": "For each cust_id show remit_cnt (all remittances) and countries: distinct countries joined with ', ' in alphabetical order.",
+   "hint": "Oracle 19c allows LISTAGG(DISTINCT col, ', ') WITHIN GROUP (ORDER BY col).",
+   "solution": "SELECT cust_id,\n       COUNT(*) AS remit_cnt,\n       LISTAGG(DISTINCT country, ', ')\n         WITHIN GROUP (ORDER BY country) AS countries\nFROM outward_remit\nGROUP BY cust_id\nORDER BY cust_id;",
+   "simple": "Imagine writing the names of places you sent postcards to. If you sent two to the USA, you still write USA only once, in A to Z order. LISTAGG glues the names into one line, and DISTINCT stops repeats. Blank names are simply left out.",
+   "remember": "LISTAGG glues rows into one string; DISTINCT drops repeats.",
+   "why": "LISTAGG concatenates values of a group into one string in the WITHIN GROUP order. Since 19c, DISTINCT removes duplicate values inside the list; before that you needed a subquery with DISTINCT or ROW_NUMBER. NULL values are ignored by LISTAGG, while COUNT(*) still counts that row.",
+   "tip": "On 19c I use LISTAGG(DISTINCT ...), and ON OVERFLOW TRUNCATE when the list might exceed 4000 bytes.",
+   "steps": [
+    {
+     "say": "Step one. Group the rows by customer.",
+     "find": "GROUP BY cust_id"
+    },
+    {
+     "say": "Step two. COUNT star counts every remittance, even one with a blank country.",
+     "find": "COUNT(*) AS remit_cnt"
+    },
+    {
+     "say": "Finally, LISTAGG DISTINCT glues each country once, sorted A to Z, with a comma between.",
+     "find": "LISTAGG(DISTINCT country, ', ')",
+     "to": "WITHIN GROUP (ORDER BY country) AS countries"
+    }
+   ]
+  },
+  {
+   "id": "f20261120-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Month-over-month retention with EXISTS",
+   "domain": "Digital banking/Mobile app",
+   "title": "Mobile banking users retained each month",
+   "scenario": "Deepa Iyer, head of digital banking, tracks how many app users keep coming back. A user is retained in a month if they also logged in during the previous calendar month.",
+   "schema": "APP_LOGIN(cust_id VARCHAR2(5), login_time DATE)\n-- one row per login, time included; many logins per month possible",
+   "data": [
+    {
+     "name": "APP_LOGIN",
+     "cols": [
+      "cust_id",
+      "login_time"
+     ],
+     "rows": [
+      [
+       "U1",
+       "10-09-2026 10:00"
+      ],
+      [
+       "U1",
+       "04-10-2026 09:30"
+      ],
+      [
+       "U1",
+       "02-11-2026 08:45"
+      ],
+      [
+       "U2",
+       "21-09-2026 19:00"
+      ],
+      [
+       "U2",
+       "15-11-2026 20:10"
+      ],
+      [
+       "U3",
+       "11-10-2026 12:00"
+      ],
+      [
+       "U3",
+       "25-10-2026 13:00"
+      ],
+      [
+       "U3",
+       "09-11-2026 18:20"
+      ],
+      [
+       "U3",
+       "19-11-2026 07:55"
+      ],
+      [
+       "U4",
+       "30-10-2026 22:00"
+      ],
+      [
+       "U5",
+       "05-09-2026 11:00"
+      ],
+      [
+       "U5",
+       "01-10-2026 10:15"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "login_month",
+     "retained_users"
+    ],
+    "rows": [
+     [
+      "2026-10",
+      "2"
+     ],
+     [
+      "2026-11",
+      "2"
+     ]
+    ]
+   },
+   "output_note": "October: U1 and U5 were also active in September. November: U1 and U3; U2 skipped October, so it does not count. September has no earlier month in the data, so it has no row.",
+   "task": "For each month, count distinct users who logged in that month and also in the previous calendar month. Show login_month as YYYY-MM.",
+   "hint": "Compare TRUNC(login_time,'MM') of the inner row with ADD_MONTHS(TRUNC(outer login_time,'MM'), -1).",
+   "solution": "SELECT TO_CHAR(TRUNC(n.login_time, 'MM'), 'YYYY-MM') AS login_month,\n       COUNT(DISTINCT n.cust_id) AS retained_users\nFROM app_login n\nWHERE EXISTS (\n  SELECT 1 FROM app_login o\n  WHERE o.cust_id = n.cust_id\n    AND TRUNC(o.login_time, 'MM') = ADD_MONTHS(TRUNC(n.login_time, 'MM'), -1))\nGROUP BY TRUNC(n.login_time, 'MM')\nORDER BY login_month;",
+   "simple": "Think of a gym that wants to know who came back. A member counts as 'back' in November only if they also came in October. For each login, the query checks last month's list for the same person. Then it counts each person once per month.",
+   "remember": "Retained = here this month AND here last month.",
+   "why": "TRUNC(date,'MM') maps every login to the first day of its month, and ADD_MONTHS(...,-1) gives the previous calendar month, so September to November gaps do not count. EXISTS stops at the first matching earlier login. COUNT(DISTINCT cust_id) is needed because one user can log in many times a month.",
+   "tip": "For retention I bucket by TRUNC(date,'MM') and use EXISTS or a self-join on month minus one, counting DISTINCT users.",
+   "tech": {
+    "pattern": "Active User Retention",
+    "company": "Facebook",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   },
+   "steps": [
+    {
+     "say": "Step one. Look at every login and turn its date into a month.",
+     "find": "FROM app_login n"
+    },
+    {
+     "say": "Step two. EXISTS checks whether the same customer also logged in during the month just before.",
+     "find": "WHERE EXISTS (",
+     "to": "AND TRUNC(o.login_time, 'MM') = ADD_MONTHS"
+    },
+    {
+     "say": "Step three. Group by month.",
+     "find": "GROUP BY TRUNC(n.login_time, 'MM')"
+    },
+    {
+     "say": "Finally, count each customer once, because one person can log in many times.",
+     "find": "COUNT(DISTINCT n.cust_id) AS retained_users"
+    }
+   ]
+  },
+  {
+   "id": "f20261120-6",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "FORALL INDICES OF sparse collection",
+   "domain": "Cards/Fraud",
+   "title": "Block only high-risk cards in bulk",
+   "scenario": "Card fraud lead Rakesh Bhatia gets risk alerts every hour. Only cards with a risk score of 80 or more must be blocked, using one bulk update.",
+   "schema": "CARD(card_no VARCHAR2(5), holder VARCHAR2(20), status VARCHAR2(10))\nFRAUD_ALERT(alert_id VARCHAR2(5), card_no VARCHAR2(5), risk_score NUMBER(3))\n-- risk_score 0-100",
+   "data": [
+    {
+     "name": "CARD",
+     "cols": [
+      "card_no",
+      "holder",
+      "status"
+     ],
+     "rows": [
+      [
+       "C101",
+       "Anil",
+       "ACTIVE"
+      ],
+      [
+       "C102",
+       "Bina",
+       "ACTIVE"
+      ],
+      [
+       "C103",
+       "Chetan",
+       "ACTIVE"
+      ],
+      [
+       "C104",
+       "Divya",
+       "ACTIVE"
+      ],
+      [
+       "C105",
+       "Esha",
+       "ACTIVE"
+      ]
+     ]
+    },
+    {
+     "name": "FRAUD_ALERT",
+     "cols": [
+      "alert_id",
+      "card_no",
+      "risk_score"
+     ],
+     "rows": [
+      [
+       "A1",
+       "C101",
+       "92"
+      ],
+      [
+       "A2",
+       "C102",
+       "45"
+      ],
+      [
+       "A3",
+       "C104",
+       "85"
+      ],
+      [
+       "A4",
+       "C105",
+       "60"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "card_no",
+     "holder",
+     "status"
+    ],
+    "rows": [
+     [
+      "C101",
+      "Anil",
+      "BLOCKED"
+     ],
+     [
+      "C102",
+      "Bina",
+      "ACTIVE"
+     ],
+     [
+      "C103",
+      "Chetan",
+      "ACTIVE"
+     ],
+     [
+      "C104",
+      "Divya",
+      "BLOCKED"
+     ],
+     [
+      "C105",
+      "Esha",
+      "ACTIVE"
+     ]
+    ]
+   },
+   "output_note": "CARD table after the block runs; it prints 'Blocked: 2'. With FORALL i IN 1 .. l_alerts.COUNT instead, it would fail with ORA-22160 because elements 2 and 4 were deleted.",
+   "task": "Load all alerts into a collection, delete the ones below 80, then block the remaining cards with a single FORALL and print how many were blocked.",
+   "hint": "After DELETE the collection has gaps; FORALL i IN INDICES OF skips them.",
+   "solution": "DECLARE\n  TYPE t_alerts IS TABLE OF fraud_alert%ROWTYPE;\n  l_alerts t_alerts;\nBEGIN\n  SELECT * BULK COLLECT INTO l_alerts FROM fraud_alert;\n  FOR i IN 1 .. l_alerts.COUNT LOOP\n    IF l_alerts(i).risk_score < 80 THEN\n      l_alerts.DELETE(i);\n    END IF;\n  END LOOP;\n  FORALL i IN INDICES OF l_alerts\n    UPDATE card SET status = 'BLOCKED'\n    WHERE card_no = l_alerts(i).card_no;\n  DBMS_OUTPUT.PUT_LINE('Blocked: ' || SQL%ROWCOUNT);\n  COMMIT;\nEND;",
+   "simple": "Imagine a row of numbered lockers, and you empty lockers 2 and 4. If you walk past every number and open each one, you get stuck at the empty ones. INDICES OF only visits lockers that still have something inside. That is how FORALL skips the deleted alerts.",
+   "remember": "Gaps in the collection? FORALL ... INDICES OF.",
+   "why": "DELETE(i) on a nested table leaves gaps, so the collection becomes sparse. FORALL i IN 1..COUNT would hit a deleted index and raise ORA-22160, while INDICES OF binds only existing elements in one context switch. After FORALL, SQL%ROWCOUNT holds the total rows changed by all executions.",
+   "tip": "For sparse collections I use FORALL INDICES OF, or VALUES OF when a second collection holds the positions to process.",
+   "steps": [
+    {
+     "say": "Step one. Load every fraud alert into a collection in one go.",
+     "find": "SELECT * BULK COLLECT INTO l_alerts"
+    },
+    {
+     "say": "Step two. Delete alerts with a score below eighty. This leaves holes in the collection.",
+     "find": "IF l_alerts(i).risk_score < 80 THEN",
+     "to": "l_alerts.DELETE(i);"
+    },
+    {
+     "say": "Step three. FORALL with INDICES OF skips the holes and blocks the remaining cards in one bulk call.",
+     "find": "FORALL i IN INDICES OF l_alerts",
+     "to": "WHERE card_no = l_alerts(i).card_no;"
+    },
+    {
+     "say": "Finally, print how many cards were blocked, and commit.",
+     "find": "DBMS_OUTPUT.PUT_LINE('Blocked: ' || SQL%ROWCOUNT);"
+    }
+   ]
+  },
+  {
+   "id": "f20261120-7",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Peak overlap with +1/-1 events",
+   "domain": "Cards/Contact centre",
+   "title": "Peak simultaneous calls at card helpline",
+   "scenario": "Nisha Verma plans staffing for the credit card helpline. She needs the highest number of calls running at the same moment and when it first happened. A call ending at 10:05 does not overlap one starting at 10:05.",
+   "schema": "CALL_LOG(call_id VARCHAR2(5), agent_id VARCHAR2(5), start_time DATE, end_time DATE)\n-- times with minutes; end_time > start_time",
+   "data": [
+    {
+     "name": "CALL_LOG",
+     "cols": [
+      "call_id",
+      "agent_id",
+      "start_time",
+      "end_time"
+     ],
+     "rows": [
+      [
+       "K1",
+       "AG1",
+       "20-11-2026 10:00",
+       "20-11-2026 10:05"
+      ],
+      [
+       "K2",
+       "AG2",
+       "20-11-2026 10:02",
+       "20-11-2026 10:10"
+      ],
+      [
+       "K3",
+       "AG1",
+       "20-11-2026 10:05",
+       "20-11-2026 10:12"
+      ],
+      [
+       "K4",
+       "AG3",
+       "20-11-2026 10:08",
+       "20-11-2026 10:15"
+      ],
+      [
+       "K5",
+       "AG2",
+       "20-11-2026 11:00",
+       "20-11-2026 11:04"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "peak_time",
+     "peak_calls"
+    ],
+    "rows": [
+     [
+      "20-11-2026 10:08",
+      "3"
+     ]
+    ]
+   },
+   "output_note": "At 10:05 K1 ends before K3 starts, so the count stays at 2. Without ordering ends first, 10:05 would wrongly show 3.",
+   "task": "Return peak_time and peak_calls: the maximum number of calls in progress at once and the earliest time it was reached.",
+   "hint": "Turn each call into a +1 at start and a -1 at end, then take a running SUM ordered by time, with -1 before +1 on ties.",
+   "solution": "WITH ev AS (\n  SELECT start_time AS t, 1 AS chg FROM call_log\n  UNION ALL\n  SELECT end_time, -1 FROM call_log\n), run AS (\n  SELECT t, SUM(chg) OVER (ORDER BY t, chg\n           ROWS UNBOUNDED PRECEDING) AS live\n  FROM ev\n)\nSELECT t AS peak_time, live AS peak_calls\nFROM run\nORDER BY live DESC, t\nFETCH FIRST 1 ROW ONLY;",
+   "simple": "Think of a room with a door counter. Every time someone walks in, add one; when someone walks out, take one away. The biggest number the counter ever shows is the busiest moment. If one person leaves exactly as another enters, we count the leaver first.",
+   "remember": "Start = +1, end = -1, running sum = people inside.",
+   "why": "Each call becomes two events, and a running SUM of +1/-1 ordered by time gives the number of live calls after each event. Ordering by t, chg puts -1 before +1 at the same instant, so touching intervals do not overlap. ROWS UNBOUNDED PRECEDING makes tied timestamps accumulate one event at a time instead of all together as RANGE would.",
+   "tip": "For max concurrency I unpivot intervals into +1/-1 events and take a running sum; the tie order decides whether touching intervals overlap.",
+   "steps": [
+    {
+     "say": "Step one. Turn each call into two events: plus one when it starts, minus one when it ends.",
+     "find": "SELECT start_time AS t, 1 AS chg",
+     "to": "SELECT end_time, -1 FROM call_log"
+    },
+    {
+     "say": "Step two. A running sum in time order counts the calls live after each event. Ends come before starts on a tie.",
+     "find": "SUM(chg) OVER (ORDER BY t, chg",
+     "to": "ROWS UNBOUNDED PRECEDING"
+    },
+    {
+     "say": "Finally, sort by the biggest count, earliest time first, and keep the top row.",
+     "find": "ORDER BY live DESC, t",
+     "to": "FETCH FIRST 1 ROW ONLY"
+    }
+   ]
+  },
+  {
+   "id": "f20261120-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Recursive WITH running average cost",
+   "domain": "Trading/Demat",
+   "title": "Average buy price after each trade",
+   "scenario": "Broker analyst Karan Malhotra shows clients their average buy price for a share. Buys change the average; sells reduce quantity but keep the average the same.",
+   "schema": "TRADE(trade_no VARCHAR2(5), client_id VARCHAR2(6), side CHAR(1), qty NUMBER(8), price NUMBER(10,2), trade_time DATE)\n-- side B = buy, S = sell; one share, one client; price in INR; first trade is a buy",
+   "data": [
+    {
+     "name": "TRADE",
+     "cols": [
+      "trade_no",
+      "client_id",
+      "side",
+      "qty",
+      "price",
+      "trade_time"
+     ],
+     "rows": [
+      [
+       "TR1",
+       "DM501",
+       "B",
+       "100",
+       "200",
+       "02-11-2026 10:00"
+      ],
+      [
+       "TR2",
+       "DM501",
+       "B",
+       "50",
+       "230",
+       "05-11-2026 11:30"
+      ],
+      [
+       "TR3",
+       "DM501",
+       "S",
+       "60",
+       "250",
+       "09-11-2026 14:00"
+      ],
+      [
+       "TR4",
+       "DM501",
+       "B",
+       "30",
+       "190",
+       "12-11-2026 10:45"
+      ],
+      [
+       "TR5",
+       "DM501",
+       "S",
+       "120",
+       "220",
+       "16-11-2026 13:15"
+      ],
+      [
+       "TR6",
+       "DM501",
+       "B",
+       "10",
+       "300",
+       "19-11-2026 09:50"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "trade_no",
+     "side",
+     "hold_qty",
+     "avg_cost"
+    ],
+    "rows": [
+     [
+      "TR1",
+      "B",
+      "100",
+      "200"
+     ],
+     [
+      "TR2",
+      "B",
+      "150",
+      "210"
+     ],
+     [
+      "TR3",
+      "S",
+      "90",
+      "210"
+     ],
+     [
+      "TR4",
+      "B",
+      "120",
+      "205"
+     ],
+     [
+      "TR5",
+      "S",
+      "0",
+      "205"
+     ],
+     [
+      "TR6",
+      "B",
+      "10",
+      "300"
+     ]
+    ]
+   },
+   "output_note": "TR4: (90 x 210 + 30 x 190) / 120 = 205. After TR5 the holding is 0, so TR6 starts a fresh average of 300.",
+   "task": "In trade_time order, show trade_no, side, hold_qty and avg_cost (2 decimals) after each trade. Buy: weighted average of old holding and new buy. Sell: average unchanged.",
+   "hint": "Each row depends on the previous row's result, so use recursive WITH joined on row number + 1.",
+   "solution": "WITH t AS (\n  SELECT tr.*, ROW_NUMBER() OVER (ORDER BY trade_time) AS rn\n  FROM trade tr\n), r (rn, trade_no, side, hold_qty, avg_cost) AS (\n  SELECT rn, trade_no, side, qty, price FROM t WHERE rn = 1\n  UNION ALL\n  SELECT t.rn, t.trade_no, t.side,\n         CASE t.side WHEN 'B' THEN r.hold_qty + t.qty\n                     ELSE r.hold_qty - t.qty END,\n         CASE t.side WHEN 'B'\n              THEN ROUND((r.hold_qty * r.avg_cost + t.qty * t.price)\n                         / (r.hold_qty + t.qty), 2)\n              ELSE r.avg_cost END\n  FROM r JOIN t ON t.rn = r.rn + 1\n)\nSELECT trade_no, side, hold_qty, avg_cost\nFROM r\nORDER BY rn;",
+   "simple": "Imagine a jar of marbles bought at different prices. When you add marbles, the average price per marble changes. When you give some away, the average stays the same, there are just fewer marbles. The query walks through trades one by one, carrying the jar's count and average forward.",
+   "remember": "Recursive WITH = carry yesterday's answer into today's row.",
+   "why": "A weighted average cost depends on the previous row's computed values, which a plain window SUM cannot express once sells are mixed in. Recursive WITH seeds the first trade and joins each new trade on rn = previous rn + 1, carrying hold_qty and avg_cost forward. Oracle requires the column alias list on a recursive subquery factoring clause.",
+   "tip": "When each row needs the previous row's computed result, not just its raw value, I use recursive WITH or MODEL instead of LAG.",
+   "steps": [
+    {
+     "say": "Step one. Number the trades in time order.",
+     "find": "ROW_NUMBER() OVER (ORDER BY trade_time) AS rn"
+    },
+    {
+     "say": "Step two. The anchor: the first trade sets the holding and the average price.",
+     "find": "SELECT rn, trade_no, side, qty, price FROM t WHERE rn = 1"
+    },
+    {
+     "say": "Step three. Each next trade joins to the previous result. Buys add quantity, sells take it away.",
+     "find": "CASE t.side WHEN 'B' THEN r.hold_qty + t.qty",
+     "to": "FROM r JOIN t ON t.rn = r.rn + 1"
+    },
+    {
+     "say": "Finally, for a buy, the new average mixes old and new cost. For a sell, the average stays.",
+     "find": "THEN ROUND((r.hold_qty * r.avg_cost + t.qty * t.price)",
+     "to": "ELSE r.avg_cost END"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -7137,6 +8077,17 @@
    "example": "WITH txn AS (\n  SELECT '1001' acct_no, TO_DATE('31-03-2026 10:15','DD-MM-YYYY HH24:MI') txn_date, 5000 amount FROM dual UNION ALL\n  SELECT '1001', TO_DATE('31-03-2026 18:40','DD-MM-YYYY HH24:MI'), 1200 FROM dual UNION ALL\n  SELECT '1002', TO_DATE('01-04-2026 09:05','DD-MM-YYYY HH24:MI'), 800 FROM dual\n)\nSELECT acct_no, txn_date, amount\nFROM   txn\nWHERE  acct_no  = '1001'                  -- not acct_no = 1001\nAND    txn_date >= DATE '2026-03-31'       -- not TRUNC(txn_date) = ...\nAND    txn_date <  DATE '2026-04-01';\n-- returns the two rows of 31-03-2026 for account 1001",
    "gotcha": "Comparing a VARCHAR2 column to a number makes Oracle apply TO_NUMBER to every row's column, which silently disables the index and can even raise ORA-01722 on non-numeric values.",
    "line": "I keep indexed columns bare in WHERE clauses, match data types to avoid implicit conversion, and use function-based indexes only when the expression cannot be moved to the value side."
+  },
+  {
+   "id": "fl20261120",
+   "concept": "Composite index column order",
+   "why": "Interviewers ask which column goes first in a multi-column index, and the answer decides whether your query uses it.",
+   "simple": "Think of a phone book sorted by surname, then first name. Finding all 'Sharma' is fast, and 'Sharma, Ritu' is even faster. But finding every 'Ritu' means reading the whole book. A composite index is the same: it helps when you search by its first column.",
+   "remember": "Leading column first: the index is sorted by it.",
+   "explain": "A composite B-tree index on (acct_no, txn_date) is sorted by acct_no, then txn_date inside each acct_no. Queries filtering on acct_no, or acct_no plus a txn_date range, can do a fast range scan. A filter on txn_date alone cannot seek directly; Oracle may use an index skip scan only if acct_no has few distinct values, otherwise a full scan. Put equality-filtered columns first and range-filtered columns after them.",
+   "example": "WITH txn AS (\n  SELECT 'SB1' acct_no, DATE '2026-11-03' txn_date, 5000 amt FROM dual UNION ALL\n  SELECT 'SB1', DATE '2026-11-18', 1200 FROM dual UNION ALL\n  SELECT 'SB2', DATE '2026-11-05', 800 FROM dual\n)\n-- on a real table, an index on (acct_no, txn_date) serves this filter well\nSELECT * FROM txn\nWHERE acct_no = 'SB1'\n  AND txn_date >= DATE '2026-11-01' AND txn_date < DATE '2026-12-01';",
+   "gotcha": "An index on (acct_no, txn_date) does not help much a query that filters only on txn_date.",
+   "line": "I put equality columns first and the range column last, so one index range scan answers the query."
   }
  ]
 }
