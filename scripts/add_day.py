@@ -42,6 +42,12 @@ def check_q(q, errs):
             errs.append(f"{i}: step {n} find {s['find']!r} not in solution")
         elif s.get('to') and not any(norm(s['to']) in l for l in lines[a:]):
             errs.append(f"{i}: step {n} to {s['to']!r} not found at/after find")
+    if q.get('trend'):
+        for k in ('topic', 'hook', 'hashtags'):
+            if not q['trend'].get(k):
+                errs.append(f'{i}: trend.{k} missing')
+        if len(q['trend'].get('hook', '').split()) > 25:
+            errs.append(f'{i}: trend.hook too long (max 20 words)')
     if q.get('tech'):
         for k in ('pattern', 'company', 'source', 'url'):
             if not q['tech'].get(k):
@@ -72,6 +78,8 @@ def rebuild_index(feed=None):
     rows = []
     for q in bank['questions'] + feed['questions']:
         t = ' TECH:' + q['tech']['pattern'] if q.get('tech') else ''
+        if q.get('trend'):
+            t += ' TREND:' + q['trend'].get('topic', '')
         rows.append(f"{q['id']}|{q.get('lvl')}|{q.get('kind')}|{q.get('concept')}|{q.get('domain', '')}{t}")
     for l in bank['lessons'] + feed['lessons']:
         rows.append(f"{l['id']}|lesson|{l.get('concept')}")
