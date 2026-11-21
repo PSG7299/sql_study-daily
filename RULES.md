@@ -20,18 +20,23 @@ fragile, so easy questions must be genuinely easy. Each question also becomes a 
   NEVER copy their question text, tables or data. Add
   `"tech": {"pattern": "<pattern name>", "company": "<company it is listed for>", "source": "DataLemur" or "LeetCode", "url": "https://datalemur.com/questions" or "https://leetcode.com/studyplan/top-sql-50/"}`.
   Rotate patterns; check concepts_index.txt (`TECH:` entries) to avoid repeats.
-- Exactly 1 of the 8 (an E or M `sql` question, never the tech one) is a **trending** question, for YouTube views.
-  First run 1-2 web searches for what is trending in India this week (big movie releases and box office,
-  game launches, cricket series, phone launches, festivals or sales events), and pick ONE topic people are
-  searching for now. Build the scenario around the business/money side of it: ticket bookings, box-office
-  collections, pre-orders, UPI payments, subscriptions, sales by city. Keep the same SQL quality and an
-  Indian-banking/finance flavour where natural. Rules: NO politics, elections, wars, disasters, deaths, crime
-  news or celebrities' private lives. For a film or event with a religious theme, keep it strictly about the
-  film business (screens, tickets, collections) and respectful. ALL numbers are invented sample data: never
-  present them as real figures, and do not use real people as characters. Do not repeat a topic used in the
-  last 7 days (check `TREND:` entries in concepts_index.txt). Add
-  `"trend": {"topic": "<short searchable name, e.g. GTA 6>", "hook": "<one spoken sentence, max 20 words,
-  e.g. GTA 6 is finally here, so let us crunch the launch numbers!>", "hashtags": ["gta6", "gtavi"]}`.
+- Exactly 2 of the 8 are **trending** questions, for YouTube views (never the tech one):
+  1. **Pop culture** (an E or M `sql`): big movie releases and box office, game launches, cricket series, phone
+     launches, festivals or sale events. Build it around the money side: ticket bookings, collections,
+     pre-orders, UPI/card payments, sales by city.
+  2. **Markets** (any level): what is moving this week in gold or silver, crude oil, USD/INR and other forex,
+     Sensex/Nifty, big IPO listings, RBI rate decisions. Build it around bank work: gold-loan LTV checks,
+     forex desk conversions, daily % change, streaks of falls, moving averages, treasury exposure.
+  First run 2-3 web searches for what is trending in India this week (one for entertainment, one for markets).
+  Watchlist of big releases to consider while they are in the news: GTA 6 (launched 19 Nov 2026),
+  Ramayana: Part 1 (in cinemas from 6 Nov 2026), Avengers: Doomsday (India release 17 Dec 2026),
+  Dune: Part Three (18 Dec 2026), King (24 Dec 2026). Rules: NO politics, elections, wars, disasters, deaths,
+  crime news or celebrities' private lives. For a film or event with a religious theme, keep it strictly about
+  the film business and respectful. ALL numbers are invented sample data: never present them as real figures or
+  real prices, never predict prices or give investment advice, and do not use real people as characters.
+  Do not repeat a topic used in the last 5 days (check `TREND:` entries in concepts_index.txt). Add
+  `"trend": {"topic": "<short searchable name, e.g. GTA 6 or Gold Price Fall>", "hook": "<one spoken sentence,
+  max 20 words>", "hashtags": ["gta6", "gtavi"]}`.
 - Each question in a different Indian banking/finance situation (core banking, loans/EMI/NPA, cards,
   UPI/NEFT/RTGS, fraud, KYC/AML, trading, mutual funds, GL reconciliation, RBI reporting, treasury, insurance).
   Amounts in INR. A named person asking with a business reason. Prefer concepts not in concepts_index.txt.
@@ -41,7 +46,7 @@ id (`f` + YYYYMMDD + `-` + n), lvl, kind (`sql`/`plsql`), concept (2-5 words), d
 scenario (2-3 SHORT sentences, max 55 words), schema (table defs with types and short comments, `\n` breaks),
 data, output, output_note (optional, max 2 sentences), task (1-2 sentences, max 45 words), hint (1 sentence),
 solution (correct Oracle 19c), simple, remember, why (2-3 technical sentences), tip (1 interview sentence),
-steps, tech (only for the tech question), trend (only for the trending question).
+steps, tech (only for the tech question), trend (only for the 2 trending questions).
 
 - **data** (required) covers EVERY table the solution reads: `{"name", "cols" (schema order), "rows" (strings)}`,
   3-7 rows each (an output/log table may have 0 rows). `"NULL"` for nulls, dates `DD-MM-YYYY` or

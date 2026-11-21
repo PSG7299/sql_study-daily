@@ -9326,6 +9326,132 @@
      "find": "ORDER BY city, booking_hour"
     }
    ]
+  },
+  {
+   "id": "f20261121-12",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Day-over-day change with LAG",
+   "domain": "Treasury · Gold loans",
+   "title": "Gold is falling: find the biggest daily drop",
+   "scenario": "Gold prices have been sliding, and Ravi in the bank's gold-loan team must recheck loan-to-value limits. He wants each day's change in the 24-carat rate and the day with the biggest fall. The prices below are sample data, not real rates.",
+   "schema": "GOLD_RATES(rate_date DATE, price_10g NUMBER(8))\n-- 24-carat rate in rupees per 10 grams, one row per day (sample data)",
+   "data": [
+    {
+     "name": "GOLD_RATES",
+     "cols": [
+      "rate_date",
+      "price_10g"
+     ],
+     "rows": [
+      [
+       "16-11-2026",
+       "152400"
+      ],
+      [
+       "17-11-2026",
+       "151800"
+      ],
+      [
+       "18-11-2026",
+       "148900"
+      ],
+      [
+       "19-11-2026",
+       "146300"
+      ],
+      [
+       "20-11-2026",
+       "146900"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "rate_date",
+     "price_10g",
+     "change_rs",
+     "change_pct",
+     "flag"
+    ],
+    "rows": [
+     [
+      "16-11-2026",
+      "152400",
+      "NULL",
+      "NULL",
+      "NULL"
+     ],
+     [
+      "17-11-2026",
+      "151800",
+      "-600",
+      "-0.39",
+      "NULL"
+     ],
+     [
+      "18-11-2026",
+      "148900",
+      "-2900",
+      "-1.91",
+      "BIGGEST FALL"
+     ],
+     [
+      "19-11-2026",
+      "146300",
+      "-2600",
+      "-1.75",
+      "NULL"
+     ],
+     [
+      "20-11-2026",
+      "146900",
+      "600",
+      "0.41",
+      "NULL"
+     ]
+    ]
+   },
+   "output_note": "The first day has no previous day, so its change is NULL. The biggest fall is the most negative change: minus 2900 on 18 November.",
+   "task": "For each day show the price, the change in rupees and in percent from the previous day, and mark the day with the biggest fall as 'BIGGEST FALL'.",
+   "hint": "LAG(price_10g) OVER (ORDER BY rate_date) gives yesterday's price; MIN(change) OVER () finds the biggest fall.",
+   "solution": "WITH d AS (\n  SELECT rate_date, price_10g,\n         price_10g - LAG(price_10g) OVER (ORDER BY rate_date) AS change_rs,\n         LAG(price_10g) OVER (ORDER BY rate_date) AS prev_price\n  FROM   gold_rates\n)\nSELECT rate_date, price_10g, change_rs,\n       ROUND(100 * change_rs / prev_price, 2) AS change_pct,\n       CASE WHEN change_rs = MIN(change_rs) OVER () THEN 'BIGGEST FALL' END AS flag\nFROM   d\nORDER  BY rate_date;",
+   "simple": "Imagine writing the gold price in a diary every evening. Each day you look back one line to yesterday's price and write down how much it went up or down. LAG is that look back. Then you scan the whole diary for the biggest drop and put a star next to it.",
+   "remember": "LAG = yesterday's value in today's row.",
+   "why": "LAG(price_10g) OVER (ORDER BY rate_date) returns the previous row's price, NULL for the first row. The CTE computes the change once so the outer query can reuse it. MIN(change_rs) OVER () with an empty window scans all rows, so the row equal to it is the biggest fall; the NULL first row is ignored by MIN.",
+   "tip": "I compute LAG once in a CTE and reuse it, instead of repeating the window expression three times.",
+   "trend": {
+    "topic": "Gold Price Fall",
+    "hook": "Gold prices have been falling sharply, so let's find the biggest one-day drop!",
+    "hashtags": [
+     "goldprice",
+     "goldrate",
+     "goldpricetoday"
+    ]
+   },
+   "steps": [
+    {
+     "say": "Step one. In the C.T.E., LAG fetches yesterday's price for every row.",
+     "find": "LAG(price_10g) OVER (ORDER BY rate_date) AS prev_price"
+    },
+    {
+     "say": "Today's price minus yesterday's gives the change in rupees.",
+     "find": "price_10g - LAG(price_10g)"
+    },
+    {
+     "say": "Step two. Change divided by yesterday's price, times a hundred, gives the percentage.",
+     "find": "ROUND(100 * change_rs / prev_price, 2)"
+    },
+    {
+     "say": "MIN over an empty window finds the most negative change, and that row gets the BIGGEST FALL label.",
+     "find": "CASE WHEN change_rs = MIN(change_rs) OVER ()"
+    },
+    {
+     "say": "Finally, sort by date.",
+     "find": "ORDER  BY rate_date"
+    }
+   ]
   }
  ],
  "lessons": [

@@ -119,6 +119,7 @@ f20261121-8|A|sql|Bilateral netting with LEAST/GREATEST|Treasury/Interbank settl
 f20261121-9|M|sql|Running total milestone|Cards/Payments · Entertainment TREND:Ramayana
 f20261121-10|A|sql|Pareto 80 percent with window SUM|Cards/Payments · Gaming TREND:GTA 6
 f20261121-11|M|sql|Peak hour per group with RANK|Cards/Payments · Movies TREND:Avengers Doomsday
+f20261121-12|M|sql|Day-over-day change with LAG|Treasury · Gold loans TREND:Gold Price Fall
 l01|lesson|ROWS versus RANGE window frames
 l02|lesson|Partition pruning
 l03|lesson|SELECT FOR UPDATE SKIP LOCKED
