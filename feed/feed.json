@@ -7987,6 +7987,919 @@
      "to": "ELSE r.avg_cost END"
     }
    ]
+  },
+  {
+   "id": "f20261121-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "IN with a subquery",
+   "domain": "Loans/Gold loan",
+   "title": "Customers holding a gold loan",
+   "scenario": "Sunita Rao, gold loan desk head at a Pune branch, wants to call every customer who has a gold loan. Some customers have more than one gold loan.",
+   "schema": "CUSTOMER(cust_id VARCHAR2(5), cust_name VARCHAR2(30), city VARCHAR2(20))\nLOAN(loan_id VARCHAR2(5), cust_id VARCHAR2(5), loan_type VARCHAR2(10), amount NUMBER(12,2))\n-- loan_type: GOLD, HOME, PERSONAL; amount in INR",
+   "data": [
+    {
+     "name": "CUSTOMER",
+     "cols": [
+      "cust_id",
+      "cust_name",
+      "city"
+     ],
+     "rows": [
+      [
+       "C101",
+       "Anil",
+       "Pune"
+      ],
+      [
+       "C102",
+       "Bhavna",
+       "Surat"
+      ],
+      [
+       "C103",
+       "Chetan",
+       "Pune"
+      ],
+      [
+       "C104",
+       "Divya",
+       "Kochi"
+      ],
+      [
+       "C105",
+       "Esha",
+       "Mysuru"
+      ]
+     ]
+    },
+    {
+     "name": "LOAN",
+     "cols": [
+      "loan_id",
+      "cust_id",
+      "loan_type",
+      "amount"
+     ],
+     "rows": [
+      [
+       "L1",
+       "C101",
+       "GOLD",
+       "150000"
+      ],
+      [
+       "L2",
+       "C102",
+       "HOME",
+       "2500000"
+      ],
+      [
+       "L3",
+       "C103",
+       "GOLD",
+       "80000"
+      ],
+      [
+       "L4",
+       "C103",
+       "GOLD",
+       "40000"
+      ],
+      [
+       "L5",
+       "C104",
+       "PERSONAL",
+       "200000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "cust_name"
+    ],
+    "rows": [
+     [
+      "C101",
+      "Anil"
+     ],
+     [
+      "C103",
+      "Chetan"
+     ]
+    ]
+   },
+   "output_note": "Chetan has two gold loans but appears once, because IN only checks membership.",
+   "task": "List cust_id and cust_name of customers who have at least one GOLD loan, each customer once, ordered by cust_id.",
+   "hint": "Put the gold-loan customer ids in a subquery and filter with IN.",
+   "solution": "SELECT cust_id, cust_name\nFROM customer\nWHERE cust_id IN (SELECT cust_id\n                  FROM loan\n                  WHERE loan_type = 'GOLD')\nORDER BY cust_id;",
+   "simple": "Think of a teacher with a list of children who brought a lunch box. She reads the class register and ticks a name if it is on that list. Even if a child brought two lunch boxes, the name is ticked once. The subquery makes the list, and IN checks each customer against it.",
+   "remember": "IN = \"is this name on the list?\"",
+   "why": "The subquery returns the set of cust_id values with a GOLD loan, and IN keeps each CUSTOMER row whose cust_id is in that set. Because the filter is on the outer table, duplicates in LOAN do not multiply rows, unlike an INNER JOIN. Oracle typically turns this into a semi-join.",
+   "tip": "When I only need to check existence in another table, I use IN or EXISTS instead of a join, so I never get duplicate rows.",
+   "steps": [
+    {
+     "say": "Step one. The inner query lists every customer id that has a gold loan.",
+     "find": "WHERE cust_id IN (SELECT cust_id",
+     "to": "WHERE loan_type = 'GOLD')"
+    },
+    {
+     "say": "Step two. The outer query keeps a customer only if their id is on that list. Chetan shows once, not twice.",
+     "find": "SELECT cust_id, cust_name",
+     "to": "FROM customer"
+    },
+    {
+     "say": "Finally, sort the result by customer id.",
+     "find": "ORDER BY cust_id"
+    }
+   ]
+  },
+  {
+   "id": "f20261121-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "GROUP BY two columns",
+   "domain": "Payments/UPI",
+   "title": "UPI count by app and status",
+   "scenario": "Rahul Iyer from the UPI operations team wants a quick daily summary. For each UPI app, how many payments succeeded or failed, and for how much.",
+   "schema": "UPI_TXN(txn_id VARCHAR2(5), app_name VARCHAR2(15), status VARCHAR2(10), amount NUMBER(12,2))\n-- status: SUCCESS or FAILED; amount in INR",
+   "data": [
+    {
+     "name": "UPI_TXN",
+     "cols": [
+      "txn_id",
+      "app_name",
+      "status",
+      "amount"
+     ],
+     "rows": [
+      [
+       "U1",
+       "PhonePe",
+       "SUCCESS",
+       "500"
+      ],
+      [
+       "U2",
+       "PhonePe",
+       "FAILED",
+       "1200"
+      ],
+      [
+       "U3",
+       "GPay",
+       "SUCCESS",
+       "300"
+      ],
+      [
+       "U4",
+       "PhonePe",
+       "SUCCESS",
+       "750"
+      ],
+      [
+       "U5",
+       "GPay",
+       "SUCCESS",
+       "2000"
+      ],
+      [
+       "U6",
+       "Paytm",
+       "FAILED",
+       "450"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "app_name",
+     "status",
+     "txn_count",
+     "total_amt"
+    ],
+    "rows": [
+     [
+      "GPay",
+      "SUCCESS",
+      "2",
+      "2300"
+     ],
+     [
+      "Paytm",
+      "FAILED",
+      "1",
+      "450"
+     ],
+     [
+      "PhonePe",
+      "FAILED",
+      "1",
+      "1200"
+     ],
+     [
+      "PhonePe",
+      "SUCCESS",
+      "2",
+      "1250"
+     ]
+    ]
+   },
+   "task": "Show app_name, status, the number of payments (txn_count) and their total amount (total_amt) for every app and status pair, ordered by app_name then status.",
+   "hint": "List both columns in GROUP BY, so each app-and-status pair becomes one group.",
+   "solution": "SELECT app_name, status,\n       COUNT(*)    AS txn_count,\n       SUM(amount) AS total_amt\nFROM upi_txn\nGROUP BY app_name, status\nORDER BY app_name, status;",
+   "simple": "Imagine sorting coins into boxes, one box for each colour and size together, like 'big gold' and 'small gold'. Then you count the coins in each box and add up their value. GROUP BY with two columns makes one box for every app and status pair, then COUNT and SUM work inside each box.",
+   "remember": "Two columns in GROUP BY = one row per pair.",
+   "why": "GROUP BY app_name, status forms one group per distinct combination of the two columns. COUNT(*) and SUM(amount) are then computed separately inside each group. Every non-aggregated column in the SELECT list must appear in the GROUP BY, or Oracle raises ORA-00979.",
+   "tip": "Every column I select that is not inside an aggregate must also be in GROUP BY.",
+   "steps": [
+    {
+     "say": "Step one. Group the payments by app and status together, so each pair becomes one box.",
+     "find": "GROUP BY app_name, status"
+    },
+    {
+     "say": "Step two. Inside each box, count the payments and add up the amounts.",
+     "find": "COUNT(*)    AS txn_count",
+     "to": "SUM(amount) AS total_amt"
+    },
+    {
+     "say": "Finally, sort by app name and then status.",
+     "find": "ORDER BY app_name, status"
+    }
+   ]
+  },
+  {
+   "id": "f20261121-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Latest row per key with tie-break",
+   "domain": "Insurance/Motor",
+   "title": "Current status of each motor policy",
+   "scenario": "Meera Pillai in motor insurance servicing needs today's status of each policy. A policy can get two status changes on the same day, so the date alone cannot decide.",
+   "schema": "POLICY_STATUS(policy_no VARCHAR2(5), status VARCHAR2(12), status_date DATE, seq_no NUMBER(6))\n-- one row per status change; seq_no always increases, so a higher seq_no is the later change",
+   "data": [
+    {
+     "name": "POLICY_STATUS",
+     "cols": [
+      "policy_no",
+      "status",
+      "status_date",
+      "seq_no"
+     ],
+     "rows": [
+      [
+       "MP1",
+       "ACTIVE",
+       "01-04-2026",
+       "1"
+      ],
+      [
+       "MP1",
+       "LAPSED",
+       "10-09-2026",
+       "2"
+      ],
+      [
+       "MP1",
+       "REVIVED",
+       "10-09-2026",
+       "3"
+      ],
+      [
+       "MP2",
+       "ACTIVE",
+       "15-05-2026",
+       "4"
+      ],
+      [
+       "MP2",
+       "CLAIM_OPEN",
+       "02-10-2026",
+       "5"
+      ],
+      [
+       "MP3",
+       "ACTIVE",
+       "20-06-2026",
+       "6"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "policy_no",
+     "status",
+     "status_date"
+    ],
+    "rows": [
+     [
+      "MP1",
+      "REVIVED",
+      "10-09-2026"
+     ],
+     [
+      "MP2",
+      "CLAIM_OPEN",
+      "02-10-2026"
+     ],
+     [
+      "MP3",
+      "ACTIVE",
+      "20-06-2026"
+     ]
+    ]
+   },
+   "output_note": "MP1 lapsed and was revived on the same day; seq_no 3 breaks the tie, so REVIVED wins.",
+   "task": "Show policy_no, status and status_date of the latest status per policy. Latest means the highest status_date; on the same date, the highest seq_no. Order by policy_no.",
+   "hint": "Use ROW_NUMBER with PARTITION BY policy_no and ORDER BY status_date DESC, seq_no DESC, then keep row 1.",
+   "solution": "SELECT policy_no, status, status_date\nFROM (\n  SELECT ps.*,\n         ROW_NUMBER() OVER (PARTITION BY policy_no\n                            ORDER BY status_date DESC, seq_no DESC) AS rn\n  FROM policy_status ps\n)\nWHERE rn = 1\nORDER BY policy_no;",
+   "simple": "Think of a diary where you write what happened each day, and some days have two entries. To know the latest news, you open the last page and read the bottom entry. ROW_NUMBER numbers each policy's entries from newest to oldest, using the entry number to break same-day ties, and we keep entry number 1.",
+   "remember": "Latest per group = ROW_NUMBER, newest first, keep 1.",
+   "why": "ROW_NUMBER restarts at 1 for each policy_no and orders rows by status_date DESC, then seq_no DESC, so the tie on 10-09-2026 is resolved deterministically. Filtering rn = 1 must happen in an outer query because window functions cannot appear in WHERE. Without the seq_no tie-breaker, Oracle could return LAPSED or REVIVED for MP1 on different runs.",
+   "tip": "I always add a unique tie-breaker column to ROW_NUMBER's ORDER BY, otherwise \"latest\" is not deterministic.",
+   "steps": [
+    {
+     "say": "Step one. For each policy, number the status rows from newest to oldest.",
+     "find": "ROW_NUMBER() OVER (PARTITION BY policy_no",
+     "to": "ORDER BY status_date DESC, seq_no DESC) AS rn"
+    },
+    {
+     "say": "Step two. On the same date, the higher sequence number counts as later. That makes revived beat lapsed.",
+     "find": "ORDER BY status_date DESC, seq_no DESC) AS rn"
+    },
+    {
+     "say": "Finally, keep only row number one, the current status of each policy.",
+     "find": "WHERE rn = 1"
+    }
+   ]
+  },
+  {
+   "id": "f20261121-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "AVG ignores NULL values",
+   "domain": "Loans/Credit bureau",
+   "title": "Average CIBIL score by branch",
+   "scenario": "Credit manager Arjun Bhatia compares applicant quality across branches. New-to-credit applicants have no CIBIL score, stored as NULL, and must not drag the average down.",
+   "schema": "BUREAU_SCORE(app_id VARCHAR2(5), branch VARCHAR2(15), cibil_score NUMBER(3))\n-- cibil_score is NULL for new-to-credit (NTC) applicants",
+   "data": [
+    {
+     "name": "BUREAU_SCORE",
+     "cols": [
+      "app_id",
+      "branch",
+      "cibil_score"
+     ],
+     "rows": [
+      [
+       "A1",
+       "Indore",
+       "760"
+      ],
+      [
+       "A2",
+       "Indore",
+       "NULL"
+      ],
+      [
+       "A3",
+       "Indore",
+       "700"
+      ],
+      [
+       "A4",
+       "Nashik",
+       "NULL"
+      ],
+      [
+       "A5",
+       "Nashik",
+       "NULL"
+      ],
+      [
+       "A6",
+       "Patna",
+       "810"
+      ],
+      [
+       "A7",
+       "Patna",
+       "655"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "branch",
+     "applicants",
+     "avg_score",
+     "ntc_count"
+    ],
+    "rows": [
+     [
+      "Indore",
+      "3",
+      "730",
+      "1"
+     ],
+     [
+      "Nashik",
+      "2",
+      "NULL",
+      "2"
+     ],
+     [
+      "Patna",
+      "2",
+      "733",
+      "0"
+     ]
+    ]
+   },
+   "output_note": "Indore averages (760 + 700) / 2 = 730, not 1460 / 3. Nashik has only NULL scores, so its average is NULL.",
+   "task": "Per branch, show applicants (all rows), avg_score (average of scores rounded to a whole number, ignoring NTC) and ntc_count (applicants with no score). Order by branch.",
+   "hint": "AVG already skips NULLs; NTC count is COUNT(*) minus COUNT(cibil_score).",
+   "solution": "SELECT branch,\n       COUNT(*)                       AS applicants,\n       ROUND(AVG(cibil_score))        AS avg_score,\n       COUNT(*) - COUNT(cibil_score)  AS ntc_count\nFROM bureau_score\nGROUP BY branch\nORDER BY branch;",
+   "simple": "Imagine three friends in a race, but one did not run. To find the average time, you only add the two who ran and divide by two. AVG does the same: blank scores are left out completely. If nobody in a branch has a score, the average is blank too.",
+   "remember": "AVG skips NULLs: they are not zero.",
+   "why": "Aggregate functions except COUNT(*) ignore NULLs, so AVG(cibil_score) divides by COUNT(cibil_score), not COUNT(*). A group with only NULLs returns NULL from AVG, as Nashik shows. Using AVG(NVL(cibil_score, 0)) would wrongly count NTC applicants as score 0.",
+   "tip": "I check whether a NULL should mean \"unknown\" or \"zero\" before averaging; AVG treats it as unknown and skips it.",
+   "steps": [
+    {
+     "say": "Step one. Count every applicant in the branch, with or without a score.",
+     "find": "COUNT(*)                       AS applicants"
+    },
+    {
+     "say": "Step two. Average the scores. Blank scores are skipped, so Indore is seven sixty plus seven hundred, divided by two.",
+     "find": "ROUND(AVG(cibil_score))        AS avg_score"
+    },
+    {
+     "say": "Finally, all rows minus scored rows gives the new-to-credit count.",
+     "find": "COUNT(*) - COUNT(cibil_score)  AS ntc_count"
+    }
+   ]
+  },
+  {
+   "id": "f20261121-5",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "PRAGMA EXCEPTION_INIT",
+   "domain": "Payments/RTGS",
+   "title": "Reject RTGS requests below minimum",
+   "scenario": "Payments lead Kavita Menon loads RTGS requests in a batch. RTGS needs at least INR 2 lakh, enforced by a CHECK constraint. Bad rows must be logged, not stop the batch.",
+   "schema": "RTGS_REQUEST(req_id VARCHAR2(4), acct_no VARCHAR2(8), amount NUMBER(14,2))\nRTGS_OUT(req_id VARCHAR2(4), acct_no VARCHAR2(8), amount NUMBER(14,2) CHECK (amount >= 200000))\nRTGS_REJECT(req_id VARCHAR2(4), reason VARCHAR2(30))\n-- a CHECK violation raises ORA-02290",
+   "data": [
+    {
+     "name": "RTGS_REQUEST",
+     "cols": [
+      "req_id",
+      "acct_no",
+      "amount"
+     ],
+     "rows": [
+      [
+       "R1",
+       "SB1001",
+       "500000"
+      ],
+      [
+       "R2",
+       "SB1002",
+       "150000"
+      ],
+      [
+       "R3",
+       "SB1003",
+       "200000"
+      ],
+      [
+       "R4",
+       "SB1004",
+       "199999.50"
+      ],
+      [
+       "R5",
+       "SB1005",
+       "1250000"
+      ]
+     ]
+    },
+    {
+     "name": "RTGS_OUT",
+     "cols": [
+      "req_id",
+      "acct_no",
+      "amount"
+     ],
+     "rows": []
+    },
+    {
+     "name": "RTGS_REJECT",
+     "cols": [
+      "req_id",
+      "reason"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "table_name",
+     "req_id",
+     "detail"
+    ],
+    "rows": [
+     [
+      "RTGS_OUT",
+      "R1",
+      "500000"
+     ],
+     [
+      "RTGS_OUT",
+      "R3",
+      "200000"
+     ],
+     [
+      "RTGS_OUT",
+      "R5",
+      "1250000"
+     ],
+     [
+      "RTGS_REJECT",
+      "R2",
+      "BELOW RTGS MINIMUM"
+     ],
+     [
+      "RTGS_REJECT",
+      "R4",
+      "BELOW RTGS MINIMUM"
+     ]
+    ]
+   },
+   "output_note": "Table state after the block. R3 is exactly 200000 and passes the >= check; R4 is 50 paise short and is rejected.",
+   "task": "Write a PL/SQL block that inserts each request into RTGS_OUT. If the CHECK constraint fails, log the req_id with reason BELOW RTGS MINIMUM into RTGS_REJECT and continue.",
+   "hint": "Name ORA-02290 with PRAGMA EXCEPTION_INIT and catch it in an inner BEGIN-EXCEPTION block inside the loop.",
+   "solution": "DECLARE\n  e_below_min EXCEPTION;\n  PRAGMA EXCEPTION_INIT(e_below_min, -2290);\nBEGIN\n  FOR r IN (SELECT req_id, acct_no, amount\n            FROM rtgs_request ORDER BY req_id) LOOP\n    BEGIN\n      INSERT INTO rtgs_out (req_id, acct_no, amount)\n      VALUES (r.req_id, r.acct_no, r.amount);\n    EXCEPTION\n      WHEN e_below_min THEN\n        INSERT INTO rtgs_reject (req_id, reason)\n        VALUES (r.req_id, 'BELOW RTGS MINIMUM');\n    END;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a ticket counter with a sign: 'Only tickets above 200 rupees here'. If someone asks for a cheaper ticket, the clerk writes their name in a 'sent away' notebook and serves the next person. EXCEPTION_INIT gives the database's rule-break error a friendly name, so our code can catch exactly that problem and keep going.",
+   "remember": "EXCEPTION_INIT = give an ORA number a readable name.",
+   "why": "ORA-02290 has no predefined name like DUP_VAL_ON_INDEX, so PRAGMA EXCEPTION_INIT binds it to a user-defined exception e_below_min. The inner BEGIN-EXCEPTION-END block handles the error per row, so only the failed INSERT is undone by statement-level rollback and the loop continues. Any other error is not caught and propagates, which is safer than WHEN OTHERS.",
+   "tip": "I map specific ORA codes with EXCEPTION_INIT instead of WHEN OTHERS, so unexpected errors still fail loudly.",
+   "steps": [
+    {
+     "say": "Step one. Give error code minus two two nine zero, the check constraint error, a readable name.",
+     "find": "e_below_min EXCEPTION;",
+     "to": "PRAGMA EXCEPTION_INIT(e_below_min, -2290);"
+    },
+    {
+     "say": "Step two. Loop through the requests and try to insert each one into the RTGS table.",
+     "find": "FOR r IN (SELECT req_id, acct_no, amount",
+     "to": "VALUES (r.req_id, r.acct_no, r.amount);"
+    },
+    {
+     "say": "Step three. If the amount is below two lakh, catch that error and log the request as rejected.",
+     "find": "WHEN e_below_min THEN",
+     "to": "VALUES (r.req_id, 'BELOW RTGS MINIMUM');"
+    },
+    {
+     "say": "Finally, the inner block ends, the loop moves on, and we commit once.",
+     "find": "END LOOP;",
+     "to": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261121-6",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "Nested table MULTISET EXCEPT",
+   "domain": "AML/Sanctions screening",
+   "title": "New sanctions hits since yesterday",
+   "scenario": "AML officer Imran Qureshi gets a daily list of customers who hit the sanctions watchlist. He wants alerts only for customers who are new today, not repeats from yesterday.",
+   "schema": "CREATE TYPE t_ids AS TABLE OF VARCHAR2(6);  -- schema-level nested table type\nWATCH_HIT(run_date DATE, cust_id VARCHAR2(6))  -- one row per hit; a customer can hit twice in a run\nNEW_ALERT(cust_id VARCHAR2(6), alert_date DATE)",
+   "data": [
+    {
+     "name": "WATCH_HIT",
+     "cols": [
+      "run_date",
+      "cust_id"
+     ],
+     "rows": [
+      [
+       "20-11-2026",
+       "K11"
+      ],
+      [
+       "20-11-2026",
+       "K12"
+      ],
+      [
+       "20-11-2026",
+       "K15"
+      ],
+      [
+       "21-11-2026",
+       "K12"
+      ],
+      [
+       "21-11-2026",
+       "K17"
+      ],
+      [
+       "21-11-2026",
+       "K17"
+      ],
+      [
+       "21-11-2026",
+       "K19"
+      ],
+      [
+       "21-11-2026",
+       "K15"
+      ]
+     ]
+    },
+    {
+     "name": "NEW_ALERT",
+     "cols": [
+      "cust_id",
+      "alert_date"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "alert_date"
+    ],
+    "rows": [
+     [
+      "K17",
+      "21-11-2026"
+     ],
+     [
+      "K19",
+      "21-11-2026"
+     ]
+    ]
+   },
+   "output_note": "NEW_ALERT after the block. K17 hit twice today but gets one alert because of DISTINCT; K12 and K15 were already hits yesterday.",
+   "task": "Write a PL/SQL block that loads the 20-11-2026 and 21-11-2026 hits into two t_ids collections, finds customers in today's list but not yesterday's (each once), and inserts them into NEW_ALERT dated 21-11-2026.",
+   "hint": "Use BULK COLLECT for both lists, then new MULTISET EXCEPT DISTINCT old, then FORALL to insert.",
+   "solution": "DECLARE\n  v_old  t_ids;\n  v_new  t_ids;\n  v_diff t_ids;\nBEGIN\n  SELECT cust_id BULK COLLECT INTO v_old\n  FROM watch_hit WHERE run_date = DATE '2026-11-20';\n  SELECT cust_id BULK COLLECT INTO v_new\n  FROM watch_hit WHERE run_date = DATE '2026-11-21';\n  v_diff := v_new MULTISET EXCEPT DISTINCT v_old;\n  FORALL i IN 1 .. v_diff.COUNT\n    INSERT INTO new_alert (cust_id, alert_date)\n    VALUES (v_diff(i), DATE '2026-11-21');\n  COMMIT;\nEND;\n/",
+   "simple": "Imagine yesterday's and today's attendance sheets for a club. You want the names on today's sheet that were not there yesterday, the new members. If someone signed twice today, you write them down once. MULTISET EXCEPT DISTINCT does that subtraction on two lists kept in memory.",
+   "remember": "MULTISET EXCEPT = today minus yesterday, in memory.",
+   "why": "BULK COLLECT fills two nested tables in one fetch each, and MULTISET EXCEPT DISTINCT returns elements of v_new not in v_old with duplicates removed. MULTISET operators work on nested tables only, not associative arrays, and the result is densely filled, so FORALL 1 .. COUNT is safe. FORALL then sends all inserts to the SQL engine in one context switch.",
+   "tip": "For set logic on PL/SQL collections, I use MULTISET UNION, INTERSECT or EXCEPT on nested tables instead of nested loops.",
+   "steps": [
+    {
+     "say": "Step one. Load yesterday's and today's watchlist hits into two lists in memory.",
+     "find": "SELECT cust_id BULK COLLECT INTO v_old",
+     "to": "FROM watch_hit WHERE run_date = DATE '2026-11-21';"
+    },
+    {
+     "say": "Step two. Subtract yesterday from today. Distinct keeps K seventeen only once.",
+     "find": "v_diff := v_new MULTISET EXCEPT DISTINCT v_old;"
+    },
+    {
+     "say": "Finally, insert every new customer as an alert in one bulk step, and commit.",
+     "find": "FORALL i IN 1 .. v_diff.COUNT",
+     "to": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261121-7",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Launch-month total per product",
+   "domain": "Cards/Product analytics",
+   "title": "Cards issued in launch month",
+   "scenario": "Card product head Neha Kapoor compares how strongly each new credit card variant started. Issuance is reported per region, so a launch month can have several rows.",
+   "schema": "CARD_ISSUE(card_variant VARCHAR2(15), region VARCHAR2(10), issue_month DATE, cards_issued NUMBER(8))\n-- issue_month is the 1st of the month; one row per variant, region and month",
+   "data": [
+    {
+     "name": "CARD_ISSUE",
+     "cols": [
+      "card_variant",
+      "region",
+      "issue_month",
+      "cards_issued"
+     ],
+     "rows": [
+      [
+       "RUPAY_PLAT",
+       "North",
+       "01-08-2026",
+       "700"
+      ],
+      [
+       "RUPAY_PLAT",
+       "South",
+       "01-08-2026",
+       "500"
+      ],
+      [
+       "RUPAY_PLAT",
+       "North",
+       "01-09-2026",
+       "3400"
+      ],
+      [
+       "TRAVEL_ELITE",
+       "West",
+       "01-09-2026",
+       "800"
+      ],
+      [
+       "TRAVEL_ELITE",
+       "West",
+       "01-10-2026",
+       "2500"
+      ],
+      [
+       "FUEL_SAVER",
+       "South",
+       "01-07-2026",
+       "1500"
+      ],
+      [
+       "FUEL_SAVER",
+       "North",
+       "01-08-2026",
+       "900"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "card_variant",
+     "launch_month",
+     "issued"
+    ],
+    "rows": [
+     [
+      "FUEL_SAVER",
+      "01-07-2026",
+      "1500"
+     ],
+     [
+      "RUPAY_PLAT",
+      "01-08-2026",
+      "1200"
+     ],
+     [
+      "TRAVEL_ELITE",
+      "01-09-2026",
+      "800"
+     ]
+    ]
+   },
+   "output_note": "RUPAY_PLAT launched in August across two regions: 700 + 500 = 1200. Its big September month is ignored.",
+   "task": "For each card_variant, show its launch_month (earliest issue_month) and issued (total cards across all regions in that month), largest launch first.",
+   "hint": "First SUM per variant and month, then ROW_NUMBER by issue_month and keep row 1.",
+   "solution": "WITH m AS (\n  SELECT card_variant, issue_month, SUM(cards_issued) AS issued\n  FROM card_issue\n  GROUP BY card_variant, issue_month\n), r AS (\n  SELECT m.*, ROW_NUMBER() OVER (PARTITION BY card_variant\n                                 ORDER BY issue_month) AS rn\n  FROM m\n)\nSELECT card_variant, issue_month AS launch_month, issued\nFROM r\nWHERE rn = 1\nORDER BY issued DESC;",
+   "simple": "Think of a new shop that opens branches in two towns in the same month. To know how good the opening month was, you add both towns' sales for that first month only. The query first adds up regions for each month, then picks each card's very first month, then sorts the best start on top.",
+   "remember": "Aggregate first, then pick the first month.",
+   "why": "Picking the first row before aggregating would return only one region (700 or 500) for RUPAY_PLAT, so the CTE m sums across regions per variant and month first. ROW_NUMBER over issue_month ascending marks the launch month per variant, and rn = 1 keeps it. MIN(issue_month) with a join back is an alternative, but the window approach scans once.",
+   "tip": "In \"first period\" questions, I aggregate to the right grain before ranking, otherwise I rank partial rows.",
+   "steps": [
+    {
+     "say": "Step one. Add up all regions, so each card has one total per month.",
+     "find": "SELECT card_variant, issue_month, SUM(cards_issued) AS issued",
+     "to": "GROUP BY card_variant, issue_month"
+    },
+    {
+     "say": "Step two. Number each card's months from the earliest. Month one is the launch month.",
+     "find": "SELECT m.*, ROW_NUMBER() OVER (PARTITION BY card_variant",
+     "to": "ORDER BY issue_month) AS rn"
+    },
+    {
+     "say": "Finally, keep only the launch month and show the strongest launch first.",
+     "find": "WHERE rn = 1",
+     "to": "ORDER BY issued DESC;"
+    }
+   ],
+   "tech": {
+    "pattern": "Card Launch Success",
+    "company": "JPMorgan Chase",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   }
+  },
+  {
+   "id": "f20261121-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Bilateral netting with LEAST/GREATEST",
+   "domain": "Treasury/Interbank settlement",
+   "title": "Net settlement between bank pairs",
+   "scenario": "Treasury analyst Vikram Shetty settles interbank payments once a day. Instead of paying both ways, each pair of banks should settle one net amount, and pairs that cancel out need no payment.",
+   "schema": "INTERBANK_PAY(pay_id VARCHAR2(4), from_bank VARCHAR2(4), to_bank VARCHAR2(4), amount NUMBER(15,2))\n-- from_bank owes to_bank the amount (INR); bank codes like SBIN, HDFC, ICIC",
+   "data": [
+    {
+     "name": "INTERBANK_PAY",
+     "cols": [
+      "pay_id",
+      "from_bank",
+      "to_bank",
+      "amount"
+     ],
+     "rows": [
+      [
+       "P1",
+       "SBIN",
+       "HDFC",
+       "5000000"
+      ],
+      [
+       "P2",
+       "HDFC",
+       "SBIN",
+       "3200000"
+      ],
+      [
+       "P3",
+       "ICIC",
+       "SBIN",
+       "1500000"
+      ],
+      [
+       "P4",
+       "SBIN",
+       "ICIC",
+       "1500000"
+      ],
+      [
+       "P5",
+       "HDFC",
+       "ICIC",
+       "2000000"
+      ],
+      [
+       "P6",
+       "SBIN",
+       "HDFC",
+       "700000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "payer",
+     "payee",
+     "net_amount"
+    ],
+    "rows": [
+     [
+      "SBIN",
+      "HDFC",
+      "2500000"
+     ],
+     [
+      "HDFC",
+      "ICIC",
+      "2000000"
+     ]
+    ]
+   },
+   "output_note": "SBIN owes HDFC 5000000 + 700000 and is owed 3200000, so it pays 2500000 net. ICIC and SBIN cancel to 0 and are dropped.",
+   "task": "For each pair of banks, compute the net amount owed. Show payer, payee and net_amount for pairs with a non-zero net, largest first.",
+   "hint": "Use LEAST and GREATEST to make one key per pair, sign the amount by direction, then SUM.",
+   "solution": "WITH p AS (\n  SELECT LEAST(from_bank, to_bank)    AS bank_a,\n         GREATEST(from_bank, to_bank) AS bank_b,\n         CASE WHEN from_bank < to_bank\n              THEN amount ELSE -amount END AS signed_amt\n  FROM interbank_pay\n), n AS (\n  SELECT bank_a, bank_b, SUM(signed_amt) AS net\n  FROM p\n  GROUP BY bank_a, bank_b\n)\nSELECT CASE WHEN net > 0 THEN bank_a ELSE bank_b END AS payer,\n       CASE WHEN net > 0 THEN bank_b ELSE bank_a END AS payee,\n       ABS(net) AS net_amount\nFROM n\nWHERE net <> 0\nORDER BY net_amount DESC;",
+   "simple": "Imagine you owe your friend 50 rupees and your friend owes you 32. Instead of swapping money twice, you just give 18. The query puts each pair of banks in alphabetical order so 'A to B' and 'B to A' land in the same box. Money one way is plus, the other way is minus, and the total tells who pays whom.",
+   "remember": "LEAST and GREATEST = one key for both directions.",
+   "why": "LEAST and GREATEST normalise (SBIN, HDFC) and (HDFC, SBIN) into the same ordered key, so both directions group together. The CASE gives a positive sign when bank_a pays bank_b and negative otherwise, so SUM is the net exposure of bank_a to bank_b. The final CASE uses the sign to choose payer and payee, ABS makes the amount positive, and net <> 0 removes pairs that fully offset.",
+   "tip": "For A-to-B versus B-to-A problems, I build an unordered pair key with LEAST/GREATEST and a signed amount.",
+   "steps": [
+    {
+     "say": "Step one. Put each bank pair in alphabetical order, so both directions share one key.",
+     "find": "SELECT LEAST(from_bank, to_bank)    AS bank_a,",
+     "to": "GREATEST(from_bank, to_bank) AS bank_b,"
+    },
+    {
+     "say": "Step two. Money from the first bank to the second is plus. The other way is minus.",
+     "find": "CASE WHEN from_bank < to_bank",
+     "to": "THEN amount ELSE -amount END AS signed_amt"
+    },
+    {
+     "say": "Step three. Add up the signed amounts for each pair to get the net.",
+     "find": "SELECT bank_a, bank_b, SUM(signed_amt) AS net",
+     "to": "GROUP BY bank_a, bank_b"
+    },
+    {
+     "say": "Finally, the sign decides who pays. Pairs that cancel to zero are dropped.",
+     "find": "SELECT CASE WHEN net > 0 THEN bank_a ELSE bank_b END AS payer,",
+     "to": "WHERE net <> 0"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -8088,6 +9001,17 @@
    "example": "WITH txn AS (\n  SELECT 'SB1' acct_no, DATE '2026-11-03' txn_date, 5000 amt FROM dual UNION ALL\n  SELECT 'SB1', DATE '2026-11-18', 1200 FROM dual UNION ALL\n  SELECT 'SB2', DATE '2026-11-05', 800 FROM dual\n)\n-- on a real table, an index on (acct_no, txn_date) serves this filter well\nSELECT * FROM txn\nWHERE acct_no = 'SB1'\n  AND txn_date >= DATE '2026-11-01' AND txn_date < DATE '2026-12-01';",
    "gotcha": "An index on (acct_no, txn_date) does not help much a query that filters only on txn_date.",
    "line": "I put equality columns first and the range column last, so one index range scan answers the query."
+  },
+  {
+   "id": "fl20261121",
+   "concept": "Implicit data type conversion",
+   "why": "A number compared with a text column can silently stop Oracle from using an index, a classic interview trap.",
+   "simple": "Imagine a library where books are sorted by their written titles. If you ask for a book by a number, the librarian has to read every title and turn it into a number before comparing. That is slow. When a text column is compared with a number, Oracle does the same thing to every row.",
+   "remember": "Compare text with text, numbers with numbers.",
+   "explain": "When types differ, Oracle converts one side; between VARCHAR2 and NUMBER it converts the character side to NUMBER. So WHERE acct_no = 1001 on a VARCHAR2 column becomes TO_NUMBER(acct_no) = 1001, which is applied to every row and blocks a normal index on acct_no. It can also raise ORA-01722 if any row holds a non-numeric value like 'SB1001'. Writing acct_no = '1001' keeps the index usable, and dates should be compared with DATE or TO_DATE values, not strings.",
+   "example": "WITH acct AS (\n  SELECT '1001' acct_no, 25000 bal FROM dual UNION ALL\n  SELECT '1002', 8000 FROM dual\n)\n-- good: text compared with text, an index on acct_no can be used\nSELECT * FROM acct\nWHERE acct_no = '1001';",
+   "gotcha": "WHERE acct_no = 1001 on a VARCHAR2 column can fail with ORA-01722 once a row like 'SB1001' arrives.",
+   "line": "I match literal and bind types to the column type, because implicit TO_NUMBER on the column disables its index."
   }
  ]
 }
