@@ -9031,6 +9031,301 @@
      "find": "ORDER  BY show_date"
     }
    ]
+  },
+  {
+   "id": "f20261121-10",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Pareto 80 percent with window SUM",
+   "domain": "Cards/Payments · Gaming",
+   "title": "GTA 6 pre-orders: which cities make 80%?",
+   "scenario": "Arjun runs card-offers at a bank whose cards were used for GTA 6 pre-orders. He wants the smallest set of cities that together bring 80 percent of pre-order revenue, to target a cashback campaign there. The numbers are sample data.",
+   "schema": "GTA6_PREORDERS(order_id VARCHAR2(5), city VARCHAR2(30), platform VARCHAR2(10), amount_inr NUMBER(8))\n-- one row per pre-order paid with the bank's cards (sample data)",
+   "data": [
+    {
+     "name": "GTA6_PREORDERS",
+     "cols": [
+      "order_id",
+      "city",
+      "platform",
+      "amount_inr"
+     ],
+     "rows": [
+      [
+       "G01",
+       "Mumbai",
+       "PS5",
+       "6999"
+      ],
+      [
+       "G02",
+       "Mumbai",
+       "PS5",
+       "4999"
+      ],
+      [
+       "G03",
+       "Delhi",
+       "Xbox",
+       "6999"
+      ],
+      [
+       "G04",
+       "Bengaluru",
+       "PS5",
+       "6999"
+      ],
+      [
+       "G05",
+       "Mumbai",
+       "Xbox",
+       "6999"
+      ],
+      [
+       "G06",
+       "Delhi",
+       "PS5",
+       "4999"
+      ],
+      [
+       "G07",
+       "Pune",
+       "PS5",
+       "4999"
+      ],
+      [
+       "G08",
+       "Bengaluru",
+       "Xbox",
+       "4999"
+      ],
+      [
+       "G09",
+       "Kolkata",
+       "PS5",
+       "4999"
+      ],
+      [
+       "G10",
+       "Mumbai",
+       "PS5",
+       "6999"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "city",
+     "revenue",
+     "cum_pct"
+    ],
+    "rows": [
+     [
+      "Mumbai",
+      "25996",
+      "43.3"
+     ],
+     [
+      "Bengaluru",
+      "11998",
+      "63.3"
+     ],
+     [
+      "Delhi",
+      "11998",
+      "83.3"
+     ]
+    ]
+   },
+   "output_note": "Delhi is included because the total was still below 80 percent before it (63.3). Bengaluru and Delhi tie on revenue, so city name breaks the tie.",
+   "task": "Show the cities, biggest revenue first, that together make up 80 percent of pre-order revenue, including the city that crosses 80 percent, with the cumulative percentage.",
+   "hint": "Group by city first, then a running SUM over revenue descending; keep cities whose running total before them was below 80 percent.",
+   "solution": "SELECT city, revenue,\n       ROUND(100 * running / total, 1) AS cum_pct\nFROM (\n  SELECT city, SUM(amount_inr) AS revenue,\n         SUM(SUM(amount_inr)) OVER (ORDER BY SUM(amount_inr) DESC, city\n                                    ROWS UNBOUNDED PRECEDING) AS running,\n         SUM(SUM(amount_inr)) OVER () AS total\n  FROM gta6_preorders\n  GROUP BY city\n)\nWHERE running - revenue < 0.8 * total\nORDER BY revenue DESC, city;",
+   "simple": "Line up the cities from richest to poorest, like children lining up by height. Walk down the line adding up their money. Keep going until you have 80 percent of all the money, and include the city that takes you past 80. Everyone after that is left out.",
+   "remember": "Pareto = running SUM sorted big to small.",
+   "why": "The inner query groups to city revenue, and SUM(SUM(amount_inr)) OVER (...) runs a window over the grouped rows. ROWS UNBOUNDED PRECEDING plus city in ORDER BY makes tied cities add one at a time; the default RANGE frame would add tied rows together. running - revenue is the total before the current city, so the filter keeps the crossing city too.",
+   "tip": "I always add ROWS UNBOUNDED PRECEDING to running totals, because the default RANGE frame lumps tied values together.",
+   "trend": {
+    "topic": "GTA 6",
+    "hook": "GTA 6 is finally out, so let's see which cities spent the most on pre-orders!",
+    "hashtags": [
+     "gta6",
+     "gtavi",
+     "grandtheftauto6"
+    ]
+   },
+   "steps": [
+    {
+     "say": "Step one. Inside, GROUP BY city adds up each city's pre-order revenue.",
+     "find": "SELECT city, SUM(amount_inr) AS revenue",
+     "to": "GROUP BY city"
+    },
+    {
+     "say": "A window SUM over revenue, biggest first, gives the running total. ROWS makes tied cities count one at a time.",
+     "find": "SUM(SUM(amount_inr)) OVER (ORDER BY",
+     "to": "ROWS UNBOUNDED PRECEDING"
+    },
+    {
+     "say": "An empty OVER gives the grand total of all cities.",
+     "find": "OVER () AS total"
+    },
+    {
+     "say": "Step two. Keep a city if the total before it was still below eighty percent.",
+     "find": "WHERE running - revenue < 0.8 * total"
+    },
+    {
+     "say": "Finally, running divided by total gives the cumulative percentage.",
+     "find": "ROUND(100 * running / total, 1)"
+    }
+   ]
+  },
+  {
+   "id": "f20261121-11",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Peak hour per group with RANK",
+   "domain": "Cards/Payments · Movies",
+   "title": "Avengers: Doomsday peak booking hour per city",
+   "scenario": "Priya in the bank's payments team watches card traffic when Avengers: Doomsday advance booking opened. She needs the busiest hour in each city, to plan server capacity for the next big release. The numbers are sample data.",
+   "schema": "AD_BOOKINGS(booking_id VARCHAR2(5), city VARCHAR2(30), booked_at DATE, seats NUMBER(3))\n-- one row per advance booking paid by card (sample data)",
+   "data": [
+    {
+     "name": "AD_BOOKINGS",
+     "cols": [
+      "booking_id",
+      "city",
+      "booked_at",
+      "seats"
+     ],
+     "rows": [
+      [
+       "B01",
+       "Mumbai",
+       "17-11-2026 10:05",
+       "4"
+      ],
+      [
+       "B02",
+       "Mumbai",
+       "17-11-2026 10:40",
+       "6"
+      ],
+      [
+       "B03",
+       "Mumbai",
+       "17-11-2026 11:15",
+       "3"
+      ],
+      [
+       "B04",
+       "Mumbai",
+       "17-11-2026 11:50",
+       "5"
+      ],
+      [
+       "B05",
+       "Hyderabad",
+       "17-11-2026 10:20",
+       "2"
+      ],
+      [
+       "B06",
+       "Hyderabad",
+       "17-11-2026 12:10",
+       "8"
+      ],
+      [
+       "B07",
+       "Hyderabad",
+       "17-11-2026 12:45",
+       "2"
+      ],
+      [
+       "B08",
+       "Chennai",
+       "17-11-2026 10:30",
+       "5"
+      ],
+      [
+       "B09",
+       "Chennai",
+       "17-11-2026 11:05",
+       "5"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "city",
+     "booking_hour",
+     "seats"
+    ],
+    "rows": [
+     [
+      "Chennai",
+      "10",
+      "5"
+     ],
+     [
+      "Chennai",
+      "11",
+      "5"
+     ],
+     [
+      "Hyderabad",
+      "12",
+      "10"
+     ],
+     [
+      "Mumbai",
+      "10",
+      "10"
+     ]
+    ]
+   },
+   "output_note": "Chennai has a tie (5 seats at 10 and at 11), so RANK keeps both hours.",
+   "task": "For each city, show the hour (HH24) with the most seats booked and the seats in that hour. If two hours tie, show both.",
+   "hint": "Group by city and hour, then RANK() OVER (PARTITION BY city ORDER BY SUM(seats) DESC) and keep rank 1.",
+   "solution": "SELECT city, booking_hour, seats\nFROM (\n  SELECT city,\n         TO_CHAR(booked_at, 'HH24') AS booking_hour,\n         SUM(seats) AS seats,\n         RANK() OVER (PARTITION BY city\n                      ORDER BY SUM(seats) DESC) AS rnk\n  FROM ad_bookings\n  GROUP BY city, TO_CHAR(booked_at, 'HH24')\n)\nWHERE rnk = 1\nORDER BY city, booking_hour;",
+   "simple": "Think of a sports day where each school gets its own race. We count the seats booked in every hour, then hold a separate race inside each city. The hour with the most seats wins in that city. If two hours finish together, both get the gold medal, which is what RANK does.",
+   "remember": "Best per group = RANK OVER PARTITION BY, keep 1.",
+   "why": "GROUP BY city and TO_CHAR(booked_at, 'HH24') gives seats per city-hour. RANK() OVER (PARTITION BY city ORDER BY SUM(seats) DESC) restarts numbering in each city and gives tied hours the same rank, so rnk = 1 returns all top hours. ROW_NUMBER would silently drop one of the tied hours.",
+   "tip": "I pick RANK over ROW_NUMBER when ties must all be shown, and say so in the interview.",
+   "trend": {
+    "topic": "Avengers Doomsday",
+    "hook": "Avengers: Doomsday bookings are open, so let's find the busiest booking hour!",
+    "hashtags": [
+     "avengersdoomsday",
+     "doomsday",
+     "marvel"
+    ]
+   },
+   "steps": [
+    {
+     "say": "Step one. Inside, group by city and booking hour, and add up the seats.",
+     "find": "TO_CHAR(booked_at, 'HH24') AS booking_hour",
+     "to": "SUM(seats) AS seats"
+    },
+    {
+     "say": "RANK with PARTITION BY city starts a new race in every city, most seats first.",
+     "find": "RANK() OVER (PARTITION BY city",
+     "to": "ORDER BY SUM(seats) DESC) AS rnk"
+    },
+    {
+     "say": "The GROUP BY must use the same hour expression.",
+     "find": "GROUP BY city, TO_CHAR(booked_at, 'HH24')"
+    },
+    {
+     "say": "Step two. Keep only rank one. Tied hours both have rank one, so both stay.",
+     "find": "WHERE rnk = 1"
+    },
+    {
+     "say": "Finally, sort by city and hour.",
+     "find": "ORDER BY city, booking_hour"
+    }
+   ]
   }
  ],
  "lessons": [
