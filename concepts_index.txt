@@ -116,6 +116,7 @@ f20261121-5|A|plsql|PRAGMA EXCEPTION_INIT|Payments/RTGS
 f20261121-6|A|plsql|Nested table MULTISET EXCEPT|AML/Sanctions screening
 f20261121-7|A|sql|Launch-month total per product|Cards/Product analytics TECH:Card Launch Success
 f20261121-8|A|sql|Bilateral netting with LEAST/GREATEST|Treasury/Interbank settlement
+f20261121-9|M|sql|Running total milestone|Cards/Payments · Entertainment TREND:Ramayana
 l01|lesson|ROWS versus RANGE window frames
 l02|lesson|Partition pruning
 l03|lesson|SELECT FOR UPDATE SKIP LOCKED

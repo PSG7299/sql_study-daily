@@ -8900,6 +8900,137 @@
      "to": "WHERE net <> 0"
     }
    ]
+  },
+  {
+   "id": "f20261121-9",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Running total milestone",
+   "domain": "Cards/Payments · Entertainment",
+   "title": "When did Ramayana cross 500 crore?",
+   "scenario": "Neha works in analytics at a bank that processes a cinema chain's ticket payments. Her manager wants the day the film's India collection crossed 500 crore rupees, to plan a 500 crore club cashback offer. The numbers below are sample data.",
+   "schema": "BOX_OFFICE(show_date DATE, collection_cr NUMBER(8,2))\n-- one row per day, India collection in crore rupees (sample data)",
+   "data": [
+    {
+     "name": "BOX_OFFICE",
+     "cols": [
+      "show_date",
+      "collection_cr"
+     ],
+     "rows": [
+      [
+       "06-11-2026",
+       "120"
+      ],
+      [
+       "07-11-2026",
+       "95"
+      ],
+      [
+       "08-11-2026",
+       "140"
+      ],
+      [
+       "09-11-2026",
+       "110"
+      ],
+      [
+       "10-11-2026",
+       "60"
+      ],
+      [
+       "11-11-2026",
+       "48"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "show_date",
+     "collection_cr",
+     "running_total_cr",
+     "milestone"
+    ],
+    "rows": [
+     [
+      "06-11-2026",
+      "120",
+      "120",
+      "NULL"
+     ],
+     [
+      "07-11-2026",
+      "95",
+      "215",
+      "NULL"
+     ],
+     [
+      "08-11-2026",
+      "140",
+      "355",
+      "NULL"
+     ],
+     [
+      "09-11-2026",
+      "110",
+      "465",
+      "NULL"
+     ],
+     [
+      "10-11-2026",
+      "60",
+      "525",
+      "CROSSED 500"
+     ],
+     [
+      "11-11-2026",
+      "48",
+      "573",
+      "NULL"
+     ]
+    ]
+   },
+   "output_note": "On 10 Nov the total went from 465 to 525, so only that day is marked. 11 Nov is above 500 too, but the day before was already above 500.",
+   "task": "Show each day's collection with a running total, and mark the first day the running total reached 500 crore as 'CROSSED 500'.",
+   "hint": "SUM() OVER (ORDER BY show_date) keeps adding day by day; running total minus today's value is yesterday's total.",
+   "solution": "SELECT show_date, collection_cr,\n       SUM(collection_cr) OVER (ORDER BY show_date) AS running_total_cr,\n       CASE WHEN SUM(collection_cr) OVER (ORDER BY show_date) >= 500\n             AND SUM(collection_cr) OVER (ORDER BY show_date) - collection_cr < 500\n            THEN 'CROSSED 500' END AS milestone\nFROM   box_office\nORDER  BY show_date;",
+   "simple": "It is like filling a piggy bank every day. Each day you add that day's money and check the total. On 10 November the total jumped from 465 to 525, so that is the day it crossed 500. The CASE checks two things: today's total is 500 or more, and yesterday's total was below 500.",
+   "remember": "Running total = SUM with OVER ORDER BY.",
+   "why": "SUM(collection_cr) OVER (ORDER BY show_date) uses the default frame RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW, giving a cumulative sum. Subtracting the current row's value gives the previous running total, so the crossing day is where the previous total is below 500 and the current one is at least 500. No self-join or subquery is needed.",
+   "tip": "Running total minus today's value gives yesterday's total, so I can find the exact crossing day without a self-join.",
+   "trend": {
+    "topic": "Ramayana",
+    "hook": "Ramayana is ruling the box office, so let's find the day it crossed 500 crore!",
+    "hashtags": [
+     "ramayana",
+     "ramayanaboxoffice",
+     "ramayanamovie"
+    ]
+   },
+   "steps": [
+    {
+     "say": "Step one. SUM with OVER, ORDER BY show date, adds each day's collection to the total so far.",
+     "find": "SUM(collection_cr) OVER (ORDER BY show_date) AS running_total_cr"
+    },
+    {
+     "say": "Step two. CASE checks that today's running total is five hundred or more.",
+     "find": "CASE WHEN SUM",
+     "to": ">= 500"
+    },
+    {
+     "say": "And that yesterday's total, which is the running total minus today, was still below five hundred.",
+     "find": "- collection_cr < 500"
+    },
+    {
+     "say": "Only that one day gets the label CROSSED 500.",
+     "find": "THEN 'CROSSED 500'"
+    },
+    {
+     "say": "Finally, ORDER BY show date lists the days in order.",
+     "find": "ORDER  BY show_date"
+    }
+   ]
   }
  ],
  "lessons": [
