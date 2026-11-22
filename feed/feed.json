@@ -9452,6 +9452,846 @@
      "find": "ORDER  BY rate_date"
     }
    ]
+  },
+  {
+   "id": "f20261122-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "UNION removes duplicates",
+   "domain": "Retail banking/Cross-sell",
+   "title": "Customers with a loan or a card",
+   "scenario": "Pooja in the cross-sell team wants one clean list of customers who hold a loan, a credit card, or both. Some customers appear in both lists, and she must not call them twice.",
+   "schema": "LOAN_CUSTOMERS(cust_id NUMBER, cust_name VARCHAR2(30))  -- customers with an active loan\nCARD_CUSTOMERS(cust_id NUMBER, cust_name VARCHAR2(30))  -- customers with a credit card",
+   "data": [
+    {
+     "name": "LOAN_CUSTOMERS",
+     "cols": [
+      "cust_id",
+      "cust_name"
+     ],
+     "rows": [
+      [
+       "101",
+       "Asha"
+      ],
+      [
+       "102",
+       "Bilal"
+      ],
+      [
+       "104",
+       "Divya"
+      ]
+     ]
+    },
+    {
+     "name": "CARD_CUSTOMERS",
+     "cols": [
+      "cust_id",
+      "cust_name"
+     ],
+     "rows": [
+      [
+       "102",
+       "Bilal"
+      ],
+      [
+       "103",
+       "Chetan"
+      ],
+      [
+       "104",
+       "Divya"
+      ],
+      [
+       "105",
+       "Esha"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "cust_name"
+    ],
+    "rows": [
+     [
+      "101",
+      "Asha"
+     ],
+     [
+      "102",
+      "Bilal"
+     ],
+     [
+      "103",
+      "Chetan"
+     ],
+     [
+      "104",
+      "Divya"
+     ],
+     [
+      "105",
+      "Esha"
+     ]
+    ]
+   },
+   "output_note": "Bilal and Divya are in both tables but appear only once, because UNION removes duplicate rows.",
+   "task": "List every customer who has a loan or a card, each customer only once, sorted by cust_id.",
+   "hint": "UNION combines two queries and removes duplicates; UNION ALL keeps them.",
+   "solution": "SELECT cust_id, cust_name FROM loan_customers\nUNION\nSELECT cust_id, cust_name FROM card_customers\nORDER BY cust_id;",
+   "simple": "Imagine two class lists: the football team and the music club. Some kids are in both. If you want one list for a party invite, you write each name only once. UNION joins the two lists and crosses out the repeated names.",
+   "remember": "UNION = merge lists, drop repeats. UNION ALL = keep repeats.",
+   "why": "UNION applies a DISTINCT over the combined result, so identical rows from both branches appear once; this needs a sort or hash step. UNION ALL skips that step and is cheaper when duplicates are impossible or wanted. ORDER BY is written once, at the very end, and applies to the whole combined result.",
+   "tip": "I use UNION ALL by default and switch to UNION only when duplicates must really be removed, because the de-duplication costs extra work.",
+   "steps": [
+    {
+     "say": "Step one. Take every customer from the loan table.",
+     "find": "SELECT cust_id, cust_name FROM loan_customers"
+    },
+    {
+     "say": "Step two. UNION adds the card customers and removes anyone already listed.",
+     "find": "UNION",
+     "to": "SELECT cust_id, cust_name FROM card_customers"
+    },
+    {
+     "say": "Finally, one ORDER BY at the end sorts the whole combined list.",
+     "find": "ORDER BY cust_id"
+    }
+   ]
+  },
+  {
+   "id": "f20261122-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "ORDER BY an aggregate",
+   "domain": "Cards/UPI payments · Movies",
+   "title": "Godzilla ticket sales by city",
+   "scenario": "Godzilla Minus Zero is roaring in cinemas, and Nikhil in the bank's cards team is tracking ticket payments made with its cards and UPI. He wants each city's total, highest first. All numbers are sample data.",
+   "schema": "TICKET_BOOKINGS(booking_id NUMBER, city VARCHAR2(20), pay_mode VARCHAR2(10), amount NUMBER(8))\n-- one row per paid movie booking, amount in rupees (sample data)",
+   "data": [
+    {
+     "name": "TICKET_BOOKINGS",
+     "cols": [
+      "booking_id",
+      "city",
+      "pay_mode",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "Mumbai",
+       "UPI",
+       "1200"
+      ],
+      [
+       "2",
+       "Bengaluru",
+       "CARD",
+       "900"
+      ],
+      [
+       "3",
+       "Mumbai",
+       "CARD",
+       "650"
+      ],
+      [
+       "4",
+       "Chennai",
+       "UPI",
+       "1500"
+      ],
+      [
+       "5",
+       "Bengaluru",
+       "UPI",
+       "800"
+      ],
+      [
+       "6",
+       "Mumbai",
+       "UPI",
+       "400"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "city",
+     "bookings",
+     "total_rs"
+    ],
+    "rows": [
+     [
+      "Mumbai",
+      "3",
+      "2250"
+     ],
+     [
+      "Bengaluru",
+      "2",
+      "1700"
+     ],
+     [
+      "Chennai",
+      "1",
+      "1500"
+     ]
+    ]
+   },
+   "output_note": "Chennai has the single biggest booking, but Mumbai wins on total because it has three bookings.",
+   "task": "Show each city's number of bookings and total amount, with the highest total first.",
+   "hint": "GROUP BY city, then ORDER BY the SUM, using DESC for highest first.",
+   "solution": "SELECT city, COUNT(*) AS bookings, SUM(amount) AS total_rs\nFROM   ticket_bookings\nGROUP  BY city\nORDER  BY total_rs DESC;",
+   "simple": "Think of three piggy banks, one for each city. Every ticket payment drops coins into its city's piggy bank. GROUP BY fills the piggy banks, SUM counts the money in each, and ORDER BY lines them up from fullest to emptiest.",
+   "remember": "GROUP BY makes the buckets; ORDER BY ranks them.",
+   "why": "GROUP BY city collapses the rows into one row per city, and SUM and COUNT are computed per group. ORDER BY runs after SELECT, so it can use the column alias total_rs. DESC sorts the largest total first; the default is ascending.",
+   "tip": "ORDER BY is evaluated last, so it is the one clause where I can use a SELECT alias like total_rs.",
+   "trend": {
+    "topic": "Godzilla Minus Zero",
+    "hook": "Godzilla Minus Zero is smashing the box office, so which city spent the most on tickets?",
+    "hashtags": [
+     "godzillaminuszero",
+     "godzilla",
+     "boxoffice"
+    ]
+   },
+   "steps": [
+    {
+     "say": "Step one. GROUP BY city puts every booking into its city's bucket.",
+     "find": "GROUP  BY city"
+    },
+    {
+     "say": "Step two. COUNT gives the bookings and SUM adds up the rupees in each bucket.",
+     "find": "SELECT city, COUNT(*) AS bookings, SUM(amount) AS total_rs"
+    },
+    {
+     "say": "Finally, ORDER BY the total, descending, puts the biggest city on top.",
+     "find": "ORDER  BY total_rs DESC"
+    }
+   ]
+  },
+  {
+   "id": "f20261122-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Weekly totals with TRUNC IW",
+   "domain": "Payments/NEFT",
+   "title": "Weekly NEFT totals, Monday to Sunday",
+   "scenario": "Farhan prepares a weekly NEFT volume report for operations. Weeks must run Monday to Sunday, and a Sunday payment must count in the week that started the Monday before.",
+   "schema": "NEFT_TXNS(txn_id NUMBER, txn_date DATE, amount NUMBER(12))\n-- outward NEFT payments, amount in rupees",
+   "data": [
+    {
+     "name": "NEFT_TXNS",
+     "cols": [
+      "txn_id",
+      "txn_date",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "16-11-2026",
+       "5000"
+      ],
+      [
+       "2",
+       "21-11-2026",
+       "3000"
+      ],
+      [
+       "3",
+       "22-11-2026",
+       "2000"
+      ],
+      [
+       "4",
+       "23-11-2026",
+       "7000"
+      ],
+      [
+       "5",
+       "25-11-2026",
+       "4000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "week_start",
+     "txns",
+     "total_rs"
+    ],
+    "rows": [
+     [
+      "16-11-2026",
+      "3",
+      "10000"
+     ],
+     [
+      "23-11-2026",
+      "2",
+      "11000"
+     ]
+    ]
+   },
+   "output_note": "22-11-2026 is a Sunday, so it belongs to the week starting Monday 16-11-2026.",
+   "task": "Show the Monday each week starts on, the number of payments and the total amount per week, oldest week first.",
+   "hint": "TRUNC(txn_date, 'IW') returns the Monday of the ISO week, whatever the session's NLS settings.",
+   "solution": "SELECT TRUNC(txn_date, 'IW') AS week_start,\n       COUNT(*)    AS txns,\n       SUM(amount) AS total_rs\nFROM   neft_txns\nGROUP  BY TRUNC(txn_date, 'IW')\nORDER  BY week_start;",
+   "simple": "Think of a school timetable where every week starts on Monday. Whatever day a payment happens, you slide it back to that week's Monday and put it in that week's box. TRUNC with 'IW' does the sliding back, and GROUP BY fills the boxes.",
+   "remember": "TRUNC(date,'IW') = slide back to Monday.",
+   "why": "TRUNC(date, 'IW') truncates to the first day of the ISO week, which is always Monday. TRUNC(date, 'D') or 'DAY' depends on NLS_TERRITORY, so in the US setting a Sunday would start a new week. The GROUP BY must repeat the same expression, because the alias is not allowed there.",
+   "tip": "For weekly reports I use TRUNC with 'IW', because 'D' changes with the session's territory setting and can silently move Sundays.",
+   "steps": [
+    {
+     "say": "Step one. TRUNC with I W slides each date back to its Monday.",
+     "find": "SELECT TRUNC(txn_date, 'IW') AS week_start"
+    },
+    {
+     "say": "Step two. Group by that same Monday, so each week becomes one row.",
+     "find": "GROUP  BY TRUNC(txn_date, 'IW')"
+    },
+    {
+     "say": "Count and sum the payments in each week.",
+     "find": "COUNT(*)    AS txns",
+     "to": "SUM(amount) AS total_rs"
+    },
+    {
+     "say": "Finally, sort by the week start date.",
+     "find": "ORDER  BY week_start"
+    }
+   ]
+  },
+  {
+   "id": "f20261122-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "GREATEST with NULL trap",
+   "domain": "Loans/Personal loan underwriting",
+   "title": "Higher of two bureau scores",
+   "scenario": "Leena's underwriting rule says: use the higher of the two credit bureau scores. But some applicants have only one score, and her first query gave them no score at all.",
+   "schema": "BUREAU_SCORES(app_id VARCHAR2(5), cibil_score NUMBER(3), experian_score NUMBER(3))\n-- NULL = score not received from that bureau",
+   "data": [
+    {
+     "name": "BUREAU_SCORES",
+     "cols": [
+      "app_id",
+      "cibil_score",
+      "experian_score"
+     ],
+     "rows": [
+      [
+       "A1",
+       "742",
+       "760"
+      ],
+      [
+       "A2",
+       "NULL",
+       "701"
+      ],
+      [
+       "A3",
+       "688",
+       "NULL"
+      ],
+      [
+       "A4",
+       "NULL",
+       "NULL"
+      ],
+      [
+       "A5",
+       "810",
+       "795"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "app_id",
+     "naive",
+     "best_score"
+    ],
+    "rows": [
+     [
+      "A1",
+      "760",
+      "760"
+     ],
+     [
+      "A2",
+      "NULL",
+      "701"
+     ],
+     [
+      "A3",
+      "NULL",
+      "688"
+     ],
+     [
+      "A4",
+      "NULL",
+      "NULL"
+     ],
+     [
+      "A5",
+      "810",
+      "810"
+     ]
+    ]
+   },
+   "output_note": "GREATEST returns NULL if any argument is NULL, so A2 and A3 lose their score in the naive column. A4 has no score at all and correctly stays NULL.",
+   "task": "Show the plain GREATEST result as naive, and a correct best_score that uses the higher score, or the only score if one is missing.",
+   "hint": "Wrap GREATEST in COALESCE and fall back to each score.",
+   "solution": "SELECT app_id,\n       GREATEST(cibil_score, experian_score) AS naive,\n       COALESCE(GREATEST(cibil_score, experian_score),\n                cibil_score, experian_score) AS best_score\nFROM   bureau_scores\nORDER  BY app_id;",
+   "simple": "Imagine two teachers each give you a mark, and you keep the higher one. If one teacher was absent, a fussy robot says 'I can't compare, so no mark!' COALESCE fixes that: if the robot gives up, just take whichever mark you do have.",
+   "remember": "GREATEST sees one NULL, returns NULL. COALESCE rescues it.",
+   "why": "In Oracle, GREATEST and LEAST return NULL as soon as any argument is NULL. COALESCE returns its first non-NULL argument, so when GREATEST fails it falls back to cibil_score, then experian_score. Using NVL(score, 0) instead would turn a missing pair into 0, which is a wrong, very low score.",
+   "tip": "I never default a missing credit score to zero with NVL; COALESCE around GREATEST keeps a truly missing score as NULL.",
+   "steps": [
+    {
+     "say": "Step one. Plain GREATEST works only when both scores are present.",
+     "find": "GREATEST(cibil_score, experian_score) AS naive"
+    },
+    {
+     "say": "Step two. COALESCE takes GREATEST's answer if it is not NULL.",
+     "find": "COALESCE(GREATEST(cibil_score, experian_score),"
+    },
+    {
+     "say": "Otherwise it falls back to whichever single score exists.",
+     "find": "cibil_score, experian_score) AS best_score"
+    },
+    {
+     "say": "Finally, sort by application id.",
+     "find": "ORDER  BY app_id"
+    }
+   ]
+  },
+  {
+   "id": "f20261122-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Swap adjacent rows with MOD",
+   "domain": "Core banking/Statements",
+   "title": "Fix swapped statement lines",
+   "scenario": "A migration bug swapped statement lines in pairs: line 1 with 2, line 3 with 4, and so on. Sunil must show the corrected order. If the last line has no partner, it stays where it is.",
+   "schema": "STATEMENT_LINES(line_id NUMBER, narration VARCHAR2(40))\n-- line_id is 1, 2, 3 ... with no gaps",
+   "data": [
+    {
+     "name": "STATEMENT_LINES",
+     "cols": [
+      "line_id",
+      "narration"
+     ],
+     "rows": [
+      [
+       "1",
+       "ATM withdrawal"
+      ],
+      [
+       "2",
+       "Salary credit"
+      ],
+      [
+       "3",
+       "UPI to grocer"
+      ],
+      [
+       "4",
+       "EMI debit"
+      ],
+      [
+       "5",
+       "Interest credit"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "corrected_id",
+     "narration"
+    ],
+    "rows": [
+     [
+      "1",
+      "Salary credit"
+     ],
+     [
+      "2",
+      "ATM withdrawal"
+     ],
+     [
+      "3",
+      "EMI debit"
+     ],
+     [
+      "4",
+      "UPI to grocer"
+     ],
+     [
+      "5",
+      "Interest credit"
+     ]
+    ]
+   },
+   "output_note": "Line 5 is odd and is the last line, so it has no partner and keeps id 5.",
+   "task": "Return each narration with its corrected line id: odd ids move up by one, even ids move down by one, except a last odd line, which stays. Sort by corrected id.",
+   "hint": "MOD(line_id, 2) tells odd from even; compare with MAX(line_id) for the last line.",
+   "solution": "SELECT CASE\n         WHEN MOD(line_id, 2) = 1\n              AND line_id = (SELECT MAX(line_id) FROM statement_lines) THEN line_id\n         WHEN MOD(line_id, 2) = 1 THEN line_id + 1\n         ELSE line_id - 1\n       END AS corrected_id,\n       narration\nFROM   statement_lines\nORDER  BY corrected_id;",
+   "simple": "Imagine kids standing in a line, but every pair swapped places by mistake. Kid 1 should be kid 2, and kid 2 should be kid 1. So odd numbers step forward one, even numbers step back one. If the last kid has no partner, he just stays put.",
+   "remember": "Odd goes up one, even goes down one, lonely last stays.",
+   "why": "MOD(line_id, 2) = 1 identifies odd ids, which become id + 1, and even ids become id - 1. The scalar subquery MAX(line_id) catches an odd last row, which would otherwise point to an id that does not exist. This relies on ids being gapless; with gaps you would first renumber with ROW_NUMBER.",
+   "tip": "Before using id arithmetic I state the assumption that ids are gapless, and otherwise renumber with ROW_NUMBER first.",
+   "tech": {
+    "pattern": "Swapped Rows",
+    "company": "Zomato",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   },
+   "steps": [
+    {
+     "say": "Step one. An odd line that is also the last line has no partner, so it keeps its id.",
+     "find": "WHEN MOD(line_id, 2) = 1",
+     "to": "AND line_id = (SELECT MAX(line_id) FROM statement_lines) THEN line_id"
+    },
+    {
+     "say": "Step two. Every other odd line moves up by one.",
+     "find": "WHEN MOD(line_id, 2) = 1 THEN line_id + 1"
+    },
+    {
+     "say": "Even lines move down by one.",
+     "find": "ELSE line_id - 1"
+    },
+    {
+     "say": "Finally, sort by the corrected id to see the right order.",
+     "find": "ORDER  BY corrected_id"
+    }
+   ]
+  },
+  {
+   "id": "f20261122-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Compound return with EXP SUM LN",
+   "domain": "Treasury/Investments · Markets",
+   "title": "Sensex rally: compound treasury returns",
+   "scenario": "The Sensex has been rallying, and Kiran on the treasury desk tracks the bank's ₹5 crore index-fund holding. He needs the compounded return to date, not a simple sum of daily percentages. Returns below are sample data, not real market figures.",
+   "schema": "INDEX_RETURNS(trade_date DATE, ret_pct NUMBER(5,2))\n-- daily return of the index holding in percent (sample data)",
+   "data": [
+    {
+     "name": "INDEX_RETURNS",
+     "cols": [
+      "trade_date",
+      "ret_pct"
+     ],
+     "rows": [
+      [
+       "16-11-2026",
+       "1.20"
+      ],
+      [
+       "17-11-2026",
+       "0.80"
+      ],
+      [
+       "18-11-2026",
+       "-0.50"
+      ],
+      [
+       "19-11-2026",
+       "1.50"
+      ],
+      [
+       "20-11-2026",
+       "0.60"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "trade_date",
+     "ret_pct",
+     "cum_ret_pct",
+     "value_rs"
+    ],
+    "rows": [
+     [
+      "16-11-2026",
+      "1.2",
+      "1.2",
+      "50600000"
+     ],
+     [
+      "17-11-2026",
+      "0.8",
+      "2.01",
+      "51004800"
+     ],
+     [
+      "18-11-2026",
+      "-0.5",
+      "1.5",
+      "50749776"
+     ],
+     [
+      "19-11-2026",
+      "1.5",
+      "3.02",
+      "51511023"
+     ],
+     [
+      "20-11-2026",
+      "0.6",
+      "3.64",
+      "51820089"
+     ]
+    ]
+   },
+   "output_note": "Simply adding the daily returns gives 3.6 percent, but compounding gives 3.64 percent, because each day's gain builds on the previous days' gains.",
+   "task": "For each day show the daily return, the compounded return to date in percent (2 decimals), and the value of a ₹50,000,000 starting holding (rounded to the rupee).",
+   "hint": "SQL has no running PRODUCT, but EXP(SUM(LN(x))) multiplies the values.",
+   "solution": "SELECT trade_date, ret_pct,\n       ROUND(100 * (EXP(SUM(LN(1 + ret_pct / 100))\n                    OVER (ORDER BY trade_date)) - 1), 2) AS cum_ret_pct,\n       ROUND(50000000 * EXP(SUM(LN(1 + ret_pct / 100))\n                    OVER (ORDER BY trade_date))) AS value_rs\nFROM   index_returns\nORDER  BY trade_date;",
+   "simple": "Imagine a plant that grows a little each day, and each day's growth is a percentage of its new size, not its old size. So you can't just add the percentages; you have to multiply. SQL can add but can't multiply down a column, so we use a math trick: logs turn multiplying into adding, and EXP turns it back.",
+   "remember": "Running product = EXP of running SUM of LN.",
+   "why": "Compounded growth is the product of (1 + r) factors, and Oracle has no PRODUCT aggregate. Since LN(a*b) = LN(a) + LN(b), a running SUM of LN(1 + r/100) followed by EXP gives the running product. LN fails for factors of zero or below, so this works for returns above minus 100 percent only.",
+   "tip": "For compounding I use EXP(SUM(LN(1+r))) as a window, and I mention it breaks for a factor of zero or less.",
+   "trend": {
+    "topic": "Sensex Rally",
+    "hook": "The Sensex is rallying hard, so let's compound a treasury desk's daily returns in SQL!",
+    "hashtags": [
+     "sensex",
+     "nifty",
+     "stockmarketindia"
+    ]
+   },
+   "steps": [
+    {
+     "say": "Step one. Turn each daily percent into a growth factor, like one point zero one two, and take its log.",
+     "find": "LN(1 + ret_pct / 100)"
+    },
+    {
+     "say": "Step two. A running SUM of logs, ordered by date, adds up all days so far.",
+     "find": "OVER (ORDER BY trade_date)) - 1), 2) AS cum_ret_pct"
+    },
+    {
+     "say": "EXP turns the summed logs back into the multiplied factor, so minus one, times a hundred, is the compounded return.",
+     "find": "ROUND(100 * (EXP(SUM(LN(1 + ret_pct / 100))"
+    },
+    {
+     "say": "Finally, the same factor times five crore gives the holding's value each day.",
+     "find": "ROUND(50000000 * EXP(SUM(LN(1 + ret_pct / 100))",
+     "to": "OVER (ORDER BY trade_date))) AS value_rs"
+    }
+   ]
+  },
+  {
+   "id": "f20261122-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "SQL%BULK_ROWCOUNT per FORALL row",
+   "domain": "Payments/Standing instructions",
+   "title": "Which standing instructions missed?",
+   "scenario": "Rekha runs the monthly ₹2,500 standing-instruction debit with FORALL. One account id in the batch was closed and deleted, and the UPDATE silently matched nothing. She must log every id that updated zero rows.",
+   "schema": "SI_ACCOUNTS(acct_id NUMBER, balance NUMBER(12))  -- accounts with a standing instruction\nSI_LOG(acct_id NUMBER, msg VARCHAR2(40))  -- exceptions log, empty before the run",
+   "data": [
+    {
+     "name": "SI_ACCOUNTS",
+     "cols": [
+      "acct_id",
+      "balance"
+     ],
+     "rows": [
+      [
+       "501",
+       "20000"
+      ],
+      [
+       "502",
+       "8000"
+      ],
+      [
+       "503",
+       "15000"
+      ],
+      [
+       "504",
+       "3000"
+      ]
+     ]
+    },
+    {
+     "name": "SI_LOG",
+     "cols": [
+      "acct_id",
+      "msg"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "acct_id",
+     "msg"
+    ],
+    "rows": [
+     [
+      "599",
+      "ACCOUNT NOT FOUND"
+     ]
+    ]
+   },
+   "output_note": "SI_LOG after the run. In SI_ACCOUNTS, 501, 502 and 503 drop by 2500 to 17500, 5500 and 12500; 504 was not in the batch and stays 3000.",
+   "task": "Write a block that debits 2500 from accounts 501, 502, 599 and 503 with one FORALL, then logs 'ACCOUNT NOT FOUND' for every id whose UPDATE touched zero rows.",
+   "hint": "SQL%BULK_ROWCOUNT(i) holds the rows affected by the i-th FORALL execution; read it before running any other SQL.",
+   "solution": "DECLARE\n  TYPE t_ids IS TABLE OF NUMBER;\n  l_ids     t_ids := t_ids(501, 502, 599, 503);\n  l_missing t_ids := t_ids();\nBEGIN\n  FORALL i IN 1 .. l_ids.COUNT\n    UPDATE si_accounts\n    SET    balance = balance - 2500\n    WHERE  acct_id = l_ids(i);\n\n  FOR i IN 1 .. l_ids.COUNT LOOP\n    IF SQL%BULK_ROWCOUNT(i) = 0 THEN\n      l_missing.EXTEND;\n      l_missing(l_missing.COUNT) := l_ids(i);\n    END IF;\n  END LOOP;\n\n  FORALL j IN 1 .. l_missing.COUNT\n    INSERT INTO si_log (acct_id, msg)\n    VALUES (l_missing(j), 'ACCOUNT NOT FOUND');\n  COMMIT;\nEND;\n/",
+   "simple": "Imagine a teacher hands out stickers to a list of kids all at once. Afterwards she checks a little tally card: how many stickers went to each name? One name got zero, because that kid has left the school. SQL%BULK_ROWCOUNT is that tally card, one count per name.",
+   "remember": "BULK_ROWCOUNT(i) = rows changed by the i-th FORALL run.",
+   "why": "FORALL sends all four UPDATEs in one context switch, and SQL%ROWCOUNT only gives the overall total of 3. SQL%BULK_ROWCOUNT(i) gives the count for each element, so element 3 (id 599) shows 0. The missing ids are collected first, because any new SQL statement, like an INSERT inside the loop, would overwrite the SQL% cursor attributes.",
+   "tip": "After FORALL I read SQL%BULK_ROWCOUNT into a collection first, because the next DML statement resets the implicit cursor attributes.",
+   "steps": [
+    {
+     "say": "Step one. One FORALL sends all four debits to the database in a single trip.",
+     "find": "FORALL i IN 1 .. l_ids.COUNT",
+     "to": "WHERE  acct_id = l_ids(i);"
+    },
+    {
+     "say": "Step two. SQL percent BULK ROWCOUNT of i tells how many rows each debit touched.",
+     "find": "IF SQL%BULK_ROWCOUNT(i) = 0 THEN"
+    },
+    {
+     "say": "Ids that touched zero rows are saved in a collection, before any other SQL runs.",
+     "find": "l_missing.EXTEND;",
+     "to": "l_missing(l_missing.COUNT) := l_ids(i);"
+    },
+    {
+     "say": "Finally, a second FORALL writes the missing ids to the log, and we commit.",
+     "find": "FORALL j IN 1 .. l_missing.COUNT",
+     "to": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261122-8",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "INSTEAD OF trigger on join view",
+   "domain": "Insurance/Life",
+   "title": "Update nominees through a view",
+   "scenario": "The policy servicing screen updates POLICY_NOMINEE_V, an outer-join view of policies and nominees. Anand needs updates to change an existing nominee, or add one when the policy has none yet.",
+   "schema": "POLICIES(policy_no VARCHAR2(8), holder VARCHAR2(30))\nNOMINEES(policy_no VARCHAR2(8), nominee_name VARCHAR2(30), relation VARCHAR2(10))\n-- view: SELECT p.policy_no, p.holder, n.nominee_name, n.relation\n--       FROM policies p LEFT JOIN nominees n ON n.policy_no = p.policy_no",
+   "data": [
+    {
+     "name": "POLICIES",
+     "cols": [
+      "policy_no",
+      "holder"
+     ],
+     "rows": [
+      [
+       "LP1001",
+       "Arjun Rao"
+      ],
+      [
+       "LP1002",
+       "Kavya Menon"
+      ],
+      [
+       "LP1003",
+       "Rohan Iyer"
+      ]
+     ]
+    },
+    {
+     "name": "NOMINEES",
+     "cols": [
+      "policy_no",
+      "nominee_name",
+      "relation"
+     ],
+     "rows": [
+      [
+       "LP1001",
+       "Sita Rao",
+       "MOTHER"
+      ],
+      [
+       "LP1002",
+       "Ravi Menon",
+       "FATHER"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "policy_no",
+     "nominee_name",
+     "relation"
+    ],
+    "rows": [
+     [
+      "LP1001",
+      "Sita Rao",
+      "MOTHER"
+     ],
+     [
+      "LP1002",
+      "Anil Menon",
+      "BROTHER"
+     ],
+     [
+      "LP1003",
+      "Meera Iyer",
+      "SPOUSE"
+     ]
+    ]
+   },
+   "output_note": "NOMINEES after both updates. LP1002's nominee was changed (MERGE matched); LP1003 had no nominee row, so the trigger inserted one.",
+   "task": "Write an INSTEAD OF UPDATE trigger on POLICY_NOMINEE_V that updates the nominee if one exists or inserts it otherwise, then run the two updates shown.",
+   "hint": "Inside the trigger, MERGE into NOMINEES using :NEW.policy_no from dual.",
+   "solution": "CREATE OR REPLACE TRIGGER trg_policy_nominee_v\nINSTEAD OF UPDATE ON policy_nominee_v\nFOR EACH ROW\nBEGIN\n  MERGE INTO nominees n\n  USING (SELECT :NEW.policy_no AS policy_no FROM dual) s\n  ON (n.policy_no = s.policy_no)\n  WHEN MATCHED THEN\n    UPDATE SET n.nominee_name = :NEW.nominee_name,\n               n.relation     = :NEW.relation\n  WHEN NOT MATCHED THEN\n    INSERT (policy_no, nominee_name, relation)\n    VALUES (:NEW.policy_no, :NEW.nominee_name, :NEW.relation);\nEND;\n/\n\nUPDATE policy_nominee_v SET nominee_name = 'Anil Menon', relation = 'BROTHER'\nWHERE  policy_no = 'LP1002';\nUPDATE policy_nominee_v SET nominee_name = 'Meera Iyer', relation = 'SPOUSE'\nWHERE  policy_no = 'LP1003';\nCOMMIT;",
+   "simple": "Think of a school notice board that shows each student with their guardian's name. You can't write on the notice board itself; it's just a display. So a helper stands in front of it: when you ask to change a name, the helper goes to the real register and fixes it, or adds a new line if there was none. The INSTEAD OF trigger is that helper.",
+   "remember": "INSTEAD OF trigger = do the real work behind a view.",
+   "why": "An outer-join view is not reliably updatable, and a row with NULL nominee columns has no NOMINEES row to update at all. An INSTEAD OF trigger, which is always row-level, replaces the DML on the view with your own code. MERGE on :NEW.policy_no updates an existing nominee or inserts a new one, so both cases work through one UPDATE statement.",
+   "tip": "When an application must write through a complex view, I give it an INSTEAD OF trigger rather than changing the application to hit base tables.",
+   "steps": [
+    {
+     "say": "Step one. The trigger fires instead of the update on the view, once for each row.",
+     "find": "INSTEAD OF UPDATE ON policy_nominee_v",
+     "to": "FOR EACH ROW"
+    },
+    {
+     "say": "Step two. MERGE looks for a nominee row with the same policy number.",
+     "find": "MERGE INTO nominees n",
+     "to": "ON (n.policy_no = s.policy_no)"
+    },
+    {
+     "say": "If one exists, it is updated with the new name and relation.",
+     "find": "WHEN MATCHED THEN",
+     "to": "n.relation     = :NEW.relation"
+    },
+    {
+     "say": "If not, a new nominee row is inserted.",
+     "find": "WHEN NOT MATCHED THEN",
+     "to": "VALUES (:NEW.policy_no, :NEW.nominee_name, :NEW.relation);"
+    },
+    {
+     "say": "Finally, the screen just updates the view, and the trigger handles both policies.",
+     "find": "UPDATE policy_nominee_v SET nominee_name = 'Anil Menon'",
+     "to": "COMMIT;"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -9564,6 +10404,17 @@
    "example": "WITH acct AS (\n  SELECT '1001' acct_no, 25000 bal FROM dual UNION ALL\n  SELECT '1002', 8000 FROM dual\n)\n-- good: text compared with text, an index on acct_no can be used\nSELECT * FROM acct\nWHERE acct_no = '1001';",
    "gotcha": "WHERE acct_no = 1001 on a VARCHAR2 column can fail with ORA-01722 once a row like 'SB1001' arrives.",
    "line": "I match literal and bind types to the column type, because implicit TO_NUMBER on the column disables its index."
+  },
+  {
+   "id": "fl20261122",
+   "concept": "Window functions run after WHERE",
+   "why": "Interviewers ask why WHERE ROW_NUMBER() OVER (...) <= 3 fails and how to fix it.",
+   "simple": "Imagine a race where you first decide who is allowed to run, and only after the race do you hand out positions. You cannot use the finishing position to decide who runs. WHERE picks the runners; window functions give positions later. So to keep the top three, you look at the results after the race, in an outer query.",
+   "remember": "Filter on a window result from the outside.",
+   "explain": "Oracle evaluates FROM, WHERE, GROUP BY and HAVING before computing analytic functions in the SELECT list. That is why a window function is not allowed in WHERE or HAVING (ORA-30483). To filter on it, compute it in an inline view or CTE and filter in the outer query. Only ORDER BY, which runs last, can reference the window result directly.",
+   "example": "WITH t AS (\n  SELECT 'A' AS acct, 500 AS amt FROM dual UNION ALL\n  SELECT 'B', 900 FROM dual UNION ALL\n  SELECT 'C', 700 FROM dual\n)\nSELECT acct, amt, rn\nFROM  (SELECT acct, amt, ROW_NUMBER() OVER (ORDER BY amt DESC) AS rn FROM t)\nWHERE  rn <= 2;",
+   "gotcha": "Filtering in WHERE before the window changes the window's input, so moving a condition inside or outside the subquery can change the ranks.",
+   "line": "Window functions are computed after WHERE, so I rank in a CTE and filter on the rank outside."
   }
  ]
 }

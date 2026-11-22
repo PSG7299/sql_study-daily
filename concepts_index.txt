@@ -120,6 +120,14 @@ f20261121-9|M|sql|Running total milestone|Cards/Payments · Entertainment TREND:
 f20261121-10|A|sql|Pareto 80 percent with window SUM|Cards/Payments · Gaming TREND:GTA 6
 f20261121-11|M|sql|Peak hour per group with RANK|Cards/Payments · Movies TREND:Avengers Doomsday
 f20261121-12|M|sql|Day-over-day change with LAG|Treasury · Gold loans TREND:Gold Price Fall
+f20261122-1|E|sql|UNION removes duplicates|Retail banking/Cross-sell
+f20261122-2|E|sql|ORDER BY an aggregate|Cards/UPI payments · Movies TREND:Godzilla Minus Zero
+f20261122-3|M|sql|Weekly totals with TRUNC IW|Payments/NEFT
+f20261122-4|M|sql|GREATEST with NULL trap|Loans/Personal loan underwriting
+f20261122-5|A|sql|Swap adjacent rows with MOD|Core banking/Statements TECH:Swapped Rows
+f20261122-6|A|sql|Compound return with EXP SUM LN|Treasury/Investments · Markets TREND:Sensex Rally
+f20261122-7|A|plsql|SQL%BULK_ROWCOUNT per FORALL row|Payments/Standing instructions
+f20261122-8|A|plsql|INSTEAD OF trigger on join view|Insurance/Life
 l01|lesson|ROWS versus RANGE window frames
 l02|lesson|Partition pruning
 l03|lesson|SELECT FOR UPDATE SKIP LOCKED
@@ -138,3 +146,4 @@ fl20261118|lesson|Bind variables and hard parsing
 fl20261119|lesson|When Oracle can use a B-tree index
 fl20261120|lesson|Composite index column order
 fl20261121|lesson|Implicit data type conversion
+fl20261122|lesson|Window functions run after WHERE
