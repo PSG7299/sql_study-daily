@@ -10292,6 +10292,949 @@
      "to": "COMMIT;"
     }
    ]
+  },
+  {
+   "id": "f20261123-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "FETCH FIRST WITH TIES",
+   "domain": "Deposits/Fixed deposits",
+   "title": "Top three FDs, ties included",
+   "scenario": "Priya, a branch manager, is inviting the top three fixed-deposit holders to a customer meet. Two customers hold exactly the same amount, and she does not want to leave either one out.",
+   "schema": "FIXED_DEPOSITS(fd_no VARCHAR2(6),      -- FD number\n               customer VARCHAR2(30),\n               amount NUMBER(12,2))     -- principal in INR",
+   "data": [
+    {
+     "name": "FIXED_DEPOSITS",
+     "cols": [
+      "fd_no",
+      "customer",
+      "amount"
+     ],
+     "rows": [
+      [
+       "FD101",
+       "Arjun Rao",
+       "500000.00"
+      ],
+      [
+       "FD102",
+       "Meena Pillai",
+       "750000.00"
+      ],
+      [
+       "FD103",
+       "Kiran Shah",
+       "300000.00"
+      ],
+      [
+       "FD104",
+       "Lata Joshi",
+       "500000.00"
+      ],
+      [
+       "FD105",
+       "Vikram Sethi",
+       "900000.00"
+      ],
+      [
+       "FD106",
+       "Sanjay Das",
+       "250000.00"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "fd_no",
+     "customer",
+     "amount"
+    ],
+    "rows": [
+     [
+      "FD105",
+      "Vikram Sethi",
+      "900000.00"
+     ],
+     [
+      "FD102",
+      "Meena Pillai",
+      "750000.00"
+     ],
+     [
+      "FD101",
+      "Arjun Rao",
+      "500000.00"
+     ],
+     [
+      "FD104",
+      "Lata Joshi",
+      "500000.00"
+     ]
+    ]
+   },
+   "output_note": "Four rows come back because FD101 and FD104 tie for third place. The order between the two tied rows is not fixed.",
+   "task": "List the top three fixed deposits by amount, including every deposit that ties with the third one.",
+   "hint": "Add WITH TIES to FETCH FIRST so equal amounts at the cut-off are kept.",
+   "solution": "SELECT fd_no, customer, amount\nFROM   fixed_deposits\nORDER  BY amount DESC\nFETCH FIRST 3 ROWS WITH TIES;",
+   "simple": "Think of a race where two runners cross the line together in third place. Both get a bronze medal; nobody is sent home. The query sorts deposits from biggest to smallest and keeps the top three, plus anyone tied with number three.",
+   "remember": "WITH TIES = no one tied at the cut-off is left out.",
+   "why": "FETCH FIRST n ROWS ONLY stops after exactly n rows, so one of two equal amounts would be dropped at random. WITH TIES keeps extra rows whose ORDER BY value equals the last row returned. It needs an ORDER BY, and is available from Oracle 12c.",
+   "tip": "For a top-N report I always ask how ties should be handled, then pick ROWS ONLY or WITH TIES.",
+   "steps": [
+    {
+     "say": "Step one. Read the deposit number, customer and amount.",
+     "find": "SELECT fd_no, customer, amount",
+     "to": "FROM   fixed_deposits"
+    },
+    {
+     "say": "Step two. Sort from the biggest amount to the smallest.",
+     "find": "ORDER  BY amount DESC"
+    },
+    {
+     "say": "Finally, keep the top three, plus anyone tied with the third. So we get four rows.",
+     "find": "FETCH FIRST 3 ROWS WITH TIES;"
+    }
+   ]
+  },
+  {
+   "id": "f20261123-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "WHERE versus HAVING",
+   "domain": "Cards/UPI payments · Movies",
+   "title": "Jailer 2 cities above ₹1,000",
+   "scenario": "Ravi in the payments team is studying Jailer 2 ticket payments made through the bank. He wants cities where successful payments add up to more than ₹1,000. Failed payments must not count.",
+   "schema": "JAILER2_BOOKINGS(booking_id VARCHAR2(5),\n                 city VARCHAR2(20),\n                 amount NUMBER(8,2),       -- ticket payment in INR\n                 pay_status VARCHAR2(10))  -- SUCCESS / FAILED",
+   "data": [
+    {
+     "name": "JAILER2_BOOKINGS",
+     "cols": [
+      "booking_id",
+      "city",
+      "amount",
+      "pay_status"
+     ],
+     "rows": [
+      [
+       "B1",
+       "Chennai",
+       "600",
+       "SUCCESS"
+      ],
+      [
+       "B2",
+       "Chennai",
+       "750",
+       "SUCCESS"
+      ],
+      [
+       "B3",
+       "Bengaluru",
+       "900",
+       "FAILED"
+      ],
+      [
+       "B4",
+       "Bengaluru",
+       "400",
+       "SUCCESS"
+      ],
+      [
+       "B5",
+       "Hyderabad",
+       "1200",
+       "SUCCESS"
+      ],
+      [
+       "B6",
+       "Hyderabad",
+       "300",
+       "FAILED"
+      ],
+      [
+       "B7",
+       "Bengaluru",
+       "500",
+       "SUCCESS"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "city",
+     "bookings",
+     "total_paid"
+    ],
+    "rows": [
+     [
+      "Chennai",
+      "2",
+      "1350"
+     ],
+     [
+      "Hyderabad",
+      "1",
+      "1200"
+     ]
+    ]
+   },
+   "output_note": "Bengaluru reaches only 900 once the failed 900 payment is removed. All figures are invented sample data.",
+   "task": "Show each city with its number of successful bookings and total paid, only where the successful total is above ₹1,000. Biggest total first.",
+   "hint": "Filter rows with WHERE before grouping, and filter groups with HAVING after.",
+   "solution": "SELECT city, COUNT(*) AS bookings, SUM(amount) AS total_paid\nFROM   jailer2_bookings\nWHERE  pay_status = 'SUCCESS'\nGROUP  BY city\nHAVING SUM(amount) > 1000\nORDER  BY total_paid DESC;",
+   "simple": "Imagine sorting coins into piggy banks, one per city. First you throw away the fake coins, that is WHERE. Then you count each piggy bank and keep only the ones with more than 1,000, that is HAVING. The query does exactly that with ticket payments.",
+   "remember": "WHERE checks rows, HAVING checks groups.",
+   "why": "WHERE runs before GROUP BY, so failed payments never enter the sums. HAVING runs after grouping and can test aggregates like SUM(amount), which WHERE cannot. Putting the status test in HAVING would not work, because pay_status is not a grouped column.",
+   "tip": "I put plain row filters in WHERE and only aggregate conditions in HAVING, which is both correct and faster.",
+   "steps": [
+    {
+     "say": "Step one. Keep only the successful payments. Failed ones are dropped before anything is added up.",
+     "find": "WHERE  pay_status = 'SUCCESS'"
+    },
+    {
+     "say": "Step two. Group the payments by city, and count and add them.",
+     "find": "SELECT city, COUNT(*) AS bookings",
+     "to": "GROUP  BY city"
+    },
+    {
+     "say": "Step three. Keep only cities whose total is above one thousand rupees.",
+     "find": "HAVING SUM(amount) > 1000"
+    },
+    {
+     "say": "Finally, show the biggest total first. Chennai, then Hyderabad.",
+     "find": "ORDER  BY total_paid DESC;"
+    }
+   ],
+   "trend": {
+    "topic": "Jailer 2",
+    "hook": "Jailer 2 is packing theatres. Which cities really paid the most? One SQL rule decides.",
+    "hashtags": [
+     "jailer2",
+     "boxoffice",
+     "sql"
+    ]
+   }
+  },
+  {
+   "id": "f20261123-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "New record with running MAX",
+   "domain": "Treasury/Forex desk · Markets",
+   "title": "Flag days the rupee hit a low",
+   "scenario": "Neha on the forex desk keeps a daily USD/INR rate. A higher rate means a weaker rupee. She wants each day flagged when the rate is above every earlier day, a new record low for the rupee.",
+   "schema": "FX_RATES(rate_date DATE,\n         usd_inr NUMBER(6,2))   -- rupees per US dollar (sample values)",
+   "data": [
+    {
+     "name": "FX_RATES",
+     "cols": [
+      "rate_date",
+      "usd_inr"
+     ],
+     "rows": [
+      [
+       "16-11-2026",
+       "90.20"
+      ],
+      [
+       "17-11-2026",
+       "90.45"
+      ],
+      [
+       "18-11-2026",
+       "90.30"
+      ],
+      [
+       "19-11-2026",
+       "90.45"
+      ],
+      [
+       "20-11-2026",
+       "90.60"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "rate_date",
+     "usd_inr",
+     "prev_high",
+     "is_record"
+    ],
+    "rows": [
+     [
+      "16-11-2026",
+      "90.20",
+      "NULL",
+      "N"
+     ],
+     [
+      "17-11-2026",
+      "90.45",
+      "90.20",
+      "Y"
+     ],
+     [
+      "18-11-2026",
+      "90.30",
+      "90.45",
+      "N"
+     ],
+     [
+      "19-11-2026",
+      "90.45",
+      "90.45",
+      "N"
+     ],
+     [
+      "20-11-2026",
+      "90.60",
+      "90.45",
+      "Y"
+     ]
+    ]
+   },
+   "output_note": "19-11 only equals the earlier high, so it is not a new record. Rates are invented sample data, not real market prices.",
+   "task": "For every day show the rate, the highest rate on any earlier day, and Y if today beats it (otherwise N).",
+   "hint": "Use MAX() OVER with a frame that ends at 1 PRECEDING so today is not compared with itself.",
+   "solution": "SELECT rate_date, usd_inr, prev_high,\n       CASE WHEN usd_inr > prev_high THEN 'Y' ELSE 'N' END AS is_record\nFROM (\n  SELECT rate_date, usd_inr,\n         MAX(usd_inr) OVER (ORDER BY rate_date\n                            ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) AS prev_high\n  FROM   fx_rates\n)\nORDER  BY rate_date;",
+   "simple": "Think of marking the tallest jump on a school sports chart. Each day you look only at earlier jumps; if today is higher than all of them, it is a new record. The query keeps a running highest rate of the days before, and says Y when today beats it.",
+   "remember": "Exclude today: frame ends at 1 PRECEDING.",
+   "why": "With the default frame, MAX would include the current row, so every day would be at least equal to its own high. ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING looks only at earlier days, and returns NULL on the first day. The strict > comparison means a tie with the old high is not a new record, and NULL > value falls to N.",
+   "tip": "For record-high or record-low flags I compare against a running MAX that stops one row before the current one.",
+   "steps": [
+    {
+     "say": "Step one. For each day, find the highest rate on all the days before it.",
+     "find": "MAX(usd_inr) OVER (ORDER BY rate_date",
+     "to": "ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING"
+    },
+    {
+     "say": "The frame stops one row early, so today is never compared with itself.",
+     "find": "ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING"
+    },
+    {
+     "say": "Step two. If today's rate is higher than that earlier high, mark it Y.",
+     "find": "CASE WHEN usd_inr > prev_high THEN 'Y' ELSE 'N' END AS is_record"
+    },
+    {
+     "say": "Finally, list the days in order. Two days set a new record.",
+     "find": "ORDER  BY rate_date;"
+    }
+   ],
+   "trend": {
+    "topic": "Rupee Record Low",
+    "hook": "The rupee keeps hitting new lows against the dollar. Can SQL spot every record day?",
+    "hashtags": [
+     "rupee",
+     "usdinr",
+     "forex"
+    ]
+   }
+  },
+  {
+   "id": "f20261123-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "LAG with PARTITION BY gap",
+   "domain": "Insurance/Term life",
+   "title": "Find late monthly premium payments",
+   "scenario": "Deepak in term-life servicing wants policies at risk of lapsing. A monthly premium paid more than 40 days after the previous payment of the same policy must be flagged.",
+   "schema": "PREMIUM_PAYMENTS(policy_no VARCHAR2(6),\n                 paid_on DATE)   -- date the monthly premium was received",
+   "data": [
+    {
+     "name": "PREMIUM_PAYMENTS",
+     "cols": [
+      "policy_no",
+      "paid_on"
+     ],
+     "rows": [
+      [
+       "TL01",
+       "05-07-2026"
+      ],
+      [
+       "TL01",
+       "04-08-2026"
+      ],
+      [
+       "TL01",
+       "20-09-2026"
+      ],
+      [
+       "TL02",
+       "10-07-2026"
+      ],
+      [
+       "TL02",
+       "09-08-2026"
+      ],
+      [
+       "TL03",
+       "01-09-2026"
+      ],
+      [
+       "TL03",
+       "25-10-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "policy_no",
+     "prev_paid",
+     "paid_on",
+     "gap_days"
+    ],
+    "rows": [
+     [
+      "TL01",
+      "04-08-2026",
+      "20-09-2026",
+      "47"
+     ],
+     [
+      "TL03",
+      "01-09-2026",
+      "25-10-2026",
+      "54"
+     ]
+    ]
+   },
+   "output_note": "TL03's first payment has no earlier payment of its own, so it is not compared with TL02.",
+   "task": "Show each payment made more than 40 days after the previous payment of the same policy, with the previous date and the gap in days.",
+   "hint": "LAG(paid_on) needs PARTITION BY policy_no, and the filter must go in an outer query.",
+   "solution": "SELECT policy_no, prev_paid, paid_on, paid_on - prev_paid AS gap_days\nFROM (\n  SELECT policy_no, paid_on,\n         LAG(paid_on) OVER (PARTITION BY policy_no ORDER BY paid_on) AS prev_paid\n  FROM   premium_payments\n)\nWHERE  paid_on - prev_paid > 40\nORDER  BY policy_no;",
+   "simple": "Think of a passbook for each policy. You look at each entry and the one just above it in the same passbook, never in someone else's. If the gap is more than 40 days, that payment was late. LAG peeks at the row above, and PARTITION BY keeps each policy in its own passbook.",
+   "remember": "PARTITION BY = each policy gets its own passbook.",
+   "why": "LAG returns the previous row in the window, and PARTITION BY restarts the window for each policy, so the first payment of TL03 gets NULL instead of TL02's date. Subtracting two DATEs gives days. Window functions cannot appear in WHERE, so the filter sits in an outer query, where NULL gaps drop out automatically.",
+   "tip": "Whenever I use LAG on per-customer data, I check the PARTITION BY first, because missing it silently compares different customers.",
+   "steps": [
+    {
+     "say": "Step one. For each payment, peek at the previous payment of the same policy.",
+     "find": "LAG(paid_on) OVER (PARTITION BY policy_no ORDER BY paid_on) AS prev_paid"
+    },
+    {
+     "say": "Step two. Subtract the dates to get the gap in days.",
+     "find": "SELECT policy_no, prev_paid, paid_on, paid_on - prev_paid AS gap_days"
+    },
+    {
+     "say": "Finally, keep only gaps over forty days. Two late payments are found.",
+     "find": "WHERE  paid_on - prev_paid > 40",
+     "to": "ORDER  BY policy_no;"
+    }
+   ]
+  },
+  {
+   "id": "f20261123-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Year-on-year growth with gap years",
+   "domain": "Cards/Product analytics",
+   "title": "YoY card spend growth, gaps handled",
+   "scenario": "Farhan in cards analytics reports year-on-year spend growth per card variant. The RuPay Select card was paused in 2024, so its 2025 figure must not be compared with 2023.",
+   "schema": "CARD_SPEND(card_variant VARCHAR2(15),\n           spend_year NUMBER(4),\n           total_spend NUMBER(14,2))   -- yearly spend in INR",
+   "data": [
+    {
+     "name": "CARD_SPEND",
+     "cols": [
+      "card_variant",
+      "spend_year",
+      "total_spend"
+     ],
+     "rows": [
+      [
+       "PLATINUM",
+       "2023",
+       "1200000.00"
+      ],
+      [
+       "PLATINUM",
+       "2024",
+       "1500000.00"
+      ],
+      [
+       "PLATINUM",
+       "2025",
+       "1350000.00"
+      ],
+      [
+       "RUPAY_SELECT",
+       "2023",
+       "400000.00"
+      ],
+      [
+       "RUPAY_SELECT",
+       "2025",
+       "600000.00"
+      ],
+      [
+       "TRAVEL",
+       "2025",
+       "200000.00"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "card_variant",
+     "spend_year",
+     "total_spend",
+     "prev_spend",
+     "yoy_pct"
+    ],
+    "rows": [
+     [
+      "PLATINUM",
+      "2023",
+      "1200000.00",
+      "NULL",
+      "NULL"
+     ],
+     [
+      "PLATINUM",
+      "2024",
+      "1500000.00",
+      "1200000.00",
+      "25"
+     ],
+     [
+      "PLATINUM",
+      "2025",
+      "1350000.00",
+      "1500000.00",
+      "-10"
+     ],
+     [
+      "RUPAY_SELECT",
+      "2023",
+      "400000.00",
+      "NULL",
+      "NULL"
+     ],
+     [
+      "RUPAY_SELECT",
+      "2025",
+      "600000.00",
+      "NULL",
+      "NULL"
+     ],
+     [
+      "TRAVEL",
+      "2025",
+      "200000.00",
+      "NULL",
+      "NULL"
+     ]
+    ]
+   },
+   "output_note": "RUPAY_SELECT 2025 shows NULL because the row before it is 2023, not 2024. A plain LAG would wrongly show 50% growth.",
+   "task": "For each variant and year, show the previous year's spend (only if that year is exactly one year earlier) and the YoY growth percentage rounded to 2 decimals.",
+   "hint": "Compare LAG(spend_year) with spend_year - 1 before trusting LAG(total_spend).",
+   "solution": "SELECT card_variant, spend_year, total_spend, prev_spend,\n       ROUND((total_spend - prev_spend) * 100 / prev_spend, 2) AS yoy_pct\nFROM (\n  SELECT card_variant, spend_year, total_spend,\n         CASE WHEN LAG(spend_year) OVER (PARTITION BY card_variant ORDER BY spend_year) = spend_year - 1\n              THEN LAG(total_spend) OVER (PARTITION BY card_variant ORDER BY spend_year)\n         END AS prev_spend\n  FROM   card_spend\n)\nORDER  BY card_variant, spend_year;",
+   "simple": "Imagine comparing your height on each birthday with last year's. If you missed a year's photo, you cannot call the jump from two years ago \"one year of growth\". The query checks the previous row really is last year before using it, and then works out the percentage change.",
+   "remember": "LAG gives the previous row, not the previous year.",
+   "why": "LAG returns the prior row in the partition, so a missing year makes it silently compare across two years. Checking that LAG(spend_year) = spend_year - 1 makes prev_spend NULL whenever the gap exists. Growth is (current - previous) * 100 / previous, and NULL propagates so the first year and gap years show no growth.",
+   "tip": "For YoY or MoM growth I verify the previous period is actually adjacent, or densify the calendar first with a partitioned outer join.",
+   "steps": [
+    {
+     "say": "Step one. Look at the previous row for the same card variant.",
+     "find": "CASE WHEN LAG(spend_year) OVER (PARTITION BY card_variant ORDER BY spend_year) = spend_year - 1"
+    },
+    {
+     "say": "Only if that row is exactly last year, take its spend. Otherwise it stays empty.",
+     "find": "THEN LAG(total_spend) OVER (PARTITION BY card_variant ORDER BY spend_year)",
+     "to": "END AS prev_spend"
+    },
+    {
+     "say": "Step two. Growth is this year minus last year, times a hundred, divided by last year.",
+     "find": "ROUND((total_spend - prev_spend) * 100 / prev_spend, 2) AS yoy_pct"
+    },
+    {
+     "say": "Finally, Platinum shows plus twenty five, then minus ten, and the paused RuPay card shows no fake growth.",
+     "find": "ORDER  BY card_variant, spend_year;"
+    }
+   ],
+   "tech": {
+    "pattern": "Year-on-Year Growth",
+    "company": "Wayfair",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   }
+  },
+  {
+   "id": "f20261123-6",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "WHERE CURRENT OF cursor update",
+   "domain": "Cards/Late fees",
+   "title": "Post late fees with WHERE CURRENT OF",
+   "scenario": "Suresh runs the card late-fee batch on 20-11-2026. Cards whose due date has passed and whose payment is below the minimum due get ₹500 fee, or ₹750 if the minimum due is above ₹5,000. Some payments are NULL.",
+   "schema": "CARD_DUES(card_no VARCHAR2(6),\n          due_date DATE,\n          min_due NUMBER(10,2),    -- minimum amount due, INR\n          paid NUMBER(10,2),       -- amount paid so far, NULL = nothing recorded\n          late_fee NUMBER(8,2))",
+   "data": [
+    {
+     "name": "CARD_DUES",
+     "cols": [
+      "card_no",
+      "due_date",
+      "min_due",
+      "paid",
+      "late_fee"
+     ],
+     "rows": [
+      [
+       "C1001",
+       "15-11-2026",
+       "3000",
+       "3000",
+       "0"
+      ],
+      [
+       "C1002",
+       "15-11-2026",
+       "4000",
+       "1000",
+       "0"
+      ],
+      [
+       "C1003",
+       "18-11-2026",
+       "8000",
+       "0",
+       "0"
+      ],
+      [
+       "C1004",
+       "25-11-2026",
+       "6000",
+       "0",
+       "0"
+      ],
+      [
+       "C1005",
+       "10-11-2026",
+       "5000",
+       "NULL",
+       "0"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "card_no",
+     "due_date",
+     "min_due",
+     "paid",
+     "late_fee"
+    ],
+    "rows": [
+     [
+      "C1001",
+      "15-11-2026",
+      "3000",
+      "3000",
+      "0"
+     ],
+     [
+      "C1002",
+      "15-11-2026",
+      "4000",
+      "1000",
+      "500"
+     ],
+     [
+      "C1003",
+      "18-11-2026",
+      "8000",
+      "0",
+      "750"
+     ],
+     [
+      "C1004",
+      "25-11-2026",
+      "6000",
+      "0",
+      "0"
+     ],
+     [
+      "C1005",
+      "10-11-2026",
+      "5000",
+      "NULL",
+      "500"
+     ]
+    ]
+   },
+   "output_note": "CARD_DUES after the block. C1001 paid in full and C1004 is not due yet; C1005 counts as unpaid because NVL turns NULL into 0.",
+   "task": "Write an anonymous block that locks the overdue, underpaid cards and sets each late fee using UPDATE ... WHERE CURRENT OF.",
+   "hint": "Declare the cursor FOR UPDATE OF late_fee, then update the row the cursor is on.",
+   "solution": "DECLARE\n  CURSOR c_due IS\n    SELECT card_no, min_due\n    FROM   card_dues\n    WHERE  due_date < DATE '2026-11-20'\n    AND    NVL(paid, 0) < min_due\n    FOR UPDATE OF late_fee;\nBEGIN\n  FOR r IN c_due LOOP\n    UPDATE card_dues\n    SET    late_fee = CASE WHEN r.min_due <= 5000 THEN 500 ELSE 750 END\n    WHERE  CURRENT OF c_due;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a teacher walking down a queue of students holding a red pen. She stops at each student who did not finish homework and writes a mark right there, on that student's page. The cursor is the teacher walking the queue, and WHERE CURRENT OF means \"write on the page I am standing at\".",
+   "remember": "WHERE CURRENT OF = update the row I am on.",
+   "why": "FOR UPDATE OF locks every selected row when the cursor opens, so no other session can change the dues while fees are posted. WHERE CURRENT OF updates the exact row just fetched using its ROWID, so no second key lookup is needed. COMMIT goes after the loop, because committing inside a FOR UPDATE loop releases the locks and the next fetch fails with ORA-01002.",
+   "tip": "When I must read and update the same rows in a loop, I lock them with FOR UPDATE and update with WHERE CURRENT OF, then commit once at the end.",
+   "steps": [
+    {
+     "say": "Step one. The cursor picks cards that are overdue and paid less than the minimum. NULL payments count as zero.",
+     "find": "WHERE  due_date < DATE '2026-11-20'",
+     "to": "AND    NVL(paid, 0) < min_due"
+    },
+    {
+     "say": "FOR UPDATE locks those rows, so nobody else can change them meanwhile.",
+     "find": "FOR UPDATE OF late_fee;"
+    },
+    {
+     "say": "Step two. For each locked row, set the fee: five hundred, or seven fifty for bigger dues.",
+     "find": "FOR r IN c_due LOOP",
+     "to": "SET    late_fee = CASE WHEN r.min_due <= 5000 THEN 500 ELSE 750 END"
+    },
+    {
+     "say": "WHERE CURRENT OF updates exactly the row the cursor is standing on.",
+     "find": "WHERE  CURRENT OF c_due;"
+    },
+    {
+     "say": "Finally, commit once after the loop. Three cards get a late fee.",
+     "find": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261123-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "Per-row exception block in loop",
+   "domain": "Payments/NACH debits",
+   "title": "Keep NACH batch running past errors",
+   "scenario": "Anjali runs the NACH auto-debit batch. One bad mandate must not stop the rest: debits that fail for low balance or an unknown account should be logged in NACH_ERRORS with the error code.",
+   "schema": "ACCOUNTS(account_no VARCHAR2(6),\n         balance NUMBER(12,2) CONSTRAINT chk_bal CHECK (balance >= 0))\nMANDATE_REQUESTS(req_id NUMBER, account_no VARCHAR2(6), amount NUMBER(12,2))\nNACH_ERRORS(req_id NUMBER, err_code NUMBER)   -- empty before the run",
+   "data": [
+    {
+     "name": "ACCOUNTS",
+     "cols": [
+      "account_no",
+      "balance"
+     ],
+     "rows": [
+      [
+       "SB101",
+       "10000"
+      ],
+      [
+       "SB102",
+       "2000"
+      ],
+      [
+       "SB103",
+       "5000"
+      ]
+     ]
+    },
+    {
+     "name": "MANDATE_REQUESTS",
+     "cols": [
+      "req_id",
+      "account_no",
+      "amount"
+     ],
+     "rows": [
+      [
+       "1",
+       "SB101",
+       "3000"
+      ],
+      [
+       "2",
+       "SB102",
+       "2500"
+      ],
+      [
+       "3",
+       "SB999",
+       "1000"
+      ],
+      [
+       "4",
+       "SB103",
+       "5000"
+      ]
+     ]
+    },
+    {
+     "name": "NACH_ERRORS",
+     "cols": [
+      "req_id",
+      "err_code"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "req_id",
+     "err_code"
+    ],
+    "rows": [
+     [
+      "2",
+      "-2290"
+     ],
+     [
+      "3",
+      "-20001"
+     ]
+    ]
+   },
+   "output_note": "NACH_ERRORS after the run. Request 2 broke the CHECK constraint and request 3 found no account; requests 1 and 4 still went through, leaving SB101 = 7000 and SB103 = 0.",
+   "task": "Write a block that debits every mandate in req_id order, logs any failure with its SQLCODE into NACH_ERRORS, and carries on with the next request.",
+   "hint": "Wrap the work for each row in its own BEGIN ... EXCEPTION ... END inside the loop.",
+   "solution": "DECLARE\n  v_code NUMBER;\nBEGIN\n  FOR r IN (SELECT req_id, account_no, amount\n            FROM   mandate_requests ORDER BY req_id) LOOP\n    BEGIN\n      UPDATE accounts\n      SET    balance = balance - r.amount\n      WHERE  account_no = r.account_no;\n      IF SQL%ROWCOUNT = 0 THEN\n        RAISE_APPLICATION_ERROR(-20001, 'Account not found');\n      END IF;\n    EXCEPTION\n      WHEN OTHERS THEN\n        v_code := SQLCODE;\n        INSERT INTO nach_errors (req_id, err_code) VALUES (r.req_id, v_code);\n    END;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a postman delivering letters down a street. If one house has no letterbox, he writes it in his notebook and walks on to the next house; he does not go home. The inner BEGIN and EXCEPTION is that notebook: each failed debit is noted, and the loop keeps going.",
+   "remember": "Inner BEGIN-EXCEPTION-END = one bad row, not a dead batch.",
+   "why": "Without the inner block, the first exception would leave the loop and end the whole batch. A failed UPDATE is rolled back only at statement level, so earlier successful debits stay in place. SQLCODE cannot be used directly inside a SQL statement, so it is first copied into a PL/SQL variable, and an UPDATE that matches no row raises nothing, hence the SQL%ROWCOUNT check.",
+   "tip": "In batch jobs I handle exceptions per row and log them, so one bad record never blocks thousands of good ones.",
+   "steps": [
+    {
+     "say": "Step one. Loop through the mandates in order.",
+     "find": "FOR r IN (SELECT req_id, account_no, amount",
+     "to": "FROM   mandate_requests ORDER BY req_id) LOOP"
+    },
+    {
+     "say": "Step two. Debit the account. A balance below zero breaks the check rule and raises an error.",
+     "find": "UPDATE accounts",
+     "to": "WHERE  account_no = r.account_no;"
+    },
+    {
+     "say": "If no account was found, raise our own error, minus two zero zero zero one.",
+     "find": "IF SQL%ROWCOUNT = 0 THEN",
+     "to": "END IF;"
+    },
+    {
+     "say": "Step three. Any error is caught right here, logged with its code, and the loop moves on.",
+     "find": "EXCEPTION",
+     "to": "INSERT INTO nach_errors (req_id, err_code) VALUES (r.req_id, v_code);"
+    },
+    {
+     "say": "Finally, two debits succeed and two errors are logged.",
+     "find": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261123-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "SCD2 ranges from change log",
+   "domain": "KYC/Address history",
+   "title": "Build address validity ranges",
+   "scenario": "Kavitha in KYC must show which city each customer lived in, and from when to when. The log also has re-KYC rows where the city did not change; these must not start a new period.",
+   "schema": "ADDRESS_LOG(cust_id VARCHAR2(4),\n            changed_on DATE,       -- date the address was recorded\n            city VARCHAR2(20))",
+   "data": [
+    {
+     "name": "ADDRESS_LOG",
+     "cols": [
+      "cust_id",
+      "changed_on",
+      "city"
+     ],
+     "rows": [
+      [
+       "C1",
+       "01-01-2024",
+       "Pune"
+      ],
+      [
+       "C1",
+       "15-06-2024",
+       "Pune"
+      ],
+      [
+       "C1",
+       "10-03-2025",
+       "Mumbai"
+      ],
+      [
+       "C1",
+       "05-09-2026",
+       "Pune"
+      ],
+      [
+       "C2",
+       "20-02-2025",
+       "Delhi"
+      ],
+      [
+       "C2",
+       "01-08-2026",
+       "Delhi"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "cust_id",
+     "city",
+     "valid_from",
+     "valid_to"
+    ],
+    "rows": [
+     [
+      "C1",
+      "Pune",
+      "01-01-2024",
+      "09-03-2025"
+     ],
+     [
+      "C1",
+      "Mumbai",
+      "10-03-2025",
+      "04-09-2026"
+     ],
+     [
+      "C1",
+      "Pune",
+      "05-09-2026",
+      "NULL"
+     ],
+     [
+      "C2",
+      "Delhi",
+      "20-02-2025",
+      "NULL"
+     ]
+    ]
+   },
+   "output_note": "NULL valid_to means the address is still current. C1 moving back to Pune correctly opens a second Pune period.",
+   "task": "Return one row per real address period with valid_from and valid_to (the day before the next real change, NULL if current).",
+   "hint": "First keep rows where the city differs from the previous row (LAG), then use LEAD on what is left.",
+   "solution": "WITH flagged AS (\n  SELECT cust_id, changed_on, city,\n         LAG(city) OVER (PARTITION BY cust_id ORDER BY changed_on) AS prev_city\n  FROM   address_log\n)\nSELECT cust_id, city,\n       changed_on AS valid_from,\n       LEAD(changed_on) OVER (PARTITION BY cust_id ORDER BY changed_on) - 1 AS valid_to\nFROM   flagged\nWHERE  prev_city IS NULL OR prev_city <> city\nORDER  BY cust_id, valid_from;",
+   "simple": "Imagine a school register of where each child sits. If the teacher writes the same seat again, nothing really changed, so you cross it out. Then each remaining entry lasts until the day before the next one. The query removes repeat entries with LAG and finds the end date with LEAD.",
+   "remember": "LAG removes repeats, LEAD closes the period.",
+   "why": "LAG compares each row with the previous one for the same customer, so unchanged re-KYC rows can be filtered out. Window functions in the outer SELECT run after its WHERE, so LEAD sees only the real change rows and returns the next real change date. Subtracting 1 makes periods non-overlapping, and LEAD returns NULL for the current period.",
+   "tip": "To build SCD Type 2 history from a raw log I drop no-change rows with LAG first, then derive end dates with LEAD.",
+   "steps": [
+    {
+     "say": "Step one. Next to each row, put the previous city of the same customer.",
+     "find": "LAG(city) OVER (PARTITION BY cust_id ORDER BY changed_on) AS prev_city"
+    },
+    {
+     "say": "Step two. Keep only real changes: the first row, or a row where the city is different.",
+     "find": "WHERE  prev_city IS NULL OR prev_city <> city"
+    },
+    {
+     "say": "Step three. On those rows, the next change date minus one day ends the period.",
+     "find": "LEAD(changed_on) OVER (PARTITION BY cust_id ORDER BY changed_on) - 1 AS valid_to"
+    },
+    {
+     "say": "Finally, the current address has no end date. Customer C1 gets three periods, C2 just one.",
+     "find": "ORDER  BY cust_id, valid_from;"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -10415,6 +11358,17 @@
    "example": "WITH t AS (\n  SELECT 'A' AS acct, 500 AS amt FROM dual UNION ALL\n  SELECT 'B', 900 FROM dual UNION ALL\n  SELECT 'C', 700 FROM dual\n)\nSELECT acct, amt, rn\nFROM  (SELECT acct, amt, ROW_NUMBER() OVER (ORDER BY amt DESC) AS rn FROM t)\nWHERE  rn <= 2;",
    "gotcha": "Filtering in WHERE before the window changes the window's input, so moving a condition inside or outside the subquery can change the ranks.",
    "line": "Window functions are computed after WHERE, so I rank in a CTE and filter on the rank outside."
+  },
+  {
+   "id": "fl20261123",
+   "concept": "ROUND versus TRUNC",
+   "why": "Interest, EMI and date cut-offs in banking depend on whether you round or cut off.",
+   "simple": "Think of a shopkeeper with ₹99.60. Rounding says \"call it ₹100\"; cutting off says \"just ₹99\". ROUND goes to the nearest value, TRUNC simply chops off the extra part. Both also work on dates: TRUNC takes a date-time back to midnight.",
+   "remember": "ROUND = nearest; TRUNC = chop, never up.",
+   "explain": "ROUND(n, d) rounds to d decimal places, half away from zero, so ROUND(2.5) is 3 and ROUND(-2.5) is -3. TRUNC(n, d) just removes digits after d places, moving toward zero, so TRUNC(-2.7) is -2. A negative d works to the left of the decimal point, such as ROUND(12345, -2) = 12300. On dates, TRUNC(d) gives midnight and TRUNC(d, 'MM') the first of the month, while ROUND(d, 'MM') moves to the nearest month start.",
+   "example": "WITH t AS (SELECT 1234.567 AS amt, -2.5 AS neg,\n                  TO_DATE('20-11-2026 18:45','DD-MM-YYYY HH24:MI') AS dt FROM dual)\nSELECT ROUND(amt, 2) AS r2,          -- 1234.57\n       TRUNC(amt, 2) AS t2,          -- 1234.56\n       ROUND(amt, -2) AS r_hundred,  -- 1200\n       ROUND(neg) AS r_neg,          -- -3\n       TRUNC(dt) AS day_start,       -- 20-11-2026 00:00\n       ROUND(dt, 'MM') AS near_month -- 01-12-2026\nFROM t;",
+   "gotcha": "TRUNC on a negative number moves toward zero, so it is not the same as FLOOR.",
+   "line": "I use ROUND for amounts shown to customers and TRUNC where the business rule says to cut off, such as interest paid in whole rupees."
   }
  ]
 }

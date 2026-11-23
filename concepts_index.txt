@@ -128,6 +128,14 @@ f20261122-5|A|sql|Swap adjacent rows with MOD|Core banking/Statements TECH:Swapp
 f20261122-6|A|sql|Compound return with EXP SUM LN|Treasury/Investments · Markets TREND:Sensex Rally
 f20261122-7|A|plsql|SQL%BULK_ROWCOUNT per FORALL row|Payments/Standing instructions
 f20261122-8|A|plsql|INSTEAD OF trigger on join view|Insurance/Life
+f20261123-1|E|sql|FETCH FIRST WITH TIES|Deposits/Fixed deposits
+f20261123-2|E|sql|WHERE versus HAVING|Cards/UPI payments · Movies TREND:Jailer 2
+f20261123-3|M|sql|New record with running MAX|Treasury/Forex desk · Markets TREND:Rupee Record Low
+f20261123-4|M|sql|LAG with PARTITION BY gap|Insurance/Term life
+f20261123-5|A|sql|Year-on-year growth with gap years|Cards/Product analytics TECH:Year-on-Year Growth
+f20261123-6|A|plsql|WHERE CURRENT OF cursor update|Cards/Late fees
+f20261123-7|A|plsql|Per-row exception block in loop|Payments/NACH debits
+f20261123-8|A|sql|SCD2 ranges from change log|KYC/Address history
 l01|lesson|ROWS versus RANGE window frames
 l02|lesson|Partition pruning
 l03|lesson|SELECT FOR UPDATE SKIP LOCKED
@@ -147,3 +155,4 @@ fl20261119|lesson|When Oracle can use a B-tree index
 fl20261120|lesson|Composite index column order
 fl20261121|lesson|Implicit data type conversion
 fl20261122|lesson|Window functions run after WHERE
+fl20261123|lesson|ROUND versus TRUNC
