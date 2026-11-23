@@ -1,0 +1,30 @@
+name: Start Query with Berry videos
+
+# Runs the moment the daily Claude task pushes new questions, and starts the video workflow
+# in PSG7299/Query-With-Berry. Needs the secret BERRY_TOKEN (a fine-grained token with
+# "Actions: Read and write" on the Query-With-Berry repo).
+on:
+  push:
+    branches: [main]
+    paths: ['feed/feed.json']
+  workflow_dispatch:
+
+jobs:
+  start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Start the video workflow
+        env:
+          TOKEN: ${{ secrets.BERRY_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Secret BERRY_TOKEN is missing - see Query-With-Berry README (Setup: start videos automatically)"; exit 1
+          fi
+          code=$(curl -s -o resp.txt -w '%{http_code}' -X POST \
+            -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/PSG7299/Query-With-Berry/actions/workflows/daily.yml/dispatches \
+            -d '{"ref":"main"}')
+          cat resp.txt
+          if [ "$code" != "204" ]; then echo "::error::GitHub answered $code - check BERRY_TOKEN"; exit 1; fi
+          echo "Video workflow started."
