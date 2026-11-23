@@ -1,7 +1,7 @@
 # Daily question rules (read by the 06:17 IST scheduled task)
 
 Learner: Oracle PL/SQL developer, 5+ years (data migration, reconciliation, utPLSQL, payroll packages),
-switching to banking/finance companies in India. NO hands-on performance-tuning experience; confidence is
+switching jobs (banking/finance and product companies) in India. NO hands-on performance-tuning experience; confidence is
 fragile, so easy questions must be genuinely easy. Each question also becomes a YouTube Short
 (Query with Berry), so keep spoken parts short.
 
@@ -22,8 +22,8 @@ fragile, so easy questions must be genuinely easy. Each question also becomes a 
   Rotate patterns; check concepts_index.txt (`TECH:` entries) to avoid repeats.
 - Exactly 2 of the 8 are **trending** questions, for YouTube views (never the tech one):
   1. **Pop culture** (an E or M `sql`): big movie releases and box office, game launches, cricket series, phone
-     launches, festivals or sale events. Build it around the money side: ticket bookings, collections,
-     pre-orders, UPI/card payments, sales by city.
+     launches, festivals or sale events. Use the topic's own data: ticket bookings, collections, pre-orders,
+     players and scores, sales by city, viewers.
   2. **Markets** (any level): what is moving this week in gold or silver, crude oil, USD/INR and other forex,
      Sensex/Nifty, big IPO listings, RBI rate decisions. Build it around bank work: gold-loan LTV checks,
      forex desk conversions, daily % change, streaks of falls, moving averages, treasury exposure.
@@ -37,9 +37,19 @@ fragile, so easy questions must be genuinely easy. Each question also becomes a 
   Do not repeat a topic used in the last 5 days (check `TREND:` entries in concepts_index.txt). Add
   `"trend": {"topic": "<short searchable name, e.g. GTA 6 or Gold Price Fall>", "hook": "<one spoken sentence,
   max 20 words>", "hashtags": ["gta6", "gtavi"]}`.
-- Each question in a different Indian banking/finance situation (core banking, loans/EMI/NPA, cards,
-  UPI/NEFT/RTGS, fraud, KYC/AML, trading, mutual funds, GL reconciliation, RBI reporting, treasury, insurance).
-  Amounts in INR. A named person asking with a business reason. Prefer concepts not in concepts_index.txt.
+- **Domain mix (every day): at most 3 of the 8 in banking/finance** (core banking, loans, cards, UPI, KYC, trading,
+  treasury, insurance; the markets trending question counts as one of these). The other 5+ come from DIFFERENT
+  everyday domains, one domain per question and no domain twice in a day, rotating through: e-commerce
+  (Flipkart/Amazon-style orders, returns, carts), food delivery (Swiggy/Zomato-style orders, riders, ratings),
+  ride-hailing and logistics (trips, drivers, deliveries, warehouses), streaming and social media (watch time,
+  subscriptions, followers, posts), sports and IPL (matches, players, runs, auctions), airlines and travel
+  (bookings, delays, seats), telecom (recharges, data usage, churn), healthcare (appointments, doctors,
+  pharmacy stock), education and ed-tech (students, courses, exams), HR and payroll (employees, salaries,
+  managers, attendance), retail and supermarkets (inventory, billing), gaming (players, matches, in-app
+  purchases), real estate, hotels, electricity and utilities. Check concepts_index.txt domains and prefer the
+  ones used least in the last 7 days. Scenarios stay Indian (cities, rupees, names). The pop-culture trending
+  question can use its own natural domain (box office, gaming, sports) rather than a banking angle.
+  Prefer concepts not in concepts_index.txt.
 
 ## Question fields (exactly)
 id (`f` + YYYYMMDD + `-` + n), lvl, kind (`sql`/`plsql`), concept (2-5 words), domain, title (max 7 words),
