@@ -11235,6 +11235,939 @@
      "find": "ORDER  BY cust_id, valid_from;"
     }
    ]
+  },
+  {
+   "id": "f20261124-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "MIN and MAX per group",
+   "domain": "Food delivery/Riders",
+   "title": "First and last drop per rider",
+   "scenario": "Sana runs rider operations for a food delivery app in Bengaluru. She wants each rider's first and last delivery time on 23 November, plus how many orders they dropped.",
+   "schema": "RIDER_ORDERS(order_id VARCHAR2(5),\n             rider_id VARCHAR2(5),\n             delivered_at DATE)   -- date and time of drop",
+   "data": [
+    {
+     "name": "RIDER_ORDERS",
+     "cols": [
+      "order_id",
+      "rider_id",
+      "delivered_at"
+     ],
+     "rows": [
+      [
+       "O1",
+       "R1",
+       "23-11-2026 09:10"
+      ],
+      [
+       "O2",
+       "R2",
+       "23-11-2026 11:45"
+      ],
+      [
+       "O3",
+       "R1",
+       "23-11-2026 13:05"
+      ],
+      [
+       "O4",
+       "R3",
+       "23-11-2026 19:30"
+      ],
+      [
+       "O5",
+       "R1",
+       "23-11-2026 21:50"
+      ],
+      [
+       "O6",
+       "R2",
+       "23-11-2026 08:20"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "rider_id",
+     "orders",
+     "first_drop",
+     "last_drop"
+    ],
+    "rows": [
+     [
+      "R1",
+      "3",
+      "23-11-2026 09:10",
+      "23-11-2026 21:50"
+     ],
+     [
+      "R2",
+      "2",
+      "23-11-2026 08:20",
+      "23-11-2026 11:45"
+     ],
+     [
+      "R3",
+      "1",
+      "23-11-2026 19:30",
+      "23-11-2026 19:30"
+     ]
+    ]
+   },
+   "output_note": "R3 made only one drop, so first and last are the same time.",
+   "task": "For each rider, show the number of orders, the earliest delivered_at and the latest delivered_at.",
+   "hint": "MIN and MAX work on dates too: earliest is MIN, latest is MAX.",
+   "solution": "SELECT rider_id,\n       COUNT(*)          AS orders,\n       MIN(delivered_at) AS first_drop,\n       MAX(delivered_at) AS last_drop\nFROM   rider_orders\nGROUP  BY rider_id\nORDER  BY rider_id;",
+   "simple": "Think of a school attendance register with the time each child arrived. The earliest time is who came first, the latest is who came last. GROUP BY makes one pile per rider, and MIN and MAX pick the earliest and latest time in each pile.",
+   "remember": "MIN = earliest, MAX = latest, even for dates.",
+   "why": "GROUP BY rider_id collapses all orders of a rider into one row. MIN and MAX on a DATE column compare chronologically, including the time part. COUNT(*) counts rows in each group.",
+   "tip": "MIN and MAX work on numbers, dates and strings, so I use them for first and last events per group.",
+   "steps": [
+    {
+     "say": "Step one. Make one group per rider.",
+     "find": "GROUP  BY rider_id"
+    },
+    {
+     "say": "Step two. Count the orders in each group.",
+     "find": "COUNT(*)          AS orders"
+    },
+    {
+     "say": "Step three. MIN gives the earliest drop time, MAX gives the latest.",
+     "find": "MIN(delivered_at) AS first_drop",
+     "to": "MAX(delivered_at) AS last_drop"
+    },
+    {
+     "say": "Finally, rider R1 worked from nine ten in the morning to nine fifty at night.",
+     "find": "ORDER  BY rider_id;"
+    }
+   ]
+  },
+  {
+   "id": "f20261124-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "Conditional SUM with CASE",
+   "domain": "Movies/Ticket booking",
+   "title": "Opening-day bookings by city",
+   "scenario": "Yeh Prem Mol Liya opens in theatres on 27 November. Rohit at a ticket booking app has advance bookings for the first few days and wants opening-day tickets next to total tickets per city.",
+   "schema": "ADVANCE_BOOKINGS(city VARCHAR2(20),\n                 show_date DATE,     -- day of the show\n                 tickets NUMBER)     -- tickets booked so far",
+   "data": [
+    {
+     "name": "ADVANCE_BOOKINGS",
+     "cols": [
+      "city",
+      "show_date",
+      "tickets"
+     ],
+     "rows": [
+      [
+       "Mumbai",
+       "27-11-2026",
+       "4200"
+      ],
+      [
+       "Mumbai",
+       "28-11-2026",
+       "3100"
+      ],
+      [
+       "Delhi",
+       "27-11-2026",
+       "3900"
+      ],
+      [
+       "Delhi",
+       "29-11-2026",
+       "5200"
+      ],
+      [
+       "Lucknow",
+       "27-11-2026",
+       "2600"
+      ],
+      [
+       "Pune",
+       "28-11-2026",
+       "2900"
+      ],
+      [
+       "Pune",
+       "27-11-2026",
+       "1800"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "city",
+     "day1_tickets",
+     "total_tickets"
+    ],
+    "rows": [
+     [
+      "Mumbai",
+      "4200",
+      "7300"
+     ],
+     [
+      "Delhi",
+      "3900",
+      "9100"
+     ],
+     [
+      "Lucknow",
+      "2600",
+      "2600"
+     ],
+     [
+      "Pune",
+      "1800",
+      "4700"
+     ]
+    ]
+   },
+   "output_note": "Sample data only. Delhi has the most tickets overall, but Mumbai leads on opening day.",
+   "task": "Per city, show opening-day (27-11-2026) tickets and total advance tickets, highest opening day first.",
+   "hint": "Put a CASE inside SUM so only opening-day rows add their tickets.",
+   "solution": "SELECT city,\n       SUM(CASE WHEN show_date = DATE '2026-11-27'\n                THEN tickets ELSE 0 END) AS day1_tickets,\n       SUM(tickets)                     AS total_tickets\nFROM   advance_bookings\nGROUP  BY city\nORDER  BY day1_tickets DESC;",
+   "simple": "Imagine counting money in two piggy banks at once: one only for Friday coins, one for all coins. For every row, the CASE asks: is this the opening day? If yes, add the tickets to the first pile, otherwise add zero. The second SUM adds everything.",
+   "remember": "SUM(CASE ...) = count only the rows you choose.",
+   "why": "Conditional aggregation evaluates the CASE per row before summing, so one pass over the table gives several totals. ELSE 0 keeps the sum at 0 instead of NULL for a city with no opening-day row. This is the classic manual pivot.",
+   "tip": "I use SUM with CASE to build several filtered totals side by side in a single GROUP BY.",
+   "steps": [
+    {
+     "say": "Step one. One row per city.",
+     "find": "GROUP  BY city"
+    },
+    {
+     "say": "Step two. Add tickets only when the show is on opening day, otherwise add zero.",
+     "find": "SUM(CASE WHEN show_date = DATE '2026-11-27'",
+     "to": "THEN tickets ELSE 0 END) AS day1_tickets"
+    },
+    {
+     "say": "Step three. A plain SUM gives all advance tickets.",
+     "find": "SUM(tickets)                     AS total_tickets"
+    },
+    {
+     "say": "Finally, sort by opening day. Mumbai wins day one, even though Delhi has more in total.",
+     "find": "ORDER  BY day1_tickets DESC;"
+    }
+   ],
+   "trend": {
+    "topic": "Yeh Prem Mol Liya",
+    "hook": "Yeh Prem Mol Liya opens 27 November. Which city booked the most opening-day tickets?",
+    "hashtags": [
+     "yehpremmolliya",
+     "boxoffice",
+     "bollywood"
+    ]
+   }
+  },
+  {
+   "id": "f20261124-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Same table joined twice",
+   "domain": "Loans/Silver loan",
+   "title": "Silver loans pushed over LTV",
+   "scenario": "Silver prices have fallen sharply this month. Priya in the bank's silver loan team must find loans that were within the 75% LTV limit on 10 November but are above it at the 23 November rate.",
+   "schema": "SILVER_LOANS(loan_id VARCHAR2(4), cust_name VARCHAR2(20),\n             silver_grams NUMBER,   -- pledged silver\n             outstanding NUMBER)    -- rupees due\nSILVER_RATES(rate_date DATE, rate_per_kg NUMBER)",
+   "data": [
+    {
+     "name": "SILVER_LOANS",
+     "cols": [
+      "loan_id",
+      "cust_name",
+      "silver_grams",
+      "outstanding"
+     ],
+     "rows": [
+      [
+       "L1",
+       "Meena",
+       "2000",
+       "230000"
+      ],
+      [
+       "L2",
+       "Arjun",
+       "1000",
+       "100000"
+      ],
+      [
+       "L3",
+       "Farida",
+       "1500",
+       "210000"
+      ],
+      [
+       "L4",
+       "Gopal",
+       "3000",
+       "360000"
+      ],
+      [
+       "L5",
+       "Sneha",
+       "500",
+       "55000"
+      ]
+     ]
+    },
+    {
+     "name": "SILVER_RATES",
+     "cols": [
+      "rate_date",
+      "rate_per_kg"
+     ],
+     "rows": [
+      [
+       "10-11-2026",
+       "180000"
+      ],
+      [
+       "17-11-2026",
+       "170000"
+      ],
+      [
+       "23-11-2026",
+       "150000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "cust_name",
+     "ltv_before",
+     "ltv_now"
+    ],
+    "rows": [
+     [
+      "L4",
+      "Gopal",
+      "66.7",
+      "80"
+     ],
+     [
+      "L1",
+      "Meena",
+      "63.9",
+      "76.7"
+     ]
+    ]
+   },
+   "output_note": "Invented rates, not real prices. L3 is excluded because it was already above 75% before the fall.",
+   "task": "LTV % = outstanding * 100 / (silver_grams / 1000 * rate_per_kg). List loans with LTV <= 75 on 10-11-2026 and > 75 on 23-11-2026, highest current LTV first.",
+   "hint": "Join SILVER_RATES twice with two aliases, one for each date.",
+   "solution": "SELECT l.loan_id, l.cust_name,\n       ROUND(l.outstanding * 100 / (l.silver_grams / 1000 * b.rate_per_kg), 1) AS ltv_before,\n       ROUND(l.outstanding * 100 / (l.silver_grams / 1000 * n.rate_per_kg), 1) AS ltv_now\nFROM   silver_loans l\nCROSS  JOIN silver_rates b\nCROSS  JOIN silver_rates n\nWHERE  b.rate_date = DATE '2026-11-10'\nAND    n.rate_date = DATE '2026-11-23'\nAND    l.outstanding * 100 / (l.silver_grams / 1000 * b.rate_per_kg) <= 75\nAND    l.outstanding * 100 / (l.silver_grams / 1000 * n.rate_per_kg) > 75\nORDER  BY ltv_now DESC;",
+   "simple": "Imagine checking a child's height against a door mark twice: last month and today. You need both readings side by side. The query opens the price list twice, once for the old date and once for today, so every loan sees both prices and can be compared.",
+   "remember": "Need two rows of one table? Join it twice.",
+   "why": "Each alias of SILVER_RATES is filtered to one date, so each CROSS JOIN adds exactly one row and one price column per loan. Both LTVs are then on the same row and can be compared in WHERE. The WHERE repeats the expressions because column aliases are not visible there.",
+   "tip": "To compare a value on two dates I self-join the rate table with two aliases instead of running two queries.",
+   "steps": [
+    {
+     "say": "Step one. Bring in the rate table twice: b for before, n for now.",
+     "find": "CROSS  JOIN silver_rates b",
+     "to": "CROSS  JOIN silver_rates n"
+    },
+    {
+     "say": "Step two. Pin b to tenth November and n to twenty-third November.",
+     "find": "WHERE  b.rate_date = DATE '2026-11-10'",
+     "to": "AND    n.rate_date = DATE '2026-11-23'"
+    },
+    {
+     "say": "Step three. Keep loans that were safe before, but are above seventy-five percent now.",
+     "find": "<= 75",
+     "to": "> 75"
+    },
+    {
+     "say": "Finally, Gopal and Meena crossed the limit. Farida was already over it, so she is not new.",
+     "find": "ORDER  BY ltv_now DESC;"
+    }
+   ],
+   "trend": {
+    "topic": "Silver Price Crash",
+    "hook": "Silver prices just crashed. Which silver loans suddenly crossed the bank's LTV limit?",
+    "hashtags": [
+     "silverprice",
+     "silverrate",
+     "goldloan"
+    ]
+   }
+  },
+  {
+   "id": "f20261124-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "RATIO_TO_REPORT share per group",
+   "domain": "Telecom/Recharge plans",
+   "title": "Plan revenue share per circle",
+   "scenario": "Aditya, an analyst at a telecom operator, has monthly revenue for each recharge plan in each circle. Management wants each plan's share within its own circle, not of the whole country.",
+   "schema": "PLAN_REVENUE(circle VARCHAR2(20),\n             plan_name VARCHAR2(30),\n             revenue_lakh NUMBER)   -- revenue in lakh rupees",
+   "data": [
+    {
+     "name": "PLAN_REVENUE",
+     "cols": [
+      "circle",
+      "plan_name",
+      "revenue_lakh"
+     ],
+     "rows": [
+      [
+       "Mumbai",
+       "Rs 299 Unlimited",
+       "60"
+      ],
+      [
+       "Mumbai",
+       "Rs 199 Data",
+       "30"
+      ],
+      [
+       "Mumbai",
+       "Rs 2999 Annual",
+       "15"
+      ],
+      [
+       "Delhi",
+       "Rs 299 Unlimited",
+       "45"
+      ],
+      [
+       "Delhi",
+       "Rs 199 Data",
+       "35"
+      ],
+      [
+       "Delhi",
+       "Rs 2999 Annual",
+       "20"
+      ],
+      [
+       "Kerala",
+       "Rs 299 Unlimited",
+       "27"
+      ],
+      [
+       "Kerala",
+       "Rs 199 Data",
+       "9"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "circle",
+     "plan_name",
+     "revenue_lakh",
+     "share_pct"
+    ],
+    "rows": [
+     [
+      "Delhi",
+      "Rs 299 Unlimited",
+      "45",
+      "45"
+     ],
+     [
+      "Delhi",
+      "Rs 199 Data",
+      "35",
+      "35"
+     ],
+     [
+      "Delhi",
+      "Rs 2999 Annual",
+      "20",
+      "20"
+     ],
+     [
+      "Kerala",
+      "Rs 299 Unlimited",
+      "27",
+      "75"
+     ],
+     [
+      "Kerala",
+      "Rs 199 Data",
+      "9",
+      "25"
+     ],
+     [
+      "Mumbai",
+      "Rs 299 Unlimited",
+      "60",
+      "57.1"
+     ],
+     [
+      "Mumbai",
+      "Rs 199 Data",
+      "30",
+      "28.6"
+     ],
+     [
+      "Mumbai",
+      "Rs 2999 Annual",
+      "15",
+      "14.3"
+     ]
+    ]
+   },
+   "output_note": "Every circle's shares add up to 100. Without PARTITION BY, Kerala's 27 would be only about 11% of the whole table.",
+   "task": "Show each plan's revenue and its percentage share of its circle's total revenue, rounded to 1 decimal, sorted by circle then share descending.",
+   "hint": "RATIO_TO_REPORT(x) OVER (PARTITION BY circle) returns x divided by the circle total.",
+   "solution": "SELECT circle, plan_name, revenue_lakh,\n       ROUND(100 * RATIO_TO_REPORT(revenue_lakh)\n                   OVER (PARTITION BY circle), 1) AS share_pct\nFROM   plan_revenue\nORDER  BY circle, share_pct DESC;",
+   "simple": "Think of a class pizza party where each table shares its own pizza. Your slice is measured against your table's pizza, not every pizza in the hall. PARTITION BY circle makes one pizza per circle, and RATIO_TO_REPORT tells each plan what part of that pizza it ate.",
+   "remember": "RATIO_TO_REPORT = my share of my group's total.",
+   "why": "RATIO_TO_REPORT is an analytic function equal to value / SUM(value) OVER the same partition. PARTITION BY circle resets the denominator for each circle while keeping every detail row. The portable equivalent is revenue_lakh / SUM(revenue_lakh) OVER (PARTITION BY circle).",
+   "tip": "For percent-of-total I use RATIO_TO_REPORT or value / SUM() OVER, and I check the partition so shares add to 100 per group.",
+   "steps": [
+    {
+     "say": "Step one. RATIO_TO_REPORT divides each plan's revenue by a total.",
+     "find": "ROUND(100 * RATIO_TO_REPORT(revenue_lakh)"
+    },
+    {
+     "say": "Step two. PARTITION BY circle makes that total the circle's own revenue.",
+     "find": "OVER (PARTITION BY circle), 1) AS share_pct"
+    },
+    {
+     "say": "Finally, sort by circle and biggest share. Kerala's unlimited plan holds seventy-five percent.",
+     "find": "ORDER  BY circle, share_pct DESC;"
+    }
+   ]
+  },
+  {
+   "id": "f20261124-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Median from frequency table",
+   "domain": "E-commerce/Orders",
+   "title": "Median items per order",
+   "scenario": "Kunal at an online shopping app stores a summary instead of raw orders: how many orders had 1 item, 2 items, and so on. He needs the median number of items per order.",
+   "schema": "ITEMS_PER_ORDER(items NUMBER,         -- items in one order\n                order_count NUMBER)   -- orders with that many items",
+   "data": [
+    {
+     "name": "ITEMS_PER_ORDER",
+     "cols": [
+      "items",
+      "order_count"
+     ],
+     "rows": [
+      [
+       "1",
+       "3"
+      ],
+      [
+       "2",
+       "3"
+      ],
+      [
+       "3",
+       "4"
+      ],
+      [
+       "4",
+       "2"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "median_items"
+    ],
+    "rows": [
+     [
+      "2.5"
+     ]
+    ]
+   },
+   "output_note": "12 orders in total, so the median is the average of the 6th order (2 items) and the 7th order (3 items).",
+   "task": "Without expanding the rows, return the median number of items per order, rounded to 1 decimal.",
+   "hint": "A running SUM of order_count tells you which items value covers the middle position(s).",
+   "solution": "WITH c AS (\n  SELECT items, order_count,\n         SUM(order_count) OVER (ORDER BY items) AS cum_cnt,\n         SUM(order_count) OVER ()               AS total_cnt\n  FROM   items_per_order\n)\nSELECT ROUND(AVG(items), 1) AS median_items\nFROM   c\nWHERE  cum_cnt >= total_cnt / 2\nAND    cum_cnt - order_count <= total_cnt / 2;",
+   "simple": "Imagine 12 children standing in a line by height, but you only know how many are of each height. You count along the groups until you reach the middle two children. The query keeps a running count, finds the groups holding the middle positions, and averages them.",
+   "remember": "Running count finds the middle; AVG handles two middles.",
+   "why": "cum_cnt is the last position covered by each items value and cum_cnt - order_count is the position just before it. With total/2 as real division, the WHERE keeps one row for an odd total and the one or two rows holding positions N/2 and N/2+1 for an even total. AVG then returns the median without expanding 12 rows.",
+   "tip": "For a median over a frequency table I use a running SUM of counts instead of exploding rows, which scales to millions of orders.",
+   "steps": [
+    {
+     "say": "Step one. A running total of orders: the last position each item count reaches.",
+     "find": "SUM(order_count) OVER (ORDER BY items) AS cum_cnt"
+    },
+    {
+     "say": "Step two. The grand total of orders, here twelve.",
+     "find": "SUM(order_count) OVER ()               AS total_cnt"
+    },
+    {
+     "say": "Step three. Keep groups that cover the middle positions, six and seven.",
+     "find": "WHERE  cum_cnt >= total_cnt / 2",
+     "to": "AND    cum_cnt - order_count <= total_cnt / 2;"
+    },
+    {
+     "say": "Finally, average them: two and three give a median of two point five.",
+     "find": "SELECT ROUND(AVG(items), 1) AS median_items"
+    }
+   ],
+   "tech": {
+    "pattern": "Median from frequency table",
+    "company": "Google",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   }
+  },
+  {
+   "id": "f20261124-6",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "Trigger error rolls back statement",
+   "domain": "HR/Payroll",
+   "title": "Salary cap trigger blocks update",
+   "scenario": "Payroll has a rule: no raise above 50% in one go. Deepak in HR runs one UPDATE giving the IT team 10%, but a typo gives Kiran 60%.",
+   "schema": "EMPLOYEES(emp_id VARCHAR2(4), name VARCHAR2(20),\n          dept VARCHAR2(10), salary NUMBER)",
+   "data": [
+    {
+     "name": "EMPLOYEES",
+     "cols": [
+      "emp_id",
+      "name",
+      "dept",
+      "salary"
+     ],
+     "rows": [
+      [
+       "E1",
+       "Ravi",
+       "IT",
+       "80000"
+      ],
+      [
+       "E2",
+       "Divya",
+       "IT",
+       "95000"
+      ],
+      [
+       "E3",
+       "Kiran",
+       "IT",
+       "60000"
+      ],
+      [
+       "E4",
+       "Neha",
+       "HR",
+       "70000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "emp_id",
+     "name",
+     "dept",
+     "salary"
+    ],
+    "rows": [
+     [
+      "E1",
+      "Ravi",
+      "IT",
+      "80000"
+     ],
+     [
+      "E2",
+      "Divya",
+      "IT",
+      "95000"
+     ],
+     [
+      "E3",
+      "Kiran",
+      "IT",
+      "60000"
+     ],
+     [
+      "E4",
+      "Neha",
+      "HR",
+      "70000"
+     ]
+    ]
+   },
+   "output_note": "The UPDATE fails with ORA-20001: Raise above 50% for E3. Oracle rolls back the whole statement, so even E1 and E2 keep their old salaries.",
+   "task": "After the trigger is created and the UPDATE runs, what does EMPLOYEES contain, and what error appears?",
+   "hint": "An error in a row trigger undoes the entire triggering statement, not only that row.",
+   "solution": "CREATE OR REPLACE TRIGGER trg_salary_cap\nBEFORE UPDATE OF salary ON employees\nFOR EACH ROW\nBEGIN\n  IF :NEW.salary > :OLD.salary * 1.5 THEN\n    RAISE_APPLICATION_ERROR(-20001, 'Raise above 50% for ' || :OLD.emp_id);\n  END IF;\nEND;\n/\nUPDATE employees\nSET    salary = CASE emp_id WHEN 'E3' THEN salary * 1.6\n                            ELSE salary * 1.1 END\nWHERE  dept = 'IT';",
+   "simple": "Think of a class photo: if one child blinks, the teacher throws away the whole photo and nobody gets a copy. The trigger checks each salary change. When it finds Kiran's 60% raise it raises an error, and Oracle cancels the entire UPDATE, so nobody's salary changes.",
+   "remember": "One row fails, the whole statement is undone.",
+   "why": "A BEFORE ROW trigger fires for each updated row and can compare :OLD and :NEW values. RAISE_APPLICATION_ERROR raises a user-defined ORA-20000 to ORA-20999 error. Oracle uses statement-level atomicity, so all rows changed by that UPDATE are rolled back, while earlier work in the transaction stays.",
+   "tip": "I enforce row rules with RAISE_APPLICATION_ERROR in a BEFORE ROW trigger and rely on statement-level rollback to keep data consistent.",
+   "steps": [
+    {
+     "say": "Step one. The trigger fires before every salary update, once per row.",
+     "find": "BEFORE UPDATE OF salary ON employees",
+     "to": "FOR EACH ROW"
+    },
+    {
+     "say": "Step two. If the new salary is more than one and a half times the old one, raise an error.",
+     "find": "IF :NEW.salary > :OLD.salary * 1.5 THEN",
+     "to": "RAISE_APPLICATION_ERROR(-20001, 'Raise above 50% for ' || :OLD.emp_id);"
+    },
+    {
+     "say": "Step three. The update gives Kiran sixty percent by mistake.",
+     "find": "SET    salary = CASE emp_id WHEN 'E3' THEN salary * 1.6"
+    },
+    {
+     "say": "Finally, Kiran's row fails, so Oracle undoes the whole update. Ravi and Divya get nothing either.",
+     "find": "WHERE  dept = 'IT';"
+    }
+   ]
+  },
+  {
+   "id": "f20261124-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "Parameterized cursor in nested loop",
+   "domain": "Healthcare/Pharmacy",
+   "title": "Reorder medicines per pharmacy store",
+   "scenario": "A pharmacy chain in Chennai reorders medicines that fall below their reorder level. Retail stores order up to twice the level; hospital stores order up to three times.",
+   "schema": "STORES(store_id VARCHAR2(3), store_type VARCHAR2(10))\nPHARMACY_STOCK(store_id VARCHAR2(3), medicine VARCHAR2(20),\n               qty NUMBER, reorder_level NUMBER)\nREORDER_REQ(store_id VARCHAR2(3), medicine VARCHAR2(20), order_qty NUMBER)",
+   "data": [
+    {
+     "name": "STORES",
+     "cols": [
+      "store_id",
+      "store_type"
+     ],
+     "rows": [
+      [
+       "S1",
+       "RETAIL"
+      ],
+      [
+       "H1",
+       "HOSPITAL"
+      ]
+     ]
+    },
+    {
+     "name": "PHARMACY_STOCK",
+     "cols": [
+      "store_id",
+      "medicine",
+      "qty",
+      "reorder_level"
+     ],
+     "rows": [
+      [
+       "S1",
+       "Paracetamol",
+       "40",
+       "50"
+      ],
+      [
+       "S1",
+       "Insulin",
+       "30",
+       "20"
+      ],
+      [
+       "S1",
+       "ORS",
+       "25",
+       "25"
+      ],
+      [
+       "H1",
+       "Paracetamol",
+       "80",
+       "100"
+      ],
+      [
+       "H1",
+       "Insulin",
+       "10",
+       "30"
+      ]
+     ]
+    },
+    {
+     "name": "REORDER_REQ",
+     "cols": [
+      "store_id",
+      "medicine",
+      "order_qty"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "store_id",
+     "medicine",
+     "order_qty"
+    ],
+    "rows": [
+     [
+      "H1",
+      "Insulin",
+      "80"
+     ],
+     [
+      "H1",
+      "Paracetamol",
+      "220"
+     ],
+     [
+      "S1",
+      "Paracetamol",
+      "60"
+     ]
+    ]
+   },
+   "output_note": "REORDER_REQ after the block, shown ordered by store and medicine. S1 ORS is not reordered because 25 is not below 25.",
+   "task": "Run the block. What rows end up in REORDER_REQ?",
+   "hint": "The cursor is reopened for every store with that store's id and factor.",
+   "solution": "DECLARE\n  CURSOR c_low (p_store VARCHAR2, p_factor NUMBER) IS\n    SELECT medicine, reorder_level * p_factor - qty AS order_qty\n    FROM   pharmacy_stock\n    WHERE  store_id = p_store\n    AND    qty < reorder_level;\n  v_factor NUMBER;\nBEGIN\n  FOR s IN (SELECT store_id, store_type FROM stores ORDER BY store_id) LOOP\n    v_factor := CASE s.store_type WHEN 'HOSPITAL' THEN 3 ELSE 2 END;\n    FOR m IN c_low(s.store_id, v_factor) LOOP\n      INSERT INTO reorder_req VALUES (s.store_id, m.medicine, m.order_qty);\n    END LOOP;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a shopkeeper with one shopping-list form that has two blanks: which shop, and how much extra to buy. For each shop he fills the blanks and gets that shop's list. The cursor is the form, and the parameters are the blanks filled for each store.",
+   "remember": "Parameterized cursor = one query, new inputs each loop.",
+   "why": "Cursor parameters are bound when the cursor opens, so the same cursor runs once per store with a different p_store and p_factor. A cursor FOR loop opens, fetches and closes it automatically each time. In production a single INSERT ... SELECT joined to STORES would do this set-based, which is faster.",
+   "tip": "I use parameterized cursors to reuse one query with different inputs, but I prefer a single set-based INSERT SELECT when no row-by-row logic is needed.",
+   "steps": [
+    {
+     "say": "Step one. The cursor takes a store and a factor, and finds medicines below their reorder level.",
+     "find": "CURSOR c_low (p_store VARCHAR2, p_factor NUMBER) IS",
+     "to": "AND    qty < reorder_level;"
+    },
+    {
+     "say": "Step two. Loop through stores. Hospitals get factor three, others factor two.",
+     "find": "FOR s IN (SELECT store_id, store_type FROM stores ORDER BY store_id) LOOP",
+     "to": "v_factor := CASE s.store_type WHEN 'HOSPITAL' THEN 3 ELSE 2 END;"
+    },
+    {
+     "say": "Step three. Open the cursor for this store and insert each reorder line.",
+     "find": "FOR m IN c_low(s.store_id, v_factor) LOOP",
+     "to": "INSERT INTO reorder_req VALUES (s.store_id, m.medicine, m.order_qty);"
+    },
+    {
+     "say": "Finally, three lines are saved. ORS is exactly at its level, so it is not reordered.",
+     "find": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261124-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Longest streak with ROW_NUMBER difference",
+   "domain": "Sports/Cricket league",
+   "title": "Longest winning streak per team",
+   "scenario": "Ishaan builds stats for a T20 league app. For each team he must show its longest run of consecutive wins and when that run started and ended.",
+   "schema": "MATCH_RESULTS(team VARCHAR2(5),\n              match_date DATE,\n              result CHAR(1))   -- W = won, L = lost",
+   "data": [
+    {
+     "name": "MATCH_RESULTS",
+     "cols": [
+      "team",
+      "match_date",
+      "result"
+     ],
+     "rows": [
+      [
+       "PUN",
+       "01-04-2026",
+       "W"
+      ],
+      [
+       "PUN",
+       "04-04-2026",
+       "L"
+      ],
+      [
+       "PUN",
+       "07-04-2026",
+       "W"
+      ],
+      [
+       "PUN",
+       "10-04-2026",
+       "W"
+      ],
+      [
+       "PUN",
+       "13-04-2026",
+       "W"
+      ],
+      [
+       "KOC",
+       "02-04-2026",
+       "W"
+      ],
+      [
+       "KOC",
+       "05-04-2026",
+       "W"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "team",
+     "streak",
+     "from_date",
+     "to_date"
+    ],
+    "rows": [
+     [
+      "KOC",
+      "2",
+      "02-04-2026",
+      "05-04-2026"
+     ],
+     [
+      "PUN",
+      "3",
+      "07-04-2026",
+      "13-04-2026"
+     ]
+    ]
+   },
+   "output_note": "PUN's first win on 01-04 is a separate streak of 1, broken by the loss on 04-04.",
+   "task": "For each team, return the longest streak of consecutive wins with its first and last match date. Show ties if a team has two equal longest streaks.",
+   "hint": "Subtract a ROW_NUMBER per team and result from a ROW_NUMBER per team: the difference is constant inside a streak.",
+   "solution": "WITH w AS (\n  SELECT team, match_date, result,\n         ROW_NUMBER() OVER (PARTITION BY team ORDER BY match_date)\n       - ROW_NUMBER() OVER (PARTITION BY team, result ORDER BY match_date) AS grp\n  FROM   match_results\n), s AS (\n  SELECT team, grp, COUNT(*) AS streak,\n         MIN(match_date) AS from_date, MAX(match_date) AS to_date\n  FROM   w\n  WHERE  result = 'W'\n  GROUP  BY team, grp\n)\nSELECT team, streak, from_date, to_date\nFROM  (SELECT s.*, RANK() OVER (PARTITION BY team ORDER BY streak DESC) AS rk\n       FROM   s)\nWHERE  rk = 1\nORDER  BY team;",
+   "simple": "Imagine two counters for a team: one counts every match, the other counts only wins. While the team keeps winning, both go up together, so the gap between them stays the same. A loss changes the gap. Same gap means same streak, so we group by it and count.",
+   "remember": "Same gap between two counters = same streak.",
+   "why": "Within a run of consecutive W rows both ROW_NUMBERs increase by 1, so their difference stays constant and labels the island. Grouping W rows by team and grp gives each streak's length and dates. RANK in the outer query keeps the longest streak per team, including ties.",
+   "tip": "For consecutive-run problems I use the ROW_NUMBER difference trick to label islands, then aggregate and rank them.",
+   "steps": [
+    {
+     "say": "Step one. Two counters: every match, and matches with the same result. Their difference labels each streak.",
+     "find": "ROW_NUMBER() OVER (PARTITION BY team ORDER BY match_date)",
+     "to": "- ROW_NUMBER() OVER (PARTITION BY team, result ORDER BY match_date) AS grp"
+    },
+    {
+     "say": "Step two. Keep only wins and group by that label to get each streak's length and dates.",
+     "find": "WHERE  result = 'W'",
+     "to": "GROUP  BY team, grp"
+    },
+    {
+     "say": "Step three. Rank streaks per team, longest first.",
+     "find": "RANK() OVER (PARTITION BY team ORDER BY streak DESC) AS rk"
+    },
+    {
+     "say": "Finally, keep rank one. Pune's best run is three wins, Kochi's is two.",
+     "find": "WHERE  rk = 1"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -11369,6 +12302,17 @@
    "example": "WITH t AS (SELECT 1234.567 AS amt, -2.5 AS neg,\n                  TO_DATE('20-11-2026 18:45','DD-MM-YYYY HH24:MI') AS dt FROM dual)\nSELECT ROUND(amt, 2) AS r2,          -- 1234.57\n       TRUNC(amt, 2) AS t2,          -- 1234.56\n       ROUND(amt, -2) AS r_hundred,  -- 1200\n       ROUND(neg) AS r_neg,          -- -3\n       TRUNC(dt) AS day_start,       -- 20-11-2026 00:00\n       ROUND(dt, 'MM') AS near_month -- 01-12-2026\nFROM t;",
    "gotcha": "TRUNC on a negative number moves toward zero, so it is not the same as FLOOR.",
    "line": "I use ROUND for amounts shown to customers and TRUNC where the business rule says to cut off, such as interest paid in whole rupees."
+  },
+  {
+   "id": "fl20261124",
+   "concept": "UNION versus UNION ALL",
+   "why": "Picking the wrong one silently drops rows or wastes a sort on big reports.",
+   "simple": "Imagine two class lists being joined into one. UNION ALL just staples the pages together, even if a child is on both lists. UNION also crosses out repeated names, which takes extra time.",
+   "remember": "UNION removes duplicates; UNION ALL keeps everything, faster.",
+   "explain": "UNION ALL appends the result of the second query to the first with no extra work. UNION additionally removes duplicate rows across the whole combined result, which needs a sort or hash step. Duplicates are compared on all selected columns, and NULLs are treated as equal for this purpose. Use UNION ALL when the sets cannot overlap or when duplicates are meaningful, such as summing transactions.",
+   "example": "WITH a AS (SELECT 'Pune' AS city FROM dual UNION ALL SELECT 'Delhi' FROM dual),\n     b AS (SELECT 'Pune' AS city FROM dual)\nSELECT city FROM a\nUNION ALL          -- returns Pune, Delhi, Pune; UNION would return Delhi, Pune\nSELECT city FROM b;",
+   "gotcha": "UNION also removes duplicates that exist inside a single query, not just across the two.",
+   "line": "I default to UNION ALL and use UNION only when I really need distinct rows, because UNION adds a sort."
   }
  ]
 }

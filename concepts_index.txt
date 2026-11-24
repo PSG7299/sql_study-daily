@@ -136,6 +136,14 @@ f20261123-5|A|sql|Year-on-year growth with gap years|Cards/Product analytics TEC
 f20261123-6|A|plsql|WHERE CURRENT OF cursor update|Cards/Late fees
 f20261123-7|A|plsql|Per-row exception block in loop|Payments/NACH debits
 f20261123-8|A|sql|SCD2 ranges from change log|KYC/Address history
+f20261124-1|E|sql|MIN and MAX per group|Food delivery/Riders
+f20261124-2|E|sql|Conditional SUM with CASE|Movies/Ticket booking TREND:Yeh Prem Mol Liya
+f20261124-3|M|sql|Same table joined twice|Loans/Silver loan TREND:Silver Price Crash
+f20261124-4|M|sql|RATIO_TO_REPORT share per group|Telecom/Recharge plans
+f20261124-5|A|sql|Median from frequency table|E-commerce/Orders TECH:Median from frequency table
+f20261124-6|A|plsql|Trigger error rolls back statement|HR/Payroll
+f20261124-7|A|plsql|Parameterized cursor in nested loop|Healthcare/Pharmacy
+f20261124-8|A|sql|Longest streak with ROW_NUMBER difference|Sports/Cricket league
 l01|lesson|ROWS versus RANGE window frames
 l02|lesson|Partition pruning
 l03|lesson|SELECT FOR UPDATE SKIP LOCKED
@@ -156,3 +164,4 @@ fl20261120|lesson|Composite index column order
 fl20261121|lesson|Implicit data type conversion
 fl20261122|lesson|Window functions run after WHERE
 fl20261123|lesson|ROUND versus TRUNC
+fl20261124|lesson|UNION versus UNION ALL
