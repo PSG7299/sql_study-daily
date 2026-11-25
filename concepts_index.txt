@@ -144,6 +144,14 @@ f20261124-5|A|sql|Median from frequency table|E-commerce/Orders TECH:Median from
 f20261124-6|A|plsql|Trigger error rolls back statement|HR/Payroll
 f20261124-7|A|plsql|Parameterized cursor in nested loop|Healthcare/Pharmacy
 f20261124-8|A|sql|Longest streak with ROW_NUMBER difference|Sports/Cricket league
+f20261125-1|E|sql|COUNT DISTINCT per group|Ride-hailing/Trips
+f20261125-2|E|sql|INNER JOIN drops unmatched rows|Education/Ed-tech
+f20261125-3|M|sql|HAVING with a subquery|Movies/Box office TREND:Indian Box Office Record Year
+f20261125-4|M|sql|Top-N per group with RANK|Airlines/Travel
+f20261125-5|A|sql|Weekly OHLC with KEEP FIRST/LAST|Treasury/Commodity desk TREND:Crude Oil Price Fall
+f20261125-6|A|sql|Histogram with a zero bucket|Social media/Creators TECH:Histogram of counts
+f20261125-7|A|plsql|String-keyed associative array order|Hotels/Bookings
+f20261125-8|A|plsql|SELECT INTO TOO_MANY_ROWS handling|Loans/EMI collection
 l01|lesson|ROWS versus RANGE window frames
 l02|lesson|Partition pruning
 l03|lesson|SELECT FOR UPDATE SKIP LOCKED
@@ -165,3 +173,4 @@ fl20261121|lesson|Implicit data type conversion
 fl20261122|lesson|Window functions run after WHERE
 fl20261123|lesson|ROUND versus TRUNC
 fl20261124|lesson|UNION versus UNION ALL
+fl20261125|lesson|Correlated versus non-correlated subquery

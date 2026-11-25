@@ -12168,6 +12168,948 @@
      "find": "WHERE  rk = 1"
     }
    ]
+  },
+  {
+   "id": "f20261125-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "COUNT DISTINCT per group",
+   "domain": "Ride-hailing/Trips",
+   "title": "Trips and unique drivers per city",
+   "scenario": "A ride-hailing app wants a city report. For each city it needs the number of trips and the number of different drivers who did them.",
+   "schema": "TRIPS(trip_id VARCHAR2(5),   -- trip id\n      city VARCHAR2(20),     -- pickup city\n      driver_id VARCHAR2(5), -- driver who did the trip\n      fare NUMBER)           -- fare in rupees",
+   "data": [
+    {
+     "name": "TRIPS",
+     "cols": [
+      "trip_id",
+      "city",
+      "driver_id",
+      "fare"
+     ],
+     "rows": [
+      [
+       "T1",
+       "Bengaluru",
+       "D1",
+       "250"
+      ],
+      [
+       "T2",
+       "Bengaluru",
+       "D2",
+       "180"
+      ],
+      [
+       "T3",
+       "Bengaluru",
+       "D1",
+       "320"
+      ],
+      [
+       "T4",
+       "Pune",
+       "D3",
+       "150"
+      ],
+      [
+       "T5",
+       "Pune",
+       "D3",
+       "210"
+      ],
+      [
+       "T6",
+       "Hyderabad",
+       "D4",
+       "300"
+      ],
+      [
+       "T7",
+       "Hyderabad",
+       "D5",
+       "120"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "city",
+     "trips",
+     "drivers"
+    ],
+    "rows": [
+     [
+      "Bengaluru",
+      "3",
+      "2"
+     ],
+     [
+      "Hyderabad",
+      "2",
+      "2"
+     ],
+     [
+      "Pune",
+      "2",
+      "1"
+     ]
+    ]
+   },
+   "output_note": "Driver D1 did two Bengaluru trips but is counted once in drivers.",
+   "task": "Show each city with its total trips and its number of unique drivers, ordered by city.",
+   "hint": "COUNT(*) counts rows; COUNT(DISTINCT col) counts different values.",
+   "solution": "SELECT city,\n       COUNT(*)                  AS trips,\n       COUNT(DISTINCT driver_id) AS drivers\nFROM   trips\nGROUP  BY city\nORDER  BY city;",
+   "simple": "Think of a school register for a bus. Seven rides happened, but some children rode twice. COUNT(*) counts every ride, while COUNT DISTINCT counts each child only once. Here we do that for each city.",
+   "remember": "COUNT DISTINCT = count each person only once.",
+   "why": "COUNT(*) counts every row in the group, while COUNT(DISTINCT driver_id) removes duplicate driver ids before counting. NULL driver ids would be ignored by COUNT DISTINCT. Both run per city because of GROUP BY.",
+   "tip": "I use COUNT(DISTINCT) for unique customers or drivers, and remember it skips NULL values.",
+   "steps": [
+    {
+     "say": "Step one. Group the trips by city.",
+     "find": "GROUP  BY city"
+    },
+    {
+     "say": "Step two. COUNT star counts every trip in the city.",
+     "find": "COUNT(*)                  AS trips"
+    },
+    {
+     "say": "Step three. COUNT DISTINCT counts each driver only once.",
+     "find": "COUNT(DISTINCT driver_id) AS drivers"
+    },
+    {
+     "say": "Finally, Bengaluru has three trips but only two drivers, because D1 drove twice.",
+     "find": "ORDER  BY city;"
+    }
+   ]
+  },
+  {
+   "id": "f20261125-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "INNER JOIN drops unmatched rows",
+   "domain": "Education/Ed-tech",
+   "title": "Students with their course names",
+   "scenario": "An ed-tech platform in Noida lists each student with the course they joined. Some students have no course yet, and one has a course id that does not exist.",
+   "schema": "STUDENTS(student_id VARCHAR2(3), name VARCHAR2(20),\n         course_id VARCHAR2(3))     -- NULL if not enrolled\nCOURSES(course_id VARCHAR2(3), course_name VARCHAR2(20))",
+   "data": [
+    {
+     "name": "STUDENTS",
+     "cols": [
+      "student_id",
+      "name",
+      "course_id"
+     ],
+     "rows": [
+      [
+       "S1",
+       "Aarav",
+       "C1"
+      ],
+      [
+       "S2",
+       "Diya",
+       "C2"
+      ],
+      [
+       "S3",
+       "Kabir",
+       "NULL"
+      ],
+      [
+       "S4",
+       "Meera",
+       "C9"
+      ]
+     ]
+    },
+    {
+     "name": "COURSES",
+     "cols": [
+      "course_id",
+      "course_name"
+     ],
+     "rows": [
+      [
+       "C1",
+       "SQL Basics"
+      ],
+      [
+       "C2",
+       "Python"
+      ],
+      [
+       "C3",
+       "Data Science"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "name",
+     "course_name"
+    ],
+    "rows": [
+     [
+      "Aarav",
+      "SQL Basics"
+     ],
+     [
+      "Diya",
+      "Python"
+     ]
+    ]
+   },
+   "output_note": "Kabir (NULL course) and Meera (C9 not in COURSES) disappear. Data Science has no students, so it is not shown either.",
+   "task": "Run the query. Which rows come back, and why do two students go missing?",
+   "hint": "An INNER JOIN keeps only rows that find a match on both sides.",
+   "solution": "SELECT s.name, c.course_name\nFROM   students s\nJOIN   courses  c\n       ON c.course_id = s.course_id\nORDER  BY s.name;",
+   "simple": "Imagine matching socks from two baskets. Only socks that find a partner go in the drawer; lonely socks stay out. An INNER JOIN keeps only students whose course id finds a partner in the courses list.",
+   "remember": "INNER JOIN = only pairs that match, nobody alone.",
+   "why": "JOIN without a keyword is an INNER JOIN, so a student row survives only when the ON condition is true. NULL = 'C1' is unknown, not true, so Kabir is dropped, and C9 has no partner. A LEFT JOIN would keep all four students with NULL course names.",
+   "tip": "When rows vanish after a join, I first check for NULL keys and missing master rows, then decide if a LEFT JOIN is needed.",
+   "steps": [
+    {
+     "say": "Step one. Join students to courses on the course id.",
+     "find": "FROM   students s",
+     "to": "ON c.course_id = s.course_id"
+    },
+    {
+     "say": "Step two. Only matching pairs survive. Kabir has no course, and Meera's course C9 does not exist.",
+     "find": "ON c.course_id = s.course_id"
+    },
+    {
+     "say": "Finally, only Aarav and Diya come back, sorted by name.",
+     "find": "ORDER  BY s.name;"
+    }
+   ]
+  },
+  {
+   "id": "f20261125-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "HAVING with a subquery",
+   "domain": "Movies/Box office",
+   "title": "Languages above the average language total",
+   "scenario": "2026 is being called a record year for Indian cinema. A film trade dashboard wants the languages whose 2026 total beats the average language total. All figures are invented sample data.",
+   "schema": "FILM_COLLECTIONS(film VARCHAR2(30),\n                 language VARCHAR2(15),\n                 release_year NUMBER,\n                 net_cr NUMBER)   -- net collection in crore rupees (sample)",
+   "data": [
+    {
+     "name": "FILM_COLLECTIONS",
+     "cols": [
+      "film",
+      "language",
+      "release_year",
+      "net_cr"
+     ],
+     "rows": [
+      [
+       "Sky Warrior",
+       "Hindi",
+       "2026",
+       "620"
+      ],
+      [
+       "Desert Storm",
+       "Hindi",
+       "2026",
+       "180"
+      ],
+      [
+       "Thunder Road",
+       "Tamil",
+       "2026",
+       "310"
+      ],
+      [
+       "Royal Blood",
+       "Telugu",
+       "2026",
+       "450"
+      ],
+      [
+       "Village Hero",
+       "Telugu",
+       "2026",
+       "90"
+      ],
+      [
+       "Quiet River",
+       "Malayalam",
+       "2026",
+       "70"
+      ],
+      [
+       "Old Glory",
+       "Hindi",
+       "2025",
+       "900"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "language",
+     "total_net_cr"
+    ],
+    "rows": [
+     [
+      "Hindi",
+      "800"
+     ],
+     [
+      "Telugu",
+      "540"
+     ]
+    ]
+   },
+   "output_note": "2026 totals: Hindi 800, Telugu 540, Tamil 310, Malayalam 70. Average = 1720 / 4 = 430. The 2025 film is ignored on both sides.",
+   "task": "For 2026 only, show languages whose total net collection is above the average language total, biggest first.",
+   "hint": "Compute the average in a subquery inside HAVING: total of 2026 divided by number of languages.",
+   "solution": "SELECT language, SUM(net_cr) AS total_net_cr\nFROM   film_collections\nWHERE  release_year = 2026\nGROUP  BY language\nHAVING SUM(net_cr) > (SELECT SUM(net_cr) / COUNT(DISTINCT language)\n                      FROM   film_collections\n                      WHERE  release_year = 2026)\nORDER  BY total_net_cr DESC;",
+   "simple": "Think of four classes collecting money for a school fair. First you find what an average class collected. Then you clap only for classes that beat that average. The subquery finds the average, and HAVING keeps the languages that beat it.",
+   "remember": "HAVING filters groups; a subquery can give the bar.",
+   "why": "WHERE removes 2025 rows before grouping, and HAVING filters the language groups after SUM is computed. The scalar subquery returns a single number, 430, which each group total is compared with. The subquery needs its own year filter, or Old Glory would raise the average.",
+   "tip": "I filter rows in WHERE and groups in HAVING, and I make sure any subquery used as a threshold has the same filters.",
+   "steps": [
+    {
+     "say": "Step one. Keep only 2026 films and add up collections per language.",
+     "find": "WHERE  release_year = 2026",
+     "to": "GROUP  BY language"
+    },
+    {
+     "say": "Step two. The subquery finds the average language total, which is four hundred thirty crore.",
+     "find": "HAVING SUM(net_cr) > (SELECT SUM(net_cr) / COUNT(DISTINCT language)",
+     "to": "WHERE  release_year = 2026)"
+    },
+    {
+     "say": "Finally, only Hindi and Telugu beat the average, shown biggest first.",
+     "find": "ORDER  BY total_net_cr DESC;"
+    }
+   ],
+   "trend": {
+    "topic": "Indian Box Office Record Year",
+    "hook": "Indian cinema just had its biggest year ever. Which languages beat the average? Let's ask SQL.",
+    "hashtags": [
+     "boxoffice",
+     "indiancinema",
+     "bollywood",
+     "tollywood"
+    ]
+   }
+  },
+  {
+   "id": "f20261125-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Top-N per group with RANK",
+   "domain": "Airlines/Travel",
+   "title": "Two worst delays per airport",
+   "scenario": "An airline ops team wants the two biggest departure delays at each airport today. If two flights tie, both must be shown.",
+   "schema": "FLIGHT_DELAYS(flight_no VARCHAR2(6),\n              airport VARCHAR2(3),  -- departure airport code\n              delay_min NUMBER)     -- delay in minutes",
+   "data": [
+    {
+     "name": "FLIGHT_DELAYS",
+     "cols": [
+      "flight_no",
+      "airport",
+      "delay_min"
+     ],
+     "rows": [
+      [
+       "AI101",
+       "DEL",
+       "45"
+      ],
+      [
+       "6E202",
+       "DEL",
+       "90"
+      ],
+      [
+       "UK303",
+       "DEL",
+       "45"
+      ],
+      [
+       "SG404",
+       "DEL",
+       "20"
+      ],
+      [
+       "6E505",
+       "BOM",
+       "30"
+      ],
+      [
+       "AI606",
+       "BOM",
+       "60"
+      ],
+      [
+       "QP707",
+       "BOM",
+       "15"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "airport",
+     "flight_no",
+     "delay_min",
+     "rnk"
+    ],
+    "rows": [
+     [
+      "BOM",
+      "AI606",
+      "60",
+      "1"
+     ],
+     [
+      "BOM",
+      "6E505",
+      "30",
+      "2"
+     ],
+     [
+      "DEL",
+      "6E202",
+      "90",
+      "1"
+     ],
+     [
+      "DEL",
+      "AI101",
+      "45",
+      "2"
+     ],
+     [
+      "DEL",
+      "UK303",
+      "45",
+      "2"
+     ]
+    ]
+   },
+   "output_note": "DEL returns three flights because AI101 and UK303 tie at 45 minutes.",
+   "task": "For each airport, return flights ranked 1 or 2 by delay (largest first), keeping ties.",
+   "hint": "RANK gives tied rows the same number; filter on it in an outer query.",
+   "solution": "SELECT airport, flight_no, delay_min, rnk\nFROM  (SELECT airport, flight_no, delay_min,\n              RANK() OVER (PARTITION BY airport\n                           ORDER BY delay_min DESC) AS rnk\n       FROM   flight_delays)\nWHERE  rnk <= 2\nORDER  BY airport, rnk, flight_no;",
+   "simple": "Think of a race where two runners cross the line together. Both get the silver medal. RANK works the same way: tied flights get the same number, so both appear in the top two.",
+   "remember": "RANK shares places on a tie; ROW_NUMBER never does.",
+   "why": "RANK restarts for every airport because of PARTITION BY, and equal delays get the same rank. A window function cannot be used directly in WHERE, so the filter goes in an outer query. ROW_NUMBER would randomly drop one of the tied 45-minute flights.",
+   "tip": "For top-N per group I choose RANK, DENSE_RANK or ROW_NUMBER based on how the business wants ties handled.",
+   "steps": [
+    {
+     "say": "Step one. Rank flights inside each airport, biggest delay first.",
+     "find": "RANK() OVER (PARTITION BY airport",
+     "to": "ORDER BY delay_min DESC) AS rnk"
+    },
+    {
+     "say": "Step two. Keep ranks one and two in the outer query.",
+     "find": "WHERE  rnk <= 2"
+    },
+    {
+     "say": "Finally, Delhi shows three flights, because two of them tie at forty five minutes.",
+     "find": "ORDER  BY airport, rnk, flight_no;"
+    }
+   ]
+  },
+  {
+   "id": "f20261125-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Weekly OHLC with KEEP FIRST/LAST",
+   "domain": "Treasury/Commodity desk",
+   "title": "Weekly open and close for crude",
+   "scenario": "Crude oil prices have been sliding. A bank's treasury desk tracks daily Brent prices for its oil-importer clients and wants weekly open, high, low and close. Prices are invented sample data.",
+   "schema": "CRUDE_PRICES(price_date DATE,\n             brent_usd NUMBER(6,2))  -- sample closing price per barrel",
+   "data": [
+    {
+     "name": "CRUDE_PRICES",
+     "cols": [
+      "price_date",
+      "brent_usd"
+     ],
+     "rows": [
+      [
+       "16-11-2026",
+       "101.20"
+      ],
+      [
+       "20-11-2026",
+       "98.50"
+      ],
+      [
+       "18-11-2026",
+       "99.80"
+      ],
+      [
+       "23-11-2026",
+       "97.90"
+      ],
+      [
+       "25-11-2026",
+       "96.70"
+      ],
+      [
+       "24-11-2026",
+       "98.40"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "week_start",
+     "open_px",
+     "high_px",
+     "low_px",
+     "close_px",
+     "pct_change"
+    ],
+    "rows": [
+     [
+      "16-11-2026",
+      "101.2",
+      "101.2",
+      "98.5",
+      "98.5",
+      "-2.67"
+     ],
+     [
+      "23-11-2026",
+      "97.9",
+      "98.4",
+      "96.7",
+      "96.7",
+      "-1.23"
+     ]
+    ]
+   },
+   "output_note": "Rows are stored out of date order, so open and close must come from ORDER BY price_date, not from row order. Week 2's high (98.40) is mid-week.",
+   "task": "For each ISO week, show open (first date's price), high, low, close (last date's price) and % change from open to close, rounded to 2 decimals.",
+   "hint": "MIN(x) KEEP (DENSE_RANK FIRST ORDER BY d) picks x from the earliest date in the group.",
+   "solution": "SELECT week_start, open_px, high_px, low_px, close_px,\n       ROUND((close_px - open_px) / open_px * 100, 2) AS pct_change\nFROM  (SELECT TRUNC(price_date, 'IW') AS week_start,\n              MIN(brent_usd) KEEP (DENSE_RANK FIRST ORDER BY price_date) AS open_px,\n              MAX(brent_usd) AS high_px,\n              MIN(brent_usd) AS low_px,\n              MAX(brent_usd) KEEP (DENSE_RANK LAST ORDER BY price_date) AS close_px\n       FROM   crude_prices\n       GROUP  BY TRUNC(price_date, 'IW'))\nORDER  BY week_start;",
+   "simple": "Think of a weekly diary of a petrol price board. Monday's number is the open, Friday's is the close, and the biggest and smallest numbers are the high and low. KEEP FIRST and KEEP LAST read the first and last page of each week, even if the pages were shuffled.",
+   "remember": "KEEP FIRST/LAST = value from the earliest or latest row.",
+   "why": "TRUNC(date, 'IW') maps every date to the Monday of its ISO week, which becomes the group. KEEP (DENSE_RANK FIRST/LAST ORDER BY price_date) returns the price from the earliest or latest date in one pass, without a self-join or window function. The MIN or MAX in front only breaks ties if two rows share the same date.",
+   "tip": "For open-close style reports I use KEEP DENSE_RANK FIRST and LAST, which avoids joining the table back to itself.",
+   "steps": [
+    {
+     "say": "Step one. Group every date into its week, starting Monday.",
+     "find": "FROM  (SELECT TRUNC(price_date, 'IW') AS week_start,"
+    },
+    {
+     "say": "Step two. KEEP FIRST takes the price from the earliest date. That is the weekly open.",
+     "find": "MIN(brent_usd) KEEP (DENSE_RANK FIRST ORDER BY price_date) AS open_px,"
+    },
+    {
+     "say": "Step three. MAX and MIN give the high and low. KEEP LAST takes the closing price.",
+     "find": "MAX(brent_usd) AS high_px,",
+     "to": "MAX(brent_usd) KEEP (DENSE_RANK LAST ORDER BY price_date) AS close_px"
+    },
+    {
+     "say": "Finally, compute the percent change. Both sample weeks closed lower than they opened.",
+     "find": "ROUND((close_px - open_px) / open_px * 100, 2) AS pct_change"
+    }
+   ],
+   "trend": {
+    "topic": "Crude Oil Price Fall",
+    "hook": "Crude oil keeps sliding. How does a bank desk build weekly candles in one SQL query?",
+    "hashtags": [
+     "crudeoil",
+     "brentcrude",
+     "oilprice",
+     "treasury"
+    ]
+   }
+  },
+  {
+   "id": "f20261125-6",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Histogram with a zero bucket",
+   "domain": "Social media/Creators",
+   "title": "How many users posted how often",
+   "scenario": "A short-video app wants a November 2026 histogram: how many users made 0 posts, 1 post, 2 posts and so on. Users who did not post in November must land in the 0 bucket.",
+   "schema": "USERS(user_id VARCHAR2(3), city VARCHAR2(15))\nPOSTS(post_id VARCHAR2(3),\n      user_id VARCHAR2(3),\n      post_date DATE)",
+   "data": [
+    {
+     "name": "USERS",
+     "cols": [
+      "user_id",
+      "city"
+     ],
+     "rows": [
+      [
+       "U1",
+       "Mumbai"
+      ],
+      [
+       "U2",
+       "Delhi"
+      ],
+      [
+       "U3",
+       "Kolkata"
+      ],
+      [
+       "U4",
+       "Jaipur"
+      ],
+      [
+       "U5",
+       "Kochi"
+      ]
+     ]
+    },
+    {
+     "name": "POSTS",
+     "cols": [
+      "post_id",
+      "user_id",
+      "post_date"
+     ],
+     "rows": [
+      [
+       "P1",
+       "U1",
+       "02-11-2026"
+      ],
+      [
+       "P2",
+       "U1",
+       "05-11-2026"
+      ],
+      [
+       "P3",
+       "U2",
+       "10-11-2026"
+      ],
+      [
+       "P4",
+       "U3",
+       "12-11-2026"
+      ],
+      [
+       "P5",
+       "U1",
+       "20-11-2026"
+      ],
+      [
+       "P6",
+       "U4",
+       "28-10-2026"
+      ],
+      [
+       "P7",
+       "U3",
+       "15-11-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "post_count",
+     "num_users"
+    ],
+    "rows": [
+     [
+      "0",
+      "2"
+     ],
+     [
+      "1",
+      "1"
+     ],
+     [
+      "2",
+      "1"
+     ],
+     [
+      "3",
+      "1"
+     ]
+    ]
+   },
+   "output_note": "U4 only posted in October and U5 never posted, so both fall in the 0 bucket. Putting the date filter in WHERE would drop them.",
+   "task": "Return each post count (posts in November 2026) and how many users have that count, including users with zero posts.",
+   "hint": "LEFT JOIN with the date filter inside ON, count p.post_id per user, then group by that count.",
+   "solution": "SELECT post_count, COUNT(*) AS num_users\nFROM  (SELECT u.user_id, COUNT(p.post_id) AS post_count\n       FROM   users u\n       LEFT JOIN posts p\n              ON  p.user_id = u.user_id\n              AND p.post_date >= DATE '2026-11-01'\n              AND p.post_date <  DATE '2026-12-01'\n       GROUP  BY u.user_id)\nGROUP  BY post_count\nORDER  BY post_count;",
+   "simple": "Think of a class teacher counting how many children read 0, 1, 2 or 3 books this month. First she counts books per child, even children who read none. Then she counts how many children are in each pile. The inner query counts per user, the outer query counts the piles.",
+   "remember": "Histogram = count per user, then count the counts.",
+   "why": "The LEFT JOIN keeps every user, and the date filter in ON only limits which posts match, so U4 and U5 get NULL post columns. COUNT(p.post_id) ignores those NULLs and returns 0, while COUNT(*) would wrongly return 1. The outer GROUP BY then aggregates a second time on the computed count.",
+   "tip": "For histograms I aggregate twice and use a LEFT JOIN with the filter in ON so the zero bucket is not lost.",
+   "steps": [
+    {
+     "say": "Step one. Keep every user, and match only their November posts.",
+     "find": "FROM   users u",
+     "to": "AND p.post_date <  DATE '2026-12-01'"
+    },
+    {
+     "say": "Step two. Count posts per user. COUNT of post id gives zero when nothing matched.",
+     "find": "FROM  (SELECT u.user_id, COUNT(p.post_id) AS post_count"
+    },
+    {
+     "say": "Step three. Now group by that count, and count users in each bucket.",
+     "find": "GROUP  BY post_count"
+    },
+    {
+     "say": "Finally, two users made zero posts, and one user each made one, two and three posts.",
+     "find": "ORDER  BY post_count;"
+    }
+   ],
+   "tech": {
+    "pattern": "Histogram of counts",
+    "company": "Twitter",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   }
+  },
+  {
+   "id": "f20261125-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "String-keyed associative array order",
+   "domain": "Hotels/Bookings",
+   "title": "Total nights per hotel in PL/SQL",
+   "scenario": "A hotel booking site sums nights per hotel in memory and writes a summary with a sequence number. Bookings arrive in booking order, not hotel order.",
+   "schema": "HOTEL_BOOKINGS(booking_id VARCHAR2(3), hotel VARCHAR2(20), nights NUMBER)\nHOTEL_NIGHTS(seq NUMBER,           -- order the row was written\n             hotel VARCHAR2(20), total_nights NUMBER)",
+   "data": [
+    {
+     "name": "HOTEL_BOOKINGS",
+     "cols": [
+      "booking_id",
+      "hotel",
+      "nights"
+     ],
+     "rows": [
+      [
+       "B1",
+       "Ooty Hill Inn",
+       "2"
+      ],
+      [
+       "B2",
+       "Goa Beach Resort",
+       "3"
+      ],
+      [
+       "B3",
+       "Jaipur Haveli",
+       "1"
+      ],
+      [
+       "B4",
+       "Goa Beach Resort",
+       "2"
+      ],
+      [
+       "B5",
+       "Ooty Hill Inn",
+       "4"
+      ]
+     ]
+    },
+    {
+     "name": "HOTEL_NIGHTS",
+     "cols": [
+      "seq",
+      "hotel",
+      "total_nights"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "seq",
+     "hotel",
+     "total_nights"
+    ],
+    "rows": [
+     [
+      "1",
+      "Goa Beach Resort",
+      "5"
+     ],
+     [
+      "2",
+      "Jaipur Haveli",
+      "1"
+     ],
+     [
+      "3",
+      "Ooty Hill Inn",
+      "6"
+     ]
+    ]
+   },
+   "output_note": "HOTEL_NIGHTS after the block. Ooty was added to the array first, but FIRST/NEXT walk a VARCHAR2-indexed array in key sort order, so Goa gets seq 1.",
+   "task": "Run the block. What rows end up in HOTEL_NIGHTS, and in what seq order?",
+   "hint": "A string-indexed associative array is always kept sorted by its key.",
+   "solution": "DECLARE\n  TYPE t_nights IS TABLE OF NUMBER INDEX BY VARCHAR2(20);\n  v_tot t_nights;\n  v_key VARCHAR2(20);\n  v_seq PLS_INTEGER := 0;\nBEGIN\n  FOR b IN (SELECT hotel, nights FROM hotel_bookings ORDER BY booking_id) LOOP\n    IF v_tot.EXISTS(b.hotel) THEN\n      v_tot(b.hotel) := v_tot(b.hotel) + b.nights;\n    ELSE\n      v_tot(b.hotel) := b.nights;\n    END IF;\n  END LOOP;\n  v_key := v_tot.FIRST;\n  WHILE v_key IS NOT NULL LOOP\n    v_seq := v_seq + 1;\n    INSERT INTO hotel_nights VALUES (v_seq, v_key, v_tot(v_key));\n    v_key := v_tot.NEXT(v_key);\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a phone contact list. You can save Ooty first and Goa later, but the list always shows names in A to Z order. A string-keyed associative array behaves like that contact list. When we walk it from FIRST to NEXT, Goa comes before Jaipur and Ooty.",
+   "remember": "String-keyed array = always sorted, like a contact list.",
+   "why": "An associative array indexed by VARCHAR2 stores elements sorted by key (using the session's NLS sort), not by insertion order. EXISTS avoids a NO_DATA_FOUND when reading a key for the first time. FIRST and NEXT return keys, so the WHILE loop stops when NEXT returns NULL after the last key.",
+   "tip": "I use string-keyed associative arrays as in-memory lookups and remember that FIRST/NEXT iterate in key order, not load order.",
+   "steps": [
+    {
+     "say": "Step one. Declare an array indexed by hotel name.",
+     "find": "TYPE t_nights IS TABLE OF NUMBER INDEX BY VARCHAR2(20);"
+    },
+    {
+     "say": "Step two. For each booking, add nights to that hotel, or start a new entry.",
+     "find": "IF v_tot.EXISTS(b.hotel) THEN",
+     "to": "END IF;"
+    },
+    {
+     "say": "Step three. Walk the array from FIRST to NEXT and insert each total with a sequence.",
+     "find": "v_key := v_tot.FIRST;",
+     "to": "v_key := v_tot.NEXT(v_key);"
+    },
+    {
+     "say": "Finally, Goa gets sequence one, because string keys come back in alphabetical order.",
+     "find": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261125-8",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "SELECT INTO TOO_MANY_ROWS handling",
+   "domain": "Loans/EMI collection",
+   "title": "Overdue EMI alert per loan",
+   "scenario": "A lender's collection job writes one alert per loan by reading its overdue EMI with SELECT INTO. Some loans have no overdue EMI and one has two.",
+   "schema": "LOANS(loan_id VARCHAR2(3), city VARCHAR2(15))\nEMI_SCHEDULE(loan_id VARCHAR2(3), emi_no NUMBER,\n             status VARCHAR2(10))   -- PAID / OVERDUE\nLOAN_ALERTS(loan_id VARCHAR2(3), msg VARCHAR2(40))",
+   "data": [
+    {
+     "name": "LOANS",
+     "cols": [
+      "loan_id",
+      "city"
+     ],
+     "rows": [
+      [
+       "L1",
+       "Pune"
+      ],
+      [
+       "L2",
+       "Nagpur"
+      ],
+      [
+       "L3",
+       "Indore"
+      ]
+     ]
+    },
+    {
+     "name": "EMI_SCHEDULE",
+     "cols": [
+      "loan_id",
+      "emi_no",
+      "status"
+     ],
+     "rows": [
+      [
+       "L1",
+       "2",
+       "PAID"
+      ],
+      [
+       "L1",
+       "3",
+       "OVERDUE"
+      ],
+      [
+       "L2",
+       "1",
+       "PAID"
+      ],
+      [
+       "L2",
+       "2",
+       "PAID"
+      ],
+      [
+       "L3",
+       "4",
+       "OVERDUE"
+      ],
+      [
+       "L3",
+       "5",
+       "OVERDUE"
+      ]
+     ]
+    },
+    {
+     "name": "LOAN_ALERTS",
+     "cols": [
+      "loan_id",
+      "msg"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "msg"
+    ],
+    "rows": [
+     [
+      "L1",
+      "Overdue EMI 3"
+     ],
+     [
+      "L2",
+      "No overdue EMI"
+     ],
+     [
+      "L3",
+      "Multiple overdue EMIs"
+     ]
+    ]
+   },
+   "output_note": "LOAN_ALERTS after the block. Each loan has its own BEGIN-EXCEPTION block, so the errors for L2 and L3 are handled and the loop continues.",
+   "task": "Run the block. What rows end up in LOAN_ALERTS?",
+   "hint": "SELECT INTO must return exactly one row; zero or many rows raise different exceptions.",
+   "solution": "DECLARE\n  v_emi emi_schedule.emi_no%TYPE;\nBEGIN\n  FOR l IN (SELECT loan_id FROM loans ORDER BY loan_id) LOOP\n    BEGIN\n      SELECT emi_no INTO v_emi\n      FROM   emi_schedule\n      WHERE  loan_id = l.loan_id\n      AND    status = 'OVERDUE';\n      INSERT INTO loan_alerts VALUES (l.loan_id, 'Overdue EMI ' || v_emi);\n    EXCEPTION\n      WHEN NO_DATA_FOUND THEN\n        INSERT INTO loan_alerts VALUES (l.loan_id, 'No overdue EMI');\n      WHEN TOO_MANY_ROWS THEN\n        INSERT INTO loan_alerts VALUES (l.loan_id, 'Multiple overdue EMIs');\n    END;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of asking a shopkeeper for 'the red pen'. If he has none, that is one problem; if he has two, he does not know which to give you. SELECT INTO is like that: it wants exactly one row. The block catches both problems for each loan and writes a friendly message instead of crashing.",
+   "remember": "SELECT INTO wants one row: zero or two is an error.",
+   "why": "SELECT INTO raises NO_DATA_FOUND for zero rows and TOO_MANY_ROWS (ORA-01422) for more than one. Wrapping the statement in an inner BEGIN-EXCEPTION-END per loop iteration handles the error locally, so the outer loop keeps going. Without the inner block, L2 would stop the whole job and nothing after it would run.",
+   "tip": "Around every SELECT INTO I handle NO_DATA_FOUND and TOO_MANY_ROWS explicitly, usually inside a per-row block in batch jobs.",
+   "steps": [
+    {
+     "say": "Step one. For each loan, read its overdue EMI with SELECT INTO.",
+     "find": "SELECT emi_no INTO v_emi",
+     "to": "AND    status = 'OVERDUE';"
+    },
+    {
+     "say": "Step two. Loan L1 has exactly one overdue EMI, so the normal alert is written.",
+     "find": "INSERT INTO loan_alerts VALUES (l.loan_id, 'Overdue EMI ' || v_emi);"
+    },
+    {
+     "say": "Step three. No row raises NO DATA FOUND. Two rows raise TOO MANY ROWS. Both are caught here.",
+     "find": "WHEN NO_DATA_FOUND THEN",
+     "to": "INSERT INTO loan_alerts VALUES (l.loan_id, 'Multiple overdue EMIs');"
+    },
+    {
+     "say": "Finally, every loan gets one alert, because each error was handled inside the loop.",
+     "find": "COMMIT;"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -12313,6 +13255,17 @@
    "example": "WITH a AS (SELECT 'Pune' AS city FROM dual UNION ALL SELECT 'Delhi' FROM dual),\n     b AS (SELECT 'Pune' AS city FROM dual)\nSELECT city FROM a\nUNION ALL          -- returns Pune, Delhi, Pune; UNION would return Delhi, Pune\nSELECT city FROM b;",
    "gotcha": "UNION also removes duplicates that exist inside a single query, not just across the two.",
    "line": "I default to UNION ALL and use UNION only when I really need distinct rows, because UNION adds a sort."
+  },
+  {
+   "id": "fl20261125",
+   "concept": "Correlated versus non-correlated subquery",
+   "why": "Interviewers ask this to check that you know when a subquery depends on the outer row.",
+   "simple": "A non-correlated subquery is like checking the class average once and comparing everyone to it. A correlated subquery is like checking each child against the average of their own section, so it is re-checked for every child.",
+   "remember": "Correlated = the subquery peeks at the outer row.",
+   "explain": "A non-correlated subquery does not reference outer columns, so it can be evaluated once and reused. A correlated subquery references a column of the outer query, so logically it runs once per outer row. Oracle often rewrites correlated subqueries into joins (unnesting), so the plan may not be row-by-row. EXISTS and NOT EXISTS are usually written as correlated subqueries.",
+   "example": "WITH emp AS (\n  SELECT 'Asha' name, 'IT' dept, 90 sal FROM dual UNION ALL\n  SELECT 'Ravi', 'IT', 60 FROM dual UNION ALL\n  SELECT 'Neha', 'HR', 50 FROM dual UNION ALL\n  SELECT 'Kiran', 'HR', 40 FROM dual)\nSELECT name, dept, sal\nFROM   emp e\nWHERE  sal > (SELECT AVG(sal) FROM emp x WHERE x.dept = e.dept);",
+   "gotcha": "A correlated subquery in SELECT that returns more than one row raises ORA-01427 at run time.",
+   "line": "A correlated subquery depends on the outer row, but the optimizer can unnest it into a join, so I always check the plan."
   }
  ]
 }
