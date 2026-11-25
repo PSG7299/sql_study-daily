@@ -21,18 +21,19 @@ fragile, so easy questions must be genuinely easy. Each question also becomes a 
   `"tech": {"pattern": "<pattern name>", "company": "<company it is listed for>", "source": "DataLemur" or "LeetCode", "url": "https://datalemur.com/questions" or "https://leetcode.com/studyplan/top-sql-50/"}`.
   Rotate patterns; check concepts_index.txt (`TECH:` entries) to avoid repeats.
 - Exactly 2 of the 8 are **trending** questions, for YouTube views (never the tech one):
-  1. **Pop culture** (an E or M `sql`): big movie releases and box office, game launches, cricket series, phone
-     launches, festivals or sale events. Use the topic's own data: ticket bookings, collections, pre-orders,
-     players and scores, sales by city, viewers.
+  1. **Trending (non-movie)** (an E or M `sql`): NO movies, films, box office, OTT film releases or actors.
+     Search wider and rotate between: cricket and other sports (series, IPL auction, World Cup, kabaddi, F1),
+     phone and gadget launches, AI and tech news (new AI apps, app downloads), big online sale events
+     (Black Friday, year-end sales), travel and festive/wedding season, food-delivery and quick-commerce trends,
+     EV and auto launches, startup IPO listings, video-game launches, viral apps, weather-driven demand
+     (winter wear, air purifiers; never disasters), government digital services (UPI, FASTag, DigiLocker
+     stats). Use the topic's own data: players and scores, orders, downloads, bookings, sales by city.
   2. **Markets** (any level): what is moving this week in gold or silver, crude oil, USD/INR and other forex,
      Sensex/Nifty, big IPO listings, RBI rate decisions. Build it around bank work: gold-loan LTV checks,
      forex desk conversions, daily % change, streaks of falls, moving averages, treasury exposure.
-  First run 2-3 web searches for what is trending in India this week (one for entertainment, one for markets).
-  Watchlist of big releases to consider while they are in the news: GTA 6 (launched 19 Nov 2026),
-  Ramayana: Part 1 (in cinemas from 6 Nov 2026), Avengers: Doomsday (India release 17 Dec 2026),
-  Dune: Part Three (18 Dec 2026), King (24 Dec 2026). Rules: NO politics, elections, wars, disasters, deaths,
-  crime news or celebrities' private lives. For a film or event with a religious theme, keep it strictly about
-  the film business and respectful. ALL numbers are invented sample data: never present them as real figures or
+  First run 2-3 web searches for what is trending in India this week (one for sports/tech/shopping news, one for markets).
+  Rules: NO politics, elections, wars, disasters, deaths,
+  crime news, movies or celebrities' private lives. Keep any religious or festival topic respectful. ALL numbers are invented sample data: never present them as real figures or
   real prices, never predict prices or give investment advice, and do not use real people as characters.
   Do not repeat a topic used in the last 5 days (check `TREND:` entries in concepts_index.txt). Add
   `"trend": {"topic": "<short searchable name, e.g. GTA 6 or Gold Price Fall>", "hook": "<one spoken sentence,
