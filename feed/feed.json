@@ -13110,6 +13110,907 @@
      "find": "COMMIT;"
     }
    ]
+  },
+  {
+   "id": "f20261126-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "CASE in ORDER BY",
+   "domain": "Electricity/Utilities",
+   "title": "Power complaints by priority",
+   "scenario": "A power distribution company in Gujarat logs customer complaints with a priority. The night-shift team must see HIGH first, then MEDIUM, then LOW, oldest first within each.",
+   "schema": "COMPLAINTS(complaint_id VARCHAR2(3),\n           city         VARCHAR2(15),\n           priority     VARCHAR2(6),   -- HIGH / MEDIUM / LOW\n           logged_on    DATE)",
+   "data": [
+    {
+     "name": "COMPLAINTS",
+     "cols": [
+      "complaint_id",
+      "city",
+      "priority",
+      "logged_on"
+     ],
+     "rows": [
+      [
+       "C1",
+       "Surat",
+       "LOW",
+       "20-11-2026"
+      ],
+      [
+       "C2",
+       "Nashik",
+       "HIGH",
+       "22-11-2026"
+      ],
+      [
+       "C3",
+       "Mysuru",
+       "MEDIUM",
+       "19-11-2026"
+      ],
+      [
+       "C4",
+       "Ranchi",
+       "HIGH",
+       "18-11-2026"
+      ],
+      [
+       "C5",
+       "Kochi",
+       "LOW",
+       "17-11-2026"
+      ],
+      [
+       "C6",
+       "Bhopal",
+       "MEDIUM",
+       "21-11-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "complaint_id",
+     "city",
+     "priority"
+    ],
+    "rows": [
+     [
+      "C4",
+      "Ranchi",
+      "HIGH"
+     ],
+     [
+      "C2",
+      "Nashik",
+      "HIGH"
+     ],
+     [
+      "C3",
+      "Mysuru",
+      "MEDIUM"
+     ],
+     [
+      "C6",
+      "Bhopal",
+      "MEDIUM"
+     ],
+     [
+      "C5",
+      "Kochi",
+      "LOW"
+     ],
+     [
+      "C1",
+      "Surat",
+      "LOW"
+     ]
+    ]
+   },
+   "output_note": "A plain ORDER BY priority would sort alphabetically: HIGH, LOW, MEDIUM.",
+   "task": "List complaint_id, city and priority with HIGH first, then MEDIUM, then LOW; inside each priority, oldest complaint first.",
+   "hint": "Turn each priority word into a number inside ORDER BY.",
+   "solution": "SELECT complaint_id, city, priority\nFROM   complaints\nORDER  BY CASE priority WHEN 'HIGH'   THEN 1\n                        WHEN 'MEDIUM' THEN 2\n                        ELSE 3\n          END,\n          logged_on;",
+   "simple": "Think of a hospital queue: the most serious patients go first, not the ones whose names come first in the alphabet. Words like HIGH and LOW sort like dictionary words, so LOW would come before MEDIUM. The CASE gives each word a number, 1, 2 or 3, and the list is sorted by that number. Then the oldest complaint goes first inside each group.",
+   "remember": "CASE in ORDER BY = your own sort order.",
+   "why": "ORDER BY on a VARCHAR2 column sorts by character value, so 'LOW' comes before 'MEDIUM'. A CASE expression in ORDER BY maps each value to a rank number, giving a business order without changing the table. The second sort key, logged_on, breaks ties inside each rank.",
+   "tip": "When a status column has a business order, I sort with a CASE expression or join to a small lookup table that stores the rank.",
+   "steps": [
+    {
+     "say": "Step one. Select the complaint id, city and priority from the complaints table.",
+     "find": "SELECT complaint_id, city, priority",
+     "to": "FROM   complaints"
+    },
+    {
+     "say": "Step two. The CASE turns HIGH into one, MEDIUM into two, and everything else into three.",
+     "find": "ORDER  BY CASE priority WHEN 'HIGH'   THEN 1",
+     "to": "END,"
+    },
+    {
+     "say": "Finally, inside each priority, the oldest complaint comes first by logged on date.",
+     "find": "logged_on;"
+    }
+   ]
+  },
+  {
+   "id": "f20261126-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "Computed column in WHERE",
+   "domain": "E-commerce/Black Friday sale",
+   "title": "Black Friday deals over 40 percent",
+   "scenario": "An Indian shopping app is running its Black Friday sale. Marketing wants a banner of products with a discount of 40 percent or more, biggest discount first. All prices are sample data.",
+   "schema": "SALE_ITEMS(item_id    VARCHAR2(3),\n           product    VARCHAR2(20),\n           mrp        NUMBER,   -- list price in rupees\n           sale_price NUMBER)   -- Black Friday price",
+   "data": [
+    {
+     "name": "SALE_ITEMS",
+     "cols": [
+      "item_id",
+      "product",
+      "mrp",
+      "sale_price"
+     ],
+     "rows": [
+      [
+       "I1",
+       "Gaming console",
+       "54990",
+       "44990"
+      ],
+      [
+       "I2",
+       "Wireless earbuds",
+       "4999",
+       "1999"
+      ],
+      [
+       "I3",
+       "Smartwatch",
+       "9999",
+       "5999"
+      ],
+      [
+       "I4",
+       "Air fryer",
+       "8999",
+       "4999"
+      ],
+      [
+       "I5",
+       "Laptop",
+       "65000",
+       "52000"
+      ],
+      [
+       "I6",
+       "Power bank",
+       "2499",
+       "1299"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "product",
+     "discount_pct"
+    ],
+    "rows": [
+     [
+      "Wireless earbuds",
+      "60"
+     ],
+     [
+      "Power bank",
+      "48"
+     ],
+     [
+      "Air fryer",
+      "44.4"
+     ],
+     [
+      "Smartwatch",
+      "40"
+     ]
+    ]
+   },
+   "output_note": "Smartwatch is exactly 40 percent, so >= keeps it. The alias discount_pct cannot be used in WHERE, so the formula is repeated.",
+   "task": "Show product and discount_pct, the discount percent rounded to 1 decimal, for items with at least 40 percent off. Biggest discount first.",
+   "hint": "WHERE runs before SELECT, so repeat the formula there instead of using the alias.",
+   "solution": "SELECT product,\n       ROUND((mrp - sale_price) * 100 / mrp, 1) AS discount_pct\nFROM   sale_items\nWHERE  (mrp - sale_price) * 100 / mrp >= 40\nORDER  BY discount_pct DESC;",
+   "simple": "Imagine a price tag that says 100 rupees, and you pay 60. You saved 40 out of 100, which is 40 percent. The query does that sum for every product, keeps only the ones with 40 percent or more off, and puts the biggest savings at the top.",
+   "remember": "WHERE cannot see SELECT aliases; ORDER BY can.",
+   "why": "Oracle evaluates WHERE before the SELECT list, so a column alias like discount_pct does not exist yet in WHERE and raises ORA-00904. ORDER BY runs after SELECT, so it can use the alias. Filtering on the unrounded value avoids rounding pushing a 39.96 percent item over the line.",
+   "tip": "I repeat the expression in WHERE or wrap the query in an inline view, because aliases are only visible in ORDER BY.",
+   "steps": [
+    {
+     "say": "Step one. Work out the discount: money saved, times one hundred, divided by the price tag, rounded to one decimal.",
+     "find": "ROUND((mrp - sale_price) * 100 / mrp, 1) AS discount_pct"
+    },
+    {
+     "say": "Step two. Keep only items with forty percent or more off. We repeat the formula, because WHERE cannot see the alias.",
+     "find": "WHERE  (mrp - sale_price) * 100 / mrp >= 40"
+    },
+    {
+     "say": "Finally, sort so the biggest discount comes first. Wireless earbuds win at sixty percent.",
+     "find": "ORDER  BY discount_pct DESC;"
+    }
+   ],
+   "trend": {
+    "topic": "Black Friday Sale",
+    "hook": "Black Friday deals are live in India. Can you find the 40 percent discounts with SQL?",
+    "hashtags": [
+     "blackfriday",
+     "blackfridaysale",
+     "onlineshopping"
+    ]
+   }
+  },
+  {
+   "id": "f20261126-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "LEAD to find renewal gaps",
+   "domain": "Streaming/Subscriptions",
+   "title": "Who let the subscription lapse?",
+   "scenario": "A video streaming app sells monthly plans. If a user renews the day after a plan ends, there is no break. The growth team wants every lapse: the plan end, the next start and the days without a plan.",
+   "schema": "SUBSCRIPTIONS(user_id    VARCHAR2(3),\n              plan_start DATE,\n              plan_end   DATE)   -- last day of access",
+   "data": [
+    {
+     "name": "SUBSCRIPTIONS",
+     "cols": [
+      "user_id",
+      "plan_start",
+      "plan_end"
+     ],
+     "rows": [
+      [
+       "U1",
+       "01-08-2026",
+       "31-08-2026"
+      ],
+      [
+       "U1",
+       "01-09-2026",
+       "30-09-2026"
+      ],
+      [
+       "U1",
+       "06-10-2026",
+       "05-11-2026"
+      ],
+      [
+       "U2",
+       "10-09-2026",
+       "09-10-2026"
+      ],
+      [
+       "U2",
+       "25-10-2026",
+       "24-11-2026"
+      ],
+      [
+       "U3",
+       "01-10-2026",
+       "31-10-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "user_id",
+     "plan_end",
+     "next_start",
+     "gap_days"
+    ],
+    "rows": [
+     [
+      "U1",
+      "30-09-2026",
+      "06-10-2026",
+      "5"
+     ],
+     [
+      "U2",
+      "09-10-2026",
+      "25-10-2026",
+      "15"
+     ]
+    ]
+   },
+   "output_note": "U1 renewed on 01-09 straight after 31-08, so that is not a lapse. U3 has no next plan, LEAD returns NULL and the row is dropped.",
+   "task": "For each lapse, return user_id, plan_end, next_start and gap_days (full days with no plan). Order by user_id, plan_end.",
+   "hint": "LEAD(plan_start) gives the start of the user's next plan on the same row.",
+   "solution": "SELECT user_id, plan_end, next_start,\n       next_start - plan_end - 1 AS gap_days\nFROM  (SELECT user_id, plan_end,\n              LEAD(plan_start) OVER (PARTITION BY user_id\n                                     ORDER BY plan_start) AS next_start\n       FROM   subscriptions)\nWHERE  next_start - plan_end > 1\nORDER  BY user_id, plan_end;",
+   "simple": "Think of a library card that runs out. If you renew it the very next morning, you never lost access. LEAD lets each plan peek at the start date of the same person's next plan. If the next plan starts more than one day after the old one ended, there were days with no plan, and we count them.",
+   "remember": "LEAD = peek at the next row in my group.",
+   "why": "LEAD(plan_start) OVER (PARTITION BY user_id ORDER BY plan_start) puts the next plan start on the current row. Subtracting two DATEs gives days, so a renewal the next day gives 1 and only a difference above 1 is a lapse. The last plan per user has a NULL next_start, and NULL > 1 is unknown, so it is filtered out.",
+   "tip": "For churn or lapse questions I compare each period to the next one with LEAD inside an inline view, then filter outside it.",
+   "steps": [
+    {
+     "say": "Step one. LEAD grabs the start date of the same user's next plan and puts it on this row.",
+     "find": "LEAD(plan_start) OVER (PARTITION BY user_id",
+     "to": "ORDER BY plan_start) AS next_start"
+    },
+    {
+     "say": "Step two. A renewal the very next day is a difference of one. Bigger than one means a lapse.",
+     "find": "WHERE  next_start - plan_end > 1"
+    },
+    {
+     "say": "Finally, count the empty days. User U1 waited five days, and U2 waited fifteen.",
+     "find": "next_start - plan_end - 1 AS gap_days"
+    }
+   ]
+  },
+  {
+   "id": "f20261126-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "RANK with DESC NULLS LAST",
+   "domain": "Trading/IPO desk",
+   "title": "Rank IPOs by listing gain",
+   "scenario": "A broking firm's IPO desk ranks this month's listings by listing-day gain for a client report. One IPO has not listed yet, so its listing price is NULL. All names and prices are sample data.",
+   "schema": "IPO_LISTINGS(ipo_name      VARCHAR2(20),\n             issue_price   NUMBER,\n             listing_price NUMBER)   -- NULL = not listed yet",
+   "data": [
+    {
+     "name": "IPO_LISTINGS",
+     "cols": [
+      "ipo_name",
+      "issue_price",
+      "listing_price"
+     ],
+     "rows": [
+      [
+       "Sahyadri Foods",
+       "100",
+       "125"
+      ],
+      [
+       "NovaGrid Power",
+       "240",
+       "228"
+      ],
+      [
+       "Kaveri Pharma",
+       "200",
+       "250"
+      ],
+      [
+       "UrbanCart Tech",
+       "80",
+       "NULL"
+      ],
+      [
+       "Indus Cables",
+       "150",
+       "201"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "ipo_name",
+     "gain_pct",
+     "gain_rank"
+    ],
+    "rows": [
+     [
+      "Indus Cables",
+      "34",
+      "1"
+     ],
+     [
+      "Kaveri Pharma",
+      "25",
+      "2"
+     ],
+     [
+      "Sahyadri Foods",
+      "25",
+      "2"
+     ],
+     [
+      "NovaGrid Power",
+      "-5",
+      "4"
+     ],
+     [
+      "UrbanCart Tech",
+      "NULL",
+      "5"
+     ]
+    ]
+   },
+   "output_note": "Without NULLS LAST, Oracle sorts NULLs first in DESC order and UrbanCart Tech would be ranked 1. Two IPOs tie at 25 percent, so RANK skips 3.",
+   "task": "Show ipo_name, gain_pct (listing gain percent, 1 decimal) and gain_rank, best gain first. The unlisted IPO must be ranked last.",
+   "hint": "In a DESC sort Oracle puts NULLs first unless you say otherwise.",
+   "solution": "SELECT ipo_name,\n       ROUND((listing_price - issue_price) * 100 / issue_price, 1) AS gain_pct,\n       RANK() OVER (ORDER BY (listing_price - issue_price) / issue_price\n                    DESC NULLS LAST) AS gain_rank\nFROM   ipo_listings\nORDER  BY gain_rank, ipo_name;",
+   "simple": "Imagine a race where one runner has not finished yet. You would not give that runner the gold medal just because there is no time on the board. Oracle treats an empty value as bigger than everything when sorting high to low, so it would come first. NULLS LAST sends the unfinished runner to the end of the list.",
+   "remember": "DESC puts NULLs on top; add NULLS LAST.",
+   "why": "Oracle treats NULL as higher than any value when sorting, so ORDER BY ... DESC returns NULLs first by default. Any arithmetic with a NULL listing price gives NULL, so the unlisted IPO would grab rank 1. DESC NULLS LAST fixes this, and RANK gives tied gains the same rank and skips the next number.",
+   "tip": "Whenever I sort descending on a nullable column, I write NULLS LAST explicitly, because the default puts NULLs at the top.",
+   "steps": [
+    {
+     "say": "Step one. Work out the listing gain: listing price minus issue price, as a percent of the issue price.",
+     "find": "ROUND((listing_price - issue_price) * 100 / issue_price, 1) AS gain_pct"
+    },
+    {
+     "say": "Step two. Rank by gain, highest first. NULLS LAST pushes the unlisted IPO to the bottom.",
+     "find": "RANK() OVER (ORDER BY (listing_price - issue_price) / issue_price",
+     "to": "DESC NULLS LAST) AS gain_rank"
+    },
+    {
+     "say": "Finally, Kaveri and Sahyadri tie at twenty five percent, so both are rank two and rank three is skipped.",
+     "find": "ORDER  BY gain_rank, ipo_name;"
+    }
+   ],
+   "trend": {
+    "topic": "IPO Listing Gains",
+    "hook": "New IPOs are listing every week. Rank their listing gains with one SQL query.",
+    "hashtags": [
+     "ipo",
+     "ipolisting",
+     "stockmarketindia"
+    ]
+   }
+  },
+  {
+   "id": "f20261126-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Odd and even readings per day",
+   "domain": "Logistics/Cold-chain warehouse",
+   "title": "Odd versus even temperature readings",
+   "scenario": "A cold-chain warehouse in Bhiwandi logs cold-room temperatures a few times a day, but rows arrive out of order. The auditor wants, per day, the total of the 1st, 3rd, 5th reading versus the 2nd, 4th reading by time.",
+   "schema": "COLD_ROOM_READINGS(reading_time DATE,          -- date and time\n                   temp_c       NUMBER(4,1))",
+   "data": [
+    {
+     "name": "COLD_ROOM_READINGS",
+     "cols": [
+      "reading_time",
+      "temp_c"
+     ],
+     "rows": [
+      [
+       "24-11-2026 14:00",
+       "3.5"
+      ],
+      [
+       "24-11-2026 06:00",
+       "2"
+      ],
+      [
+       "24-11-2026 10:00",
+       "4"
+      ],
+      [
+       "24-11-2026 18:00",
+       "3"
+      ],
+      [
+       "25-11-2026 09:00",
+       "2.5"
+      ],
+      [
+       "25-11-2026 05:00",
+       "1.5"
+      ],
+      [
+       "25-11-2026 13:00",
+       "4.5"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "day",
+     "odd_sum",
+     "even_sum"
+    ],
+    "rows": [
+     [
+      "24-11-2026",
+      "5.5",
+      "7"
+     ],
+     [
+      "25-11-2026",
+      "6",
+      "2.5"
+     ]
+    ]
+   },
+   "output_note": "On 24-11 the readings in time order are 2, 4, 3.5, 3: odd positions give 2 + 3.5 = 5.5, even positions give 4 + 3 = 7.",
+   "task": "For each day return day, odd_sum (readings in odd positions by time) and even_sum (even positions). Order by day.",
+   "hint": "Number the readings per day with ROW_NUMBER, then split with MOD(rn, 2).",
+   "solution": "WITH r AS (\n  SELECT TRUNC(reading_time) AS day, temp_c,\n         ROW_NUMBER() OVER (PARTITION BY TRUNC(reading_time)\n                            ORDER BY reading_time) AS rn\n  FROM   cold_room_readings\n)\nSELECT day,\n       SUM(CASE WHEN MOD(rn, 2) = 1 THEN temp_c ELSE 0 END) AS odd_sum,\n       SUM(CASE WHEN MOD(rn, 2) = 0 THEN temp_c ELSE 0 END) AS even_sum\nFROM   r\nGROUP  BY day\nORDER  BY day;",
+   "simple": "Think of kids lining up by arrival time and counting off one, two, one, two. ROW_NUMBER gives each reading its place in the day's line, by clock time, not by the order rows were saved. MOD tells us if the number is odd or even. Then we add up the odd ones and the even ones separately.",
+   "remember": "ROW_NUMBER to count off, MOD 2 to split odd and even.",
+   "why": "ROW_NUMBER partitioned by TRUNC(reading_time) and ordered by the timestamp gives the true position within each day, independent of insert order. MOD(rn, 2) classifies positions, and conditional SUM with CASE pivots them into two columns in one pass. TRUNC removes the time part so all readings of a day share one group.",
+   "tip": "When a question says nth event per day, I number rows with ROW_NUMBER partitioned by TRUNC of the timestamp and then aggregate with CASE.",
+   "steps": [
+    {
+     "say": "Step one. Number each day's readings by clock time, so the out of order rows line up correctly.",
+     "find": "ROW_NUMBER() OVER (PARTITION BY TRUNC(reading_time)",
+     "to": "ORDER BY reading_time) AS rn"
+    },
+    {
+     "say": "Step two. MOD of the number by two tells odd from even. Add odd positions into one total.",
+     "find": "SUM(CASE WHEN MOD(rn, 2) = 1 THEN temp_c ELSE 0 END) AS odd_sum"
+    },
+    {
+     "say": "Step three. Add the even positions into a second total.",
+     "find": "SUM(CASE WHEN MOD(rn, 2) = 0 THEN temp_c ELSE 0 END) AS even_sum"
+    },
+    {
+     "say": "Finally, group by day. On the twenty fourth, odd readings total five point five and even readings total seven.",
+     "find": "GROUP  BY day"
+    }
+   ],
+   "tech": {
+    "pattern": "Odd and even measurements",
+    "company": "Google",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   }
+  },
+  {
+   "id": "f20261126-6",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "SQL%ROWCOUNT update-else-insert",
+   "domain": "Retail/Supermarket inventory",
+   "title": "Add deliveries to store stock",
+   "scenario": "A supermarket chain loads truck deliveries into store stock. If the store already stocks the item, the quantity is added; if not, a new stock row is created. One new item arrives in two deliveries.",
+   "schema": "STOCK(store_id VARCHAR2(3), sku VARCHAR2(10), qty NUMBER)\nDELIVERIES(delivery_id NUMBER, store_id VARCHAR2(3),\n           sku VARCHAR2(10), qty NUMBER)",
+   "data": [
+    {
+     "name": "STOCK",
+     "cols": [
+      "store_id",
+      "sku",
+      "qty"
+     ],
+     "rows": [
+      [
+       "S1",
+       "RICE5KG",
+       "30"
+      ],
+      [
+       "S1",
+       "OIL1L",
+       "12"
+      ],
+      [
+       "S2",
+       "SUGAR1KG",
+       "40"
+      ]
+     ]
+    },
+    {
+     "name": "DELIVERIES",
+     "cols": [
+      "delivery_id",
+      "store_id",
+      "sku",
+      "qty"
+     ],
+     "rows": [
+      [
+       "1",
+       "S1",
+       "RICE5KG",
+       "20"
+      ],
+      [
+       "2",
+       "S1",
+       "OIL1L",
+       "10"
+      ],
+      [
+       "3",
+       "S2",
+       "ATTA10KG",
+       "15"
+      ],
+      [
+       "4",
+       "S2",
+       "ATTA10KG",
+       "5"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "store_id",
+     "sku",
+     "qty"
+    ],
+    "rows": [
+     [
+      "S1",
+      "RICE5KG",
+      "50"
+     ],
+     [
+      "S1",
+      "OIL1L",
+      "22"
+     ],
+     [
+      "S2",
+      "SUGAR1KG",
+      "40"
+     ],
+     [
+      "S2",
+      "ATTA10KG",
+      "20"
+     ]
+    ]
+   },
+   "output_note": "STOCK after the block. Delivery 3 updates 0 rows, so ATTA10KG is inserted with 15; delivery 4 then finds that row and adds 5.",
+   "task": "Run the block. What does the STOCK table contain afterwards?",
+   "hint": "SQL%ROWCOUNT tells you how many rows the last UPDATE changed.",
+   "solution": "BEGIN\n  FOR d IN (SELECT * FROM deliveries ORDER BY delivery_id) LOOP\n    UPDATE stock\n    SET    qty = qty + d.qty\n    WHERE  store_id = d.store_id\n    AND    sku = d.sku;\n    IF SQL%ROWCOUNT = 0 THEN\n      INSERT INTO stock (store_id, sku, qty)\n      VALUES (d.store_id, d.sku, d.qty);\n    END IF;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a shopkeeper with a notebook page for each item. When a delivery comes, he looks for that item's page and adds the new count. If there is no page yet, he starts a new page. The block tries to add to the page first, and SQL%ROWCOUNT tells it whether a page was found. If not, it writes a new row.",
+   "remember": "UPDATE first; SQL%ROWCOUNT = 0 means insert.",
+   "why": "SQL%ROWCOUNT is an implicit cursor attribute holding the number of rows affected by the most recent DML statement. An UPDATE that matches nothing is not an error, it just sets SQL%ROWCOUNT to 0, so the code can fall back to INSERT. Because the loop processes deliveries in order, the row inserted for delivery 3 is visible to the UPDATE for delivery 4 in the same transaction.",
+   "tip": "For row-by-row upserts I update first and check SQL%ROWCOUNT, but for set-based loads I'd use a single MERGE.",
+   "steps": [
+    {
+     "say": "Step one. Go through deliveries in order, and try to add the quantity to the existing stock row.",
+     "find": "UPDATE stock",
+     "to": "AND    sku = d.sku;"
+    },
+    {
+     "say": "Step two. If the update touched zero rows, the store does not stock that item yet, so insert a new row.",
+     "find": "IF SQL%ROWCOUNT = 0 THEN",
+     "to": "VALUES (d.store_id, d.sku, d.qty);"
+    },
+    {
+     "say": "Finally, atta was inserted with fifteen, then the next delivery updated it to twenty.",
+     "find": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261126-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "RAISE_APPLICATION_ERROR with SQLERRM",
+   "domain": "Gaming/In-game wallet",
+   "title": "Game purchases with custom errors",
+   "scenario": "A mobile game lets players buy items with coins. A purchase procedure raises a custom error when coins are short. The batch logs OK or the error for each purchase and keeps going.",
+   "schema": "WALLETS(player_id VARCHAR2(3), coins NUMBER)\nPURCHASES(purchase_id NUMBER, player_id VARCHAR2(3),\n          item_cost NUMBER)\nPURCHASE_LOG(player_id VARCHAR2(3), msg VARCHAR2(60))",
+   "data": [
+    {
+     "name": "WALLETS",
+     "cols": [
+      "player_id",
+      "coins"
+     ],
+     "rows": [
+      [
+       "P1",
+       "500"
+      ],
+      [
+       "P2",
+       "120"
+      ]
+     ]
+    },
+    {
+     "name": "PURCHASES",
+     "cols": [
+      "purchase_id",
+      "player_id",
+      "item_cost"
+     ],
+     "rows": [
+      [
+       "1",
+       "P1",
+       "300"
+      ],
+      [
+       "2",
+       "P2",
+       "150"
+      ],
+      [
+       "3",
+       "P1",
+       "250"
+      ],
+      [
+       "4",
+       "P9",
+       "50"
+      ]
+     ]
+    },
+    {
+     "name": "PURCHASE_LOG",
+     "cols": [
+      "player_id",
+      "msg"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "player_id",
+     "msg"
+    ],
+    "rows": [
+     [
+      "P1",
+      "OK"
+     ],
+     [
+      "P2",
+      "-20001 ORA-20001: Not enough coins"
+     ],
+     [
+      "P1",
+      "-20001 ORA-20001: Not enough coins"
+     ],
+     [
+      "P9",
+      "100 ORA-01403: no data found"
+     ]
+    ]
+   },
+   "output_note": "PURCHASE_LOG after the block; WALLETS ends as P1 = 200, P2 = 120. P1 had only 200 left for purchase 3, and P9 has no wallet, so SELECT INTO raises NO_DATA_FOUND (SQLCODE 100).",
+   "task": "Run the block. What rows end up in PURCHASE_LOG?",
+   "hint": "RAISE_APPLICATION_ERROR sets SQLCODE to your number and SQLERRM to ORA-<number>: <your message>.",
+   "solution": "DECLARE\n  PROCEDURE buy(p_player VARCHAR2, p_cost NUMBER) IS\n    v_coins wallets.coins%TYPE;\n  BEGIN\n    SELECT coins INTO v_coins FROM wallets WHERE player_id = p_player;\n    IF v_coins < p_cost THEN\n      RAISE_APPLICATION_ERROR(-20001, 'Not enough coins');\n    END IF;\n    UPDATE wallets SET coins = coins - p_cost WHERE player_id = p_player;\n  END buy;\nBEGIN\n  FOR p IN (SELECT player_id, item_cost FROM purchases ORDER BY purchase_id) LOOP\n    BEGIN\n      buy(p.player_id, p.item_cost);\n      INSERT INTO purchase_log VALUES (p.player_id, 'OK');\n    EXCEPTION\n      WHEN OTHERS THEN\n        INSERT INTO purchase_log VALUES (p.player_id, SQLCODE || ' ' || SQLERRM);\n    END;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a toy shop where you pay with tokens from a piggy bank. If you do not have enough tokens, the shopkeeper says 'Not enough coins' and gives you a slip with error number 20001. If you have no piggy bank at all, you get a different slip. The block writes down every slip in a notebook and serves the next child.",
+   "remember": "RAISE_APPLICATION_ERROR = your own error number and message.",
+   "why": "RAISE_APPLICATION_ERROR raises a user-defined exception with a code from -20000 to -20999, and SQLERRM returns it as ORA-20001: message. The inner BEGIN-EXCEPTION block catches it per purchase, so the loop continues. Purchase 3 fails because purchase 1 already reduced P1 to 200 coins, and the unknown player triggers NO_DATA_FOUND, whose SQLCODE is +100.",
+   "tip": "I use RAISE_APPLICATION_ERROR with documented -20xxx codes for business rules, and log SQLCODE and SQLERRM in batch jobs so one bad row does not stop the run.",
+   "steps": [
+    {
+     "say": "Step one. Read the player's coins. If there are not enough, raise our own error, number twenty thousand and one.",
+     "find": "SELECT coins INTO v_coins FROM wallets WHERE player_id = p_player;",
+     "to": "RAISE_APPLICATION_ERROR(-20001, 'Not enough coins');"
+    },
+    {
+     "say": "Step two. P1 buys for three hundred, coins drop to two hundred, and we log OK.",
+     "find": "INSERT INTO purchase_log VALUES (p.player_id, 'OK');"
+    },
+    {
+     "say": "Step three. Any error is caught here and logged with its code and message, so the loop keeps going.",
+     "find": "WHEN OTHERS THEN",
+     "to": "INSERT INTO purchase_log VALUES (p.player_id, SQLCODE || ' ' || SQLERRM);"
+    },
+    {
+     "say": "Finally, P9 has no wallet, so we log one hundred, no data found.",
+     "find": "END LOOP;"
+    }
+   ]
+  },
+  {
+   "id": "f20261126-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Weighted average with ROLLUP",
+   "domain": "Deposits/Fixed deposits",
+   "title": "Weighted FD rate per branch",
+   "scenario": "A bank’s ALM team needs the average fixed deposit rate per branch and for the whole bank. A small FD at a low rate should not pull the average down as much as a big FD.",
+   "schema": "FD_ACCOUNTS(fd_id  VARCHAR2(3),\n            branch VARCHAR2(15),\n            amount NUMBER,        -- principal in rupees\n            rate   NUMBER(4,2))   -- annual rate %",
+   "data": [
+    {
+     "name": "FD_ACCOUNTS",
+     "cols": [
+      "fd_id",
+      "branch",
+      "amount",
+      "rate"
+     ],
+     "rows": [
+      [
+       "F1",
+       "Jaipur",
+       "1000000",
+       "7.25"
+      ],
+      [
+       "F2",
+       "Jaipur",
+       "100000",
+       "6.5"
+      ],
+      [
+       "F3",
+       "Jaipur",
+       "200000",
+       "6.75"
+      ],
+      [
+       "F4",
+       "Lucknow",
+       "500000",
+       "7"
+      ],
+      [
+       "F5",
+       "Lucknow",
+       "50000",
+       "6"
+      ],
+      [
+       "F6",
+       "Lucknow",
+       "450000",
+       "7.1"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "branch_name",
+     "total_amount",
+     "wavg_rate"
+    ],
+    "rows": [
+     [
+      "Jaipur",
+      "1300000",
+      "7.12"
+     ],
+     [
+      "Lucknow",
+      "1000000",
+      "7"
+     ],
+     [
+      "ALL BRANCHES",
+      "2300000",
+      "7.06"
+     ]
+    ]
+   },
+   "output_note": "A plain AVG(rate) would give 6.83 for Jaipur and 6.77 overall, which understates the cost of deposits.",
+   "task": "Show branch_name, total_amount and wavg_rate (amount-weighted rate, 2 decimals) per branch plus a grand total row labelled ALL BRANCHES, which comes last.",
+   "hint": "Weighted average = SUM(amount * rate) / SUM(amount); ROLLUP adds the total row.",
+   "solution": "SELECT CASE WHEN GROUPING(branch) = 1 THEN 'ALL BRANCHES'\n            ELSE branch END                       AS branch_name,\n       SUM(amount)                                AS total_amount,\n       ROUND(SUM(amount * rate) / SUM(amount), 2) AS wavg_rate\nFROM   fd_accounts\nGROUP  BY ROLLUP (branch)\nORDER  BY GROUPING(branch), branch;",
+   "simple": "Imagine a class where one big group of 10 kids scored 90 and one kid scored 50. The fair class average is close to 90, not 70, because more kids scored 90. Here every rupee is like one kid: big deposits count more. ROLLUP then adds one extra line with the total for the whole bank.",
+   "remember": "Weighted average = SUM(value x weight) / SUM(weight).",
+   "why": "AVG(rate) gives every FD equal weight, while the bank pays interest per rupee, so SUM(amount * rate) / SUM(amount) is the correct cost of funds. GROUP BY ROLLUP(branch) adds a super-aggregate row where branch is NULL, and GROUPING(branch) = 1 identifies it reliably even if real data had NULL branches. Ordering by GROUPING(branch) puts the total last.",
+   "tip": "For rates, prices or yields across different sizes I always use a weighted average, and I label ROLLUP total rows with GROUPING, not NVL.",
+   "steps": [
+    {
+     "say": "Step one. Multiply each amount by its rate, add them up, and divide by the total amount. That is the weighted rate.",
+     "find": "ROUND(SUM(amount * rate) / SUM(amount), 2) AS wavg_rate"
+    },
+    {
+     "say": "Step two. ROLLUP gives one row per branch, plus one extra row for the whole bank.",
+     "find": "GROUP  BY ROLLUP (branch)"
+    },
+    {
+     "say": "Step three. GROUPING is one only on that extra row, so we label it ALL BRANCHES.",
+     "find": "SELECT CASE WHEN GROUPING(branch) = 1 THEN 'ALL BRANCHES'",
+     "to": "ELSE branch END"
+    },
+    {
+     "say": "Finally, Jaipur comes out at seven point one two, higher than a plain average, because the big deposit earns the most.",
+     "find": "ORDER  BY GROUPING(branch), branch;"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -13266,6 +14167,17 @@
    "example": "WITH emp AS (\n  SELECT 'Asha' name, 'IT' dept, 90 sal FROM dual UNION ALL\n  SELECT 'Ravi', 'IT', 60 FROM dual UNION ALL\n  SELECT 'Neha', 'HR', 50 FROM dual UNION ALL\n  SELECT 'Kiran', 'HR', 40 FROM dual)\nSELECT name, dept, sal\nFROM   emp e\nWHERE  sal > (SELECT AVG(sal) FROM emp x WHERE x.dept = e.dept);",
    "gotcha": "A correlated subquery in SELECT that returns more than one row raises ORA-01427 at run time.",
    "line": "A correlated subquery depends on the outer row, but the optimizer can unnest it into a join, so I always check the plan."
+  },
+  {
+   "id": "fl20261126",
+   "concept": "Implicit cursor attributes",
+   "why": "After any INSERT, UPDATE, DELETE or SELECT INTO, PL/SQL tells you what happened through SQL% attributes.",
+   "simple": "After you post letters, the post office gives you a receipt saying how many went out. SQL%ROWCOUNT is that receipt for the last SQL statement. SQL%FOUND says 'yes, at least one', and SQL%NOTFOUND says 'none at all'.",
+   "remember": "SQL%ROWCOUNT = receipt for the last DML.",
+   "explain": "Every DML statement and SELECT INTO in PL/SQL runs through an implicit cursor named SQL. SQL%ROWCOUNT returns the number of rows affected, SQL%FOUND is TRUE if at least one row was affected, and SQL%NOTFOUND is the opposite. An UPDATE or DELETE that matches no rows does not raise an error; it simply sets SQL%ROWCOUNT to 0. The attributes always describe the most recent statement, so read them immediately after the DML you care about.",
+   "example": "WITH stock AS (\n  SELECT 'S1' store_id, 'RICE5KG' sku, 30 qty FROM dual UNION ALL\n  SELECT 'S1', 'OIL1L', 12 FROM dual\n)\nSELECT COUNT(*) AS rows_an_update_would_touch\nFROM   stock\nWHERE  store_id = 'S1' AND sku = 'ATTA10KG';\n-- 0 rows: in PL/SQL, UPDATE with this WHERE sets SQL%ROWCOUNT = 0",
+   "gotcha": "A call to a procedure, a COMMIT or another DML between your statement and the check overwrites SQL%ROWCOUNT, so capture it into a variable right away.",
+   "line": "I check SQL%ROWCOUNT right after an UPDATE to detect a missing row, since zero rows updated is not an exception in Oracle."
   }
  ]
 }
