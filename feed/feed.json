@@ -14011,6 +14011,958 @@
      "find": "ORDER  BY GROUPING(branch), branch;"
     }
    ]
+  },
+  {
+   "id": "f20261127-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "NOT EXISTS for unsold rows",
+   "domain": "Real estate/Property sales",
+   "title": "Find flats nobody has booked",
+   "scenario": "A builder in Pune, Hyderabad and Noida tracks flats in one table and bookings in another. The sales head wants the list of flats that are still unsold.",
+   "schema": "FLATS(flat_id    VARCHAR2(5),\n      project    VARCHAR2(15),\n      city       VARCHAR2(15),\n      price_lakh NUMBER)        -- price in lakh rupees\nBOOKINGS(booking_id NUMBER,\n         flat_id    VARCHAR2(5),  -- booked flat\n         booked_on  DATE)",
+   "data": [
+    {
+     "name": "FLATS",
+     "cols": [
+      "flat_id",
+      "project",
+      "city",
+      "price_lakh"
+     ],
+     "rows": [
+      [
+       "A101",
+       "Skyline",
+       "Pune",
+       "85"
+      ],
+      [
+       "A102",
+       "Skyline",
+       "Pune",
+       "90"
+      ],
+      [
+       "B201",
+       "Lakeview",
+       "Hyderabad",
+       "72"
+      ],
+      [
+       "B202",
+       "Lakeview",
+       "Hyderabad",
+       "75"
+      ],
+      [
+       "C301",
+       "Greens",
+       "Noida",
+       "110"
+      ]
+     ]
+    },
+    {
+     "name": "BOOKINGS",
+     "cols": [
+      "booking_id",
+      "flat_id",
+      "booked_on"
+     ],
+     "rows": [
+      [
+       "1",
+       "A101",
+       "05-11-2026"
+      ],
+      [
+       "2",
+       "B201",
+       "12-11-2026"
+      ],
+      [
+       "3",
+       "C301",
+       "20-11-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "flat_id",
+     "project",
+     "price_lakh"
+    ],
+    "rows": [
+     [
+      "A102",
+      "Skyline",
+      "90"
+     ],
+     [
+      "B202",
+      "Lakeview",
+      "75"
+     ]
+    ]
+   },
+   "task": "Show flat_id, project and price_lakh of every flat that has no booking, ordered by flat_id.",
+   "hint": "Keep a flat only if NOT EXISTS finds no matching booking row.",
+   "solution": "SELECT f.flat_id, f.project, f.price_lakh\nFROM   flats f\nWHERE  NOT EXISTS (SELECT 1\n                   FROM   bookings b\n                   WHERE  b.flat_id = f.flat_id)\nORDER  BY f.flat_id;",
+   "simple": "Think of a school trip list and a list of kids who paid. To find who has not paid, you take each kid and look for their name on the paid list. If it is not there, they go on the reminder list. NOT EXISTS does the same for each flat.",
+   "remember": "NOT EXISTS = keep me if nobody matches me.",
+   "why": "NOT EXISTS runs the correlated subquery for each outer row and keeps the row when the subquery returns nothing. It is NULL-safe, unlike NOT IN, which returns no rows if the subquery ever yields a NULL flat_id. The optimizer usually turns it into an anti-join.",
+   "tip": "For 'rows with no match' I prefer NOT EXISTS over NOT IN because a single NULL makes NOT IN return nothing.",
+   "steps": [
+    {
+     "say": "Step one. Go through every flat in the flats table.",
+     "find": "FROM   flats f"
+    },
+    {
+     "say": "Step two. For each flat, look for a booking with the same flat id.",
+     "find": "WHERE  NOT EXISTS (SELECT 1",
+     "to": "WHERE  b.flat_id = f.flat_id)"
+    },
+    {
+     "say": "Finally, flats with no booking stay. A102 and B202 are still unsold.",
+     "find": "ORDER  BY f.flat_id;"
+    }
+   ]
+  },
+  {
+   "id": "f20261127-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "TO_CHAR day name grouping",
+   "domain": "Healthcare/Appointments",
+   "title": "Busiest clinic days of the week",
+   "scenario": "A clinic in Bengaluru wants to know which weekdays get the most appointments, so it can add a doctor on busy days.",
+   "schema": "APPOINTMENTS(appt_id   NUMBER,\n             doctor    VARCHAR2(15),\n             appt_date DATE)          -- day of the visit",
+   "data": [
+    {
+     "name": "APPOINTMENTS",
+     "cols": [
+      "appt_id",
+      "doctor",
+      "appt_date"
+     ],
+     "rows": [
+      [
+       "1",
+       "Dr Rao",
+       "23-11-2026"
+      ],
+      [
+       "2",
+       "Dr Iyer",
+       "23-11-2026"
+      ],
+      [
+       "3",
+       "Dr Rao",
+       "24-11-2026"
+      ],
+      [
+       "4",
+       "Dr Sen",
+       "28-11-2026"
+      ],
+      [
+       "5",
+       "Dr Iyer",
+       "28-11-2026"
+      ],
+      [
+       "6",
+       "Dr Rao",
+       "28-11-2026"
+      ],
+      [
+       "7",
+       "Dr Sen",
+       "30-11-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "day_name",
+     "appts"
+    ],
+    "rows": [
+     [
+      "MON",
+      "3"
+     ],
+     [
+      "SAT",
+      "3"
+     ],
+     [
+      "TUE",
+      "1"
+     ]
+    ]
+   },
+   "output_note": "23-11 and 30-11 are both Mondays, so they add up. Day names assume English NLS settings.",
+   "task": "Show day_name (MON, TUE, ...) and appts, the number of appointments on that weekday, busiest first; break ties by day_name.",
+   "hint": "TO_CHAR(appt_date, 'DY') turns a date into its short day name; group by that.",
+   "solution": "SELECT TO_CHAR(appt_date, 'DY') AS day_name,\n       COUNT(*)                 AS appts\nFROM   appointments\nGROUP  BY TO_CHAR(appt_date, 'DY')\nORDER  BY appts DESC, day_name;",
+   "simple": "Imagine a calendar where you only look at the day names, not the dates. Every Monday goes into the Monday box, every Saturday into the Saturday box. Then you count the slips in each box. TO_CHAR gives the day name and GROUP BY makes the boxes.",
+   "remember": "TO_CHAR(date, 'DY') = which day of the week?",
+   "why": "TO_CHAR(appt_date, 'DY') returns the abbreviated weekday, so different dates that share a weekday fall into one group. The GROUP BY must repeat the expression because the column alias is not visible there in Oracle. The output language depends on NLS_DATE_LANGUAGE, which can be passed as a third argument.",
+   "tip": "When I group by weekday I either repeat the TO_CHAR expression in GROUP BY or wrap it in a subquery, since Oracle does not allow the alias there.",
+   "steps": [
+    {
+     "say": "Step one. Turn each date into its day name, like MON or SAT.",
+     "find": "SELECT TO_CHAR(appt_date, 'DY') AS day_name,"
+    },
+    {
+     "say": "Step two. Group by that day name and count the visits in each group.",
+     "find": "GROUP  BY TO_CHAR(appt_date, 'DY')"
+    },
+    {
+     "say": "Finally, sort busiest first. Monday and Saturday tie with three visits each.",
+     "find": "ORDER  BY appts DESC, day_name;"
+    }
+   ]
+  },
+  {
+   "id": "f20261127-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "LEFT JOIN with NVL on SUM",
+   "domain": "Sports/IPL auction",
+   "title": "Purse left after the auction",
+   "scenario": "It is IPL auction season. Each team starts with a purse in crore rupees and buys players. The analyst wants every team's spend, even a team that bought nobody.",
+   "schema": "TEAMS(team_code VARCHAR2(3),\n      team_name VARCHAR2(20),\n      purse_cr  NUMBER(6,2))    -- starting purse, crore\nBIDS(player    VARCHAR2(20),\n     team_code VARCHAR2(3),     -- buying team\n     price_cr  NUMBER(6,2))     -- winning bid, crore",
+   "data": [
+    {
+     "name": "TEAMS",
+     "cols": [
+      "team_code",
+      "team_name",
+      "purse_cr"
+     ],
+     "rows": [
+      [
+       "CHN",
+       "Chennai Chargers",
+       "15"
+      ],
+      [
+       "MUM",
+       "Mumbai Mavericks",
+       "12.5"
+      ],
+      [
+       "KOL",
+       "Kolkata Comets",
+       "20"
+      ],
+      [
+       "PUN",
+       "Pune Panthers",
+       "9.75"
+      ]
+     ]
+    },
+    {
+     "name": "BIDS",
+     "cols": [
+      "player",
+      "team_code",
+      "price_cr"
+     ],
+     "rows": [
+      [
+       "Aarav Mehta",
+       "CHN",
+       "6.25"
+      ],
+      [
+       "Dev Patil",
+       "CHN",
+       "4"
+      ],
+      [
+       "Ishan Nair",
+       "MUM",
+       "8.5"
+      ],
+      [
+       "Kunal Joshi",
+       "KOL",
+       "11"
+      ],
+      [
+       "Rohan Das",
+       "MUM",
+       "2.75"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "team_name",
+     "players_bought",
+     "purse_left"
+    ],
+    "rows": [
+     [
+      "Pune Panthers",
+      "0",
+      "9.75"
+     ],
+     [
+      "Kolkata Comets",
+      "1",
+      "9"
+     ],
+     [
+      "Chennai Chargers",
+      "2",
+      "4.75"
+     ],
+     [
+      "Mumbai Mavericks",
+      "2",
+      "1.25"
+     ]
+    ]
+   },
+   "output_note": "Teams, players and amounts are made-up sample data. COUNT(*) would wrongly show 1 player for Pune Panthers.",
+   "task": "Show team_name, players_bought and purse_left (purse minus total bids) for every team, including teams with no buys, most money left first.",
+   "hint": "LEFT JOIN keeps Pune; count a BIDS column and wrap SUM in NVL.",
+   "solution": "SELECT t.team_name,\n       COUNT(b.player)                      AS players_bought,\n       t.purse_cr - NVL(SUM(b.price_cr), 0) AS purse_left\nFROM   teams t\nLEFT   JOIN bids b ON b.team_code = t.team_code\nGROUP  BY t.team_name, t.purse_cr\nORDER  BY purse_left DESC;",
+   "simple": "Each team gets pocket money before going shopping. Some kids buy a lot, one kid buys nothing. The LEFT JOIN makes sure the kid who bought nothing is still on the list. NVL says 'nothing spent means zero spent', so we can still do the subtraction.",
+   "remember": "LEFT JOIN keeps everyone; NVL turns 'nothing' into zero.",
+   "why": "A LEFT JOIN keeps Pune Panthers with NULL bid columns, so SUM(b.price_cr) is NULL and purse minus NULL would be NULL; NVL(..., 0) fixes that. COUNT(b.player) ignores NULLs and gives 0, while COUNT(*) counts the outer-joined row and gives 1. purse_cr must be in GROUP BY because it is used outside an aggregate.",
+   "tip": "With an outer join I count a column from the optional table, never COUNT(*), and I wrap its SUM in NVL.",
+   "steps": [
+    {
+     "say": "Step one. LEFT JOIN keeps every team, even Pune who bought nobody.",
+     "find": "LEFT   JOIN bids b ON b.team_code = t.team_code"
+    },
+    {
+     "say": "Step two. Count the player column, so Pune shows zero, not one.",
+     "find": "COUNT(b.player)"
+    },
+    {
+     "say": "Step three. NVL turns Pune's empty spend into zero before we subtract.",
+     "find": "t.purse_cr - NVL(SUM(b.price_cr), 0) AS purse_left"
+    },
+    {
+     "say": "Finally, sort by money left. Pune Panthers top the list with nine point seven five crore.",
+     "find": "ORDER  BY purse_left DESC;"
+    }
+   ],
+   "trend": {
+    "topic": "IPL 2027 Auction",
+    "hook": "The IPL auction is coming! Which team still has the most money left? Let SQL find out.",
+    "hashtags": [
+     "ipl2027",
+     "iplauction",
+     "ipl",
+     "cricket"
+    ]
+   }
+  },
+  {
+   "id": "f20261127-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Join to a single-day rate row",
+   "domain": "Loans/Gold loan",
+   "title": "Gold loans breaching 75% LTV",
+   "scenario": "Gold prices have been falling this month. A bank's gold-loan desk must flag loans whose loan-to-value crosses 75% at today's rate, so branches can ask for top-ups.",
+   "schema": "GOLD_RATES(rate_date  DATE,\n           rate_per_g NUMBER)     -- 22K rate, rupees per gram\nGOLD_LOANS(loan_id     VARCHAR2(4),\n           customer    VARCHAR2(15),\n           gold_g      NUMBER,    -- pledged gold in grams\n           outstanding NUMBER)    -- loan balance in rupees",
+   "data": [
+    {
+     "name": "GOLD_RATES",
+     "cols": [
+      "rate_date",
+      "rate_per_g"
+     ],
+     "rows": [
+      [
+       "24-11-2026",
+       "12000"
+      ],
+      [
+       "25-11-2026",
+       "11800"
+      ],
+      [
+       "26-11-2026",
+       "11500"
+      ],
+      [
+       "27-11-2026",
+       "11200"
+      ]
+     ]
+    },
+    {
+     "name": "GOLD_LOANS",
+     "cols": [
+      "loan_id",
+      "customer",
+      "gold_g",
+      "outstanding"
+     ],
+     "rows": [
+      [
+       "GL1",
+       "Meena",
+       "50",
+       "400000"
+      ],
+      [
+       "GL2",
+       "Suresh",
+       "30",
+       "260000"
+      ],
+      [
+       "GL3",
+       "Farah",
+       "20",
+       "168000"
+      ],
+      [
+       "GL4",
+       "Vikram",
+       "40",
+       "350000"
+      ],
+      [
+       "GL5",
+       "Anita",
+       "10",
+       "70000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "customer",
+     "gold_value",
+     "ltv_pct"
+    ],
+    "rows": [
+     [
+      "GL4",
+      "Vikram",
+      "448000",
+      "78.13"
+     ],
+     [
+      "GL2",
+      "Suresh",
+      "336000",
+      "77.38"
+     ]
+    ]
+   },
+   "output_note": "All rates are invented sample data, not real prices. Farah is exactly 75.00% and is not flagged; at the 24-11 rate no loan crossed 75%.",
+   "task": "Using the rate for 27-11-2026, show loan_id, customer, gold_value and ltv_pct (outstanding / gold value x 100, 2 decimals) for loans above 75%, highest LTV first.",
+   "hint": "Join each loan to the one GOLD_RATES row for 27-11-2026, then compare the ratio with 75.",
+   "solution": "SELECT l.loan_id, l.customer,\n       l.gold_g * r.rate_per_g AS gold_value,\n       ROUND(l.outstanding * 100 / (l.gold_g * r.rate_per_g), 2) AS ltv_pct\nFROM   gold_loans l\nJOIN   gold_rates r ON r.rate_date = DATE '2026-11-27'\nWHERE  l.outstanding * 100 / (l.gold_g * r.rate_per_g) > 75\nORDER  BY ltv_pct DESC;",
+   "simple": "Imagine you borrowed money and gave your gold chain as a promise. If the chain's value drops, your loan becomes too big compared to the chain. We take today's gold price, find each chain's value, and see how big the loan is compared to it. Anyone above 75 out of 100 gets a call.",
+   "remember": "LTV = loan divided by today's collateral value.",
+   "why": "The join condition only filters GOLD_RATES to one row, so every loan pairs with exactly that day's rate; if the date were missing the join would return nothing, and two rows for the date would double every loan. The WHERE clause repeats the unrounded expression because the alias ltv_pct is not visible in WHERE, and comparing unrounded values avoids a 75.004 being rounded down. The > keeps the exact 75% loan out.",
+   "tip": "For collateral checks I join to the rate as of a fixed date and filter on the unrounded ratio, rounding only for display.",
+   "steps": [
+    {
+     "say": "Step one. Pick only today's gold rate and pair it with every loan.",
+     "find": "JOIN   gold_rates r ON r.rate_date = DATE '2026-11-27'"
+    },
+    {
+     "say": "Step two. Gold value is grams times rate. LTV is the loan divided by that value, times one hundred.",
+     "find": "l.gold_g * r.rate_per_g AS gold_value,",
+     "to": "ROUND(l.outstanding * 100 / (l.gold_g * r.rate_per_g), 2) AS ltv_pct"
+    },
+    {
+     "say": "Step three. Keep only loans above seventy-five percent. Farah at exactly seventy-five is safe.",
+     "find": "WHERE  l.outstanding * 100 / (l.gold_g * r.rate_per_g) > 75"
+    },
+    {
+     "say": "Finally, Vikram and Suresh need a top-up, because falling gold pushed them over the limit.",
+     "find": "ORDER  BY ltv_pct DESC;"
+    }
+   ],
+   "trend": {
+    "topic": "Gold Price Fall",
+    "hook": "Gold prices keep falling. Which gold loans just crossed the danger line? One SQL query tells you.",
+    "hashtags": [
+     "goldprice",
+     "goldrate",
+     "goldloan",
+     "sql"
+    ]
+   }
+  },
+  {
+   "id": "f20261127-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Nth row per user with ROW_NUMBER",
+   "domain": "Cards/Card transactions",
+   "title": "Each customer's third card swipe",
+   "scenario": "A card issuer runs an offer on every customer's third card transaction. Two swipes can share the same timestamp, so the order must still be fixed.",
+   "schema": "CARD_TXNS(txn_id   NUMBER,       -- increasing id\n          customer VARCHAR2(10),\n          txn_time DATE,         -- swipe time\n          amount   NUMBER)       -- rupees",
+   "data": [
+    {
+     "name": "CARD_TXNS",
+     "cols": [
+      "txn_id",
+      "customer",
+      "txn_time",
+      "amount"
+     ],
+     "rows": [
+      [
+       "101",
+       "Asha",
+       "01-11-2026 10:05",
+       "1200"
+      ],
+      [
+       "102",
+       "Asha",
+       "01-11-2026 18:30",
+       "450"
+      ],
+      [
+       "103",
+       "Asha",
+       "03-11-2026 09:00",
+       "3000"
+      ],
+      [
+       "105",
+       "Bilal",
+       "02-11-2026 11:00",
+       "650"
+      ],
+      [
+       "106",
+       "Bilal",
+       "05-11-2026 20:15",
+       "990"
+      ],
+      [
+       "107",
+       "Bilal",
+       "05-11-2026 20:15",
+       "2100"
+      ],
+      [
+       "108",
+       "Chitra",
+       "06-11-2026 14:40",
+       "5000"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "customer",
+     "txn_id",
+     "txn_time",
+     "amount"
+    ],
+    "rows": [
+     [
+      "Asha",
+      "103",
+      "03-11-2026 09:00",
+      "3000"
+     ],
+     [
+      "Bilal",
+      "107",
+      "05-11-2026 20:15",
+      "2100"
+     ]
+    ]
+   },
+   "output_note": "With RANK, Bilal's 106 and 107 would both be rank 2 and he would have no rank 3. Chitra has only one swipe, so she is left out.",
+   "task": "Show customer, txn_id, txn_time and amount of each customer's third transaction by time; if times tie, the lower txn_id comes first. Skip customers with fewer than three.",
+   "hint": "ROW_NUMBER per customer ordered by txn_time, txn_id, then keep rn = 3.",
+   "solution": "WITH ranked AS (\n  SELECT customer, txn_id, txn_time, amount,\n         ROW_NUMBER() OVER (PARTITION BY customer\n                            ORDER BY txn_time, txn_id) AS rn\n  FROM   card_txns\n)\nSELECT customer, txn_id, txn_time, amount\nFROM   ranked\nWHERE  rn = 3\nORDER  BY customer;",
+   "simple": "Think of kids lining up for ice cream, and every third kid gets a free scoop. If two kids arrive at the same moment, the teacher decides by roll number. ROW_NUMBER gives each swipe a place in the line, one line per customer. Then we just pick place number three.",
+   "remember": "Nth per group = ROW_NUMBER with a tie-breaker, then rn = N.",
+   "why": "ROW_NUMBER always gives distinct numbers 1, 2, 3 within each PARTITION BY group, so exactly one row can be third; RANK and DENSE_RANK repeat numbers on ties and can skip or duplicate the third row. Adding txn_id to ORDER BY makes the numbering deterministic when timestamps tie. The filter must be in an outer query because window functions are computed after WHERE.",
+   "tip": "For 'Nth event per user' I use ROW_NUMBER with a unique tie-breaker in the ORDER BY, and filter in an outer query.",
+   "steps": [
+    {
+     "say": "Step one. Split swipes by customer, and number them in time order.",
+     "find": "ROW_NUMBER() OVER (PARTITION BY customer",
+     "to": "ORDER BY txn_time, txn_id) AS rn"
+    },
+    {
+     "say": "Step two. When two swipes share a time, the smaller transaction id goes first.",
+     "find": "ORDER BY txn_time, txn_id) AS rn"
+    },
+    {
+     "say": "Step three. In the outer query, keep only swipe number three.",
+     "find": "WHERE  rn = 3"
+    },
+    {
+     "say": "Finally, Asha gets 103 and Bilal gets 107. Chitra has only one swipe, so she is out.",
+     "find": "ORDER  BY customer;"
+    }
+   ],
+   "tech": {
+    "pattern": "Nth transaction per user",
+    "company": "Uber",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   }
+  },
+  {
+   "id": "f20261127-6",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "BULK COLLECT LIMIT last batch",
+   "domain": "Education/Exam results",
+   "title": "Grade all students in batches",
+   "scenario": "An ed-tech platform grades exam scores in batches with BULK COLLECT LIMIT. A wrongly placed EXIT once skipped the last few students, so the loop must handle a final small batch.",
+   "schema": "EXAM_SCORES(roll_no NUMBER,\n            student VARCHAR2(15),\n            marks   NUMBER)       -- out of 100, pass at 40\nRESULTS(roll_no NUMBER,\n        grade   VARCHAR2(4))     -- PASS or FAIL, empty at start",
+   "data": [
+    {
+     "name": "EXAM_SCORES",
+     "cols": [
+      "roll_no",
+      "student",
+      "marks"
+     ],
+     "rows": [
+      [
+       "1",
+       "Aditi",
+       "78"
+      ],
+      [
+       "2",
+       "Bhavesh",
+       "35"
+      ],
+      [
+       "3",
+       "Charu",
+       "62"
+      ],
+      [
+       "4",
+       "Danish",
+       "40"
+      ],
+      [
+       "5",
+       "Esha",
+       "29"
+      ]
+     ]
+    },
+    {
+     "name": "RESULTS",
+     "cols": [
+      "roll_no",
+      "grade"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "roll_no",
+     "grade"
+    ],
+    "rows": [
+     [
+      "1",
+      "PASS"
+     ],
+     [
+      "2",
+      "FAIL"
+     ],
+     [
+      "3",
+      "PASS"
+     ],
+     [
+      "4",
+      "PASS"
+     ],
+     [
+      "5",
+      "FAIL"
+     ]
+    ]
+   },
+   "output_note": "RESULTS after the block. Batches are 2, 2 and 1 rows; with EXIT WHEN c%NOTFOUND right after the FETCH, Esha's last batch of 1 would be skipped.",
+   "task": "Write a PL/SQL block that reads EXAM_SCORES 2 rows at a time with BULK COLLECT LIMIT and inserts PASS (marks >= 40) or FAIL into RESULTS with FORALL, without losing the last partial batch.",
+   "hint": "Exit when the fetched collection is empty, not when %NOTFOUND is true.",
+   "solution": "DECLARE\n  CURSOR c IS SELECT roll_no, marks FROM exam_scores ORDER BY roll_no;\n  TYPE t_num IS TABLE OF NUMBER;\n  l_rolls t_num;\n  l_marks t_num;\nBEGIN\n  OPEN c;\n  LOOP\n    FETCH c BULK COLLECT INTO l_rolls, l_marks LIMIT 2;\n    EXIT WHEN l_rolls.COUNT = 0;\n    FORALL i IN 1 .. l_rolls.COUNT\n      INSERT INTO results (roll_no, grade)\n      VALUES (l_rolls(i), CASE WHEN l_marks(i) >= 40 THEN 'PASS' ELSE 'FAIL' END);\n  END LOOP;\n  CLOSE c;\n  COMMIT;\nEND;\n/",
+   "simple": "Imagine a teacher carrying answer sheets two at a time from one room to another. On the last trip there is only one sheet left. A careless teacher sees 'pile is finished' and stops before carrying it. The right rule is: stop only when your hands come back empty.",
+   "remember": "With LIMIT, exit when COUNT = 0, not on %NOTFOUND.",
+   "why": "On the fetch that returns fewer rows than LIMIT, %NOTFOUND is already TRUE even though the collection holds rows, so EXIT WHEN c%NOTFOUND right after FETCH drops the last partial batch. Checking l_rolls.COUNT = 0 exits only after an empty fetch. FORALL sends each batch of inserts to the SQL engine in one context switch.",
+   "tip": "In BULK COLLECT LIMIT loops I put EXIT WHEN coll.COUNT = 0 after the fetch, or EXIT WHEN c%NOTFOUND at the bottom after processing.",
+   "steps": [
+    {
+     "say": "Step one. Fetch the students two at a time into two collections.",
+     "find": "FETCH c BULK COLLECT INTO l_rolls, l_marks LIMIT 2;"
+    },
+    {
+     "say": "Step two. Stop only when a fetch brings back nothing. The last trip with one student still gets processed.",
+     "find": "EXIT WHEN l_rolls.COUNT = 0;"
+    },
+    {
+     "say": "Step three. FORALL inserts the whole batch, with PASS at forty or more.",
+     "find": "FORALL i IN 1 .. l_rolls.COUNT",
+     "to": "VALUES (l_rolls(i), CASE WHEN l_marks(i) >= 40 THEN 'PASS' ELSE 'FAIL' END);"
+    },
+    {
+     "say": "Finally, all five students get a grade, including Esha in the last batch.",
+     "find": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261127-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "CASE statement needs ELSE",
+   "domain": "Telecom/Plan migration",
+   "title": "Migrate plans without crashing",
+   "scenario": "A telecom operator moves prepaid users from old plans to new ones. One user has an unknown plan code, and the job must log it instead of failing the whole run.",
+   "schema": "SUBSCRIBERS(msisdn    VARCHAR2(10),\n            plan_code VARCHAR2(5),   -- old plan\n            new_plan  VARCHAR2(5))   -- NULL until migrated\nMIGRATION_LOG(msisdn VARCHAR2(10),\n              msg    VARCHAR2(50))  -- empty at start",
+   "data": [
+    {
+     "name": "SUBSCRIBERS",
+     "cols": [
+      "msisdn",
+      "plan_code",
+      "new_plan"
+     ],
+     "rows": [
+      [
+       "9810000001",
+       "P199",
+       "NULL"
+      ],
+      [
+       "9810000002",
+       "P299",
+       "NULL"
+      ],
+      [
+       "9810000003",
+       "P99X",
+       "NULL"
+      ],
+      [
+       "9810000004",
+       "P499",
+       "NULL"
+      ]
+     ]
+    },
+    {
+     "name": "MIGRATION_LOG",
+     "cols": [
+      "msisdn",
+      "msg"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "msisdn",
+     "plan_code",
+     "new_plan"
+    ],
+    "rows": [
+     [
+      "9810000001",
+      "P199",
+      "N239"
+     ],
+     [
+      "9810000002",
+      "P299",
+      "N349"
+     ],
+     [
+      "9810000003",
+      "P99X",
+      "NULL"
+     ],
+     [
+      "9810000004",
+      "P499",
+      "N549"
+     ]
+    ]
+   },
+   "output_note": "SUBSCRIBERS after the block; MIGRATION_LOG gets one row: 9810000003, 'Unknown plan P99X'. Without the ELSE, P99X raises ORA-06592 CASE_NOT_FOUND and the whole block's changes are rolled back.",
+   "task": "Write a block that maps P199 to N239, P299 to N349 and P499 to N549 using a CASE statement, and logs any other plan code into MIGRATION_LOG instead of raising an error.",
+   "hint": "A PL/SQL CASE statement with no matching WHEN and no ELSE raises CASE_NOT_FOUND.",
+   "solution": "BEGIN\n  FOR s IN (SELECT msisdn, plan_code FROM subscribers) LOOP\n    CASE s.plan_code\n      WHEN 'P199' THEN\n        UPDATE subscribers SET new_plan = 'N239' WHERE msisdn = s.msisdn;\n      WHEN 'P299' THEN\n        UPDATE subscribers SET new_plan = 'N349' WHERE msisdn = s.msisdn;\n      WHEN 'P499' THEN\n        UPDATE subscribers SET new_plan = 'N549' WHERE msisdn = s.msisdn;\n      ELSE\n        INSERT INTO migration_log (msisdn, msg)\n        VALUES (s.msisdn, 'Unknown plan ' || s.plan_code);\n    END CASE;\n  END LOOP;\n  COMMIT;\nEND;\n/",
+   "simple": "Think of a post office sorting letters into boxes by city. If a letter has a city with no box, a strict sorter throws up his hands and stops the whole sorting. A smart sorter puts it in a 'problem' tray and keeps going. The ELSE branch is that problem tray.",
+   "remember": "CASE statement without ELSE = crash on the unexpected.",
+   "why": "A CASE expression in SQL returns NULL when nothing matches, but a PL/SQL CASE statement raises ORA-06592 CASE_NOT_FOUND instead. If that exception is unhandled, the anonymous block fails and Oracle rolls back all its uncommitted work, including earlier successful updates. An ELSE branch routes unknown codes to a log and lets the loop finish.",
+   "tip": "I always give a PL/SQL CASE statement an ELSE, even if it only logs or raises a clear custom error, because CASE_NOT_FOUND is easy to miss in testing.",
+   "steps": [
+    {
+     "say": "Step one. Loop through every subscriber and look at the old plan code.",
+     "find": "FOR s IN (SELECT msisdn, plan_code FROM subscribers) LOOP",
+     "to": "CASE s.plan_code"
+    },
+    {
+     "say": "Step two. Each known code gets its new plan with a simple update.",
+     "find": "WHEN 'P199' THEN",
+     "to": "UPDATE subscribers SET new_plan = 'N549' WHERE msisdn = s.msisdn;"
+    },
+    {
+     "say": "Step three. Any other code goes to the log. Without this ELSE, the block crashes with case not found.",
+     "find": "ELSE",
+     "to": "VALUES (s.msisdn, 'Unknown plan ' || s.plan_code);"
+    },
+    {
+     "say": "Finally, three users move to new plans and P99X is logged for a human to check.",
+     "find": "COMMIT;"
+    }
+   ]
+  },
+  {
+   "id": "f20261127-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Overlapping ranges with self-join",
+   "domain": "Airlines/Crew rostering",
+   "title": "Catch overlapping crew duties",
+   "scenario": "An airline's rostering team must make sure no crew member is on two flights at once. Back-to-back duties that just touch are allowed.",
+   "schema": "CREW_DUTIES(duty_id    VARCHAR2(3),\n            crew_id    VARCHAR2(3),\n            flight     VARCHAR2(6),\n            duty_start DATE,         -- sign-on time\n            duty_end   DATE)         -- sign-off time",
+   "data": [
+    {
+     "name": "CREW_DUTIES",
+     "cols": [
+      "duty_id",
+      "crew_id",
+      "flight",
+      "duty_start",
+      "duty_end"
+     ],
+     "rows": [
+      [
+       "D1",
+       "C10",
+       "QB-201",
+       "27-11-2026 06:00",
+       "27-11-2026 09:30"
+      ],
+      [
+       "D2",
+       "C10",
+       "QB-455",
+       "27-11-2026 09:00",
+       "27-11-2026 12:00"
+      ],
+      [
+       "D3",
+       "C10",
+       "QB-610",
+       "27-11-2026 12:00",
+       "27-11-2026 15:00"
+      ],
+      [
+       "D4",
+       "C20",
+       "QB-101",
+       "27-11-2026 07:00",
+       "27-11-2026 13:00"
+      ],
+      [
+       "D5",
+       "C20",
+       "QB-305",
+       "27-11-2026 10:30",
+       "27-11-2026 11:30"
+      ],
+      [
+       "D6",
+       "C30",
+       "QB-088",
+       "27-11-2026 08:00",
+       "27-11-2026 10:00"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "crew_id",
+     "duty_a",
+     "duty_b",
+     "overlap_min"
+    ],
+    "rows": [
+     [
+      "C10",
+      "D1",
+      "D2",
+      "30"
+     ],
+     [
+      "C20",
+      "D4",
+      "D5",
+      "60"
+     ]
+    ]
+   },
+   "output_note": "D2 and D3 only touch at 12:00, so they are not an overlap. D5 sits fully inside D4 and is still caught.",
+   "task": "List crew_id, duty_a, duty_b and overlap_min (minutes of overlap) for every pair of duties of the same crew member that overlap, each pair once.",
+   "hint": "Two ranges overlap when each one starts before the other ends.",
+   "solution": "SELECT a.crew_id, a.duty_id AS duty_a, b.duty_id AS duty_b,\n       ROUND((LEAST(a.duty_end, b.duty_end)\n            - GREATEST(a.duty_start, b.duty_start)) * 24 * 60) AS overlap_min\nFROM   crew_duties a\nJOIN   crew_duties b\n  ON   b.crew_id    = a.crew_id\n AND   b.duty_id    > a.duty_id\n AND   b.duty_start < a.duty_end\n AND   a.duty_start < b.duty_end\nORDER  BY a.crew_id, a.duty_id;",
+   "simple": "Imagine two cricket practice slots booked for the same kid. If one slot starts before the other finishes, and the other starts before the first finishes, the kid would need to be in two places. We compare every pair of slots for the same kid. If one ends exactly when the next begins, that is fine.",
+   "remember": "Overlap: A starts before B ends AND B starts before A ends.",
+   "why": "The self-join pairs each duty with the other duties of the same crew, and b.duty_id > a.duty_id keeps each pair once and skips self-pairs. The two strict < conditions cover partial and full containment while treating touching ranges as not overlapping. Subtracting Oracle DATEs gives days, so * 24 * 60 converts the overlap from LEAST(end) - GREATEST(start) into minutes.",
+   "tip": "For any booking or roster clash I use the two-condition overlap test, start_a < end_b AND start_b < end_a, instead of listing every case.",
+   "steps": [
+    {
+     "say": "Step one. Join the duties table to itself, for the same crew member, each pair only once.",
+     "find": "JOIN   crew_duties b",
+     "to": "AND   b.duty_id    > a.duty_id"
+    },
+    {
+     "say": "Step two. They overlap if each duty starts before the other one ends.",
+     "find": "AND   b.duty_start < a.duty_end",
+     "to": "AND   a.duty_start < b.duty_end"
+    },
+    {
+     "say": "Step three. Overlap is the earlier end minus the later start, turned into minutes.",
+     "find": "ROUND((LEAST(a.duty_end, b.duty_end)",
+     "to": "- GREATEST(a.duty_start, b.duty_start)) * 24 * 60) AS overlap_min"
+    },
+    {
+     "say": "Finally, D1 and D2 clash by thirty minutes, and D5 sits inside D4 for sixty.",
+     "find": "ORDER  BY a.crew_id, a.duty_id;"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -14178,6 +15130,17 @@
    "example": "WITH stock AS (\n  SELECT 'S1' store_id, 'RICE5KG' sku, 30 qty FROM dual UNION ALL\n  SELECT 'S1', 'OIL1L', 12 FROM dual\n)\nSELECT COUNT(*) AS rows_an_update_would_touch\nFROM   stock\nWHERE  store_id = 'S1' AND sku = 'ATTA10KG';\n-- 0 rows: in PL/SQL, UPDATE with this WHERE sets SQL%ROWCOUNT = 0",
    "gotcha": "A call to a procedure, a COMMIT or another DML between your statement and the check overwrites SQL%ROWCOUNT, so capture it into a variable right away.",
    "line": "I check SQL%ROWCOUNT right after an UPDATE to detect a missing row, since zero rows updated is not an exception in Oracle."
+  },
+  {
+   "id": "fl20261127",
+   "concept": "DECODE versus CASE",
+   "why": "Interviewers love asking which one to use and how each treats NULL.",
+   "simple": "DECODE and CASE are both like a choose-your-answer card: if this, say that. DECODE is the old short version that only checks 'is it equal'. CASE is the newer, more flexible one that can also check bigger-than, smaller-than and more. One surprise: DECODE thinks two empty boxes are equal, but a simple CASE does not.",
+   "remember": "DECODE treats NULL = NULL; simple CASE does not.",
+   "explain": "DECODE(expr, s1, r1, s2, r2, default) is Oracle-only and works only in SQL, comparing with equality. CASE is ANSI standard, works in SQL and PL/SQL, and its searched form (CASE WHEN cond THEN ...) supports ranges, LIKE and multiple columns. DECODE considers two NULLs equal, while CASE expr WHEN NULL never matches because NULL = NULL is unknown; use CASE WHEN expr IS NULL instead. Both stop at the first match and return NULL when nothing matches and no default or ELSE is given.",
+   "example": "WITH t AS (\n  SELECT 'Pune' AS city FROM dual UNION ALL\n  SELECT NULL         FROM dual\n)\nSELECT city,\n       DECODE(city, NULL, 'missing', 'ok')          AS via_decode,\n       CASE city WHEN NULL THEN 'missing' ELSE 'ok' END AS via_simple_case,\n       CASE WHEN city IS NULL THEN 'missing' ELSE 'ok' END AS via_searched_case\nFROM   t;",
+   "gotcha": "CASE city WHEN NULL THEN ... never fires; the NULL row returns 'ok' in the simple CASE column.",
+   "line": "I use searched CASE for readability and portability, and I remember that DECODE matches NULL to NULL while CASE needs IS NULL."
   }
  ]
 }
