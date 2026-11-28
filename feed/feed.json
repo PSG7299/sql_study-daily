@@ -14963,6 +14963,940 @@
      "find": "ORDER  BY a.crew_id, a.duty_id;"
     }
    ]
+  },
+  {
+   "id": "f20261128-1",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "Subquery with AVG in WHERE",
+   "domain": "Sports/Cricket ODI series",
+   "title": "Innings better than the series average",
+   "scenario": "India's ODI series in New Zealand has a fan app showing batting stats. The app wants to highlight innings that beat the average score of all innings so far.",
+   "schema": "INNINGS(match_no NUMBER,       -- ODI number in the series\n        batter   VARCHAR2(20),\n        runs     NUMBER)       -- runs scored in that innings",
+   "data": [
+    {
+     "name": "INNINGS",
+     "cols": [
+      "match_no",
+      "batter",
+      "runs"
+     ],
+     "rows": [
+      [
+       "1",
+       "Arjun",
+       "85"
+      ],
+      [
+       "1",
+       "Kabir",
+       "12"
+      ],
+      [
+       "1",
+       "Rohan",
+       "40"
+      ],
+      [
+       "2",
+       "Arjun",
+       "30"
+      ],
+      [
+       "2",
+       "Kabir",
+       "64"
+      ],
+      [
+       "2",
+       "Vikram",
+       "9"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "batter",
+     "match_no",
+     "runs"
+    ],
+    "rows": [
+     [
+      "Arjun",
+      "1",
+      "85"
+     ],
+     [
+      "Kabir",
+      "2",
+      "64"
+     ]
+    ]
+   },
+   "output_note": "The average is 240 / 6 = 40. Rohan's 40 equals the average, so it is not greater and is left out.",
+   "task": "List the batter, match number and runs for every innings with runs greater than the average runs of all innings, highest first.",
+   "hint": "Put SELECT AVG(runs) FROM innings in brackets on the right side of the comparison.",
+   "solution": "SELECT batter, match_no, runs\nFROM   innings\nWHERE  runs > (SELECT AVG(runs) FROM innings)\nORDER  BY runs DESC;",
+   "simple": "Think of a class test where the teacher first works out the class average mark. Then she reads out only the names of students who scored more than that average. The SQL does the same: the small query in brackets finds the average, and the outer query keeps only innings above it.",
+   "remember": "Inner query finds the bar, outer query jumps over it.",
+   "why": "You cannot write WHERE runs > AVG(runs) because aggregates are not allowed in WHERE. A scalar subquery returns one value, the average over all rows, which Oracle computes and then compares with each row. Using > excludes rows exactly equal to the average.",
+   "tip": "Aggregates cannot go in WHERE, so I compare against a scalar subquery or use AVG() OVER () in an inline view.",
+   "steps": [
+    {
+     "say": "Step one. The small query in brackets works out the average runs of all innings. Here it is forty.",
+     "find": "WHERE  runs > (SELECT AVG(runs) FROM innings)"
+    },
+    {
+     "say": "Step two. Only innings above forty pass. Rohan's forty is equal, not greater, so he drops out.",
+     "find": "WHERE  runs > (SELECT AVG(runs) FROM innings)"
+    },
+    {
+     "say": "Finally, sort by runs, highest first. Arjun's eighty-five tops the list.",
+     "find": "ORDER  BY runs DESC;"
+    }
+   ],
+   "trend": {
+    "topic": "India vs New Zealand ODI Series",
+    "hook": "India are touring New Zealand. Which innings beat the series average? One line of SQL tells you.",
+    "hashtags": [
+     "INDvNZ",
+     "indvsnz",
+     "cricket",
+     "odi"
+    ]
+   }
+  },
+  {
+   "id": "f20261128-2",
+   "lvl": "E",
+   "kind": "sql",
+   "concept": "TRUNC to drop time part",
+   "domain": "Food delivery/Orders",
+   "title": "Count yesterday's orders correctly",
+   "scenario": "A food-delivery app stores the full order date and time. An analyst filtered with order_time = DATE '2026-11-27' and got zero orders for the day.",
+   "schema": "ORDERS(order_id   NUMBER,\n       customer   VARCHAR2(20),\n       order_time DATE,      -- date with hours and minutes\n       amount     NUMBER)    -- rupees",
+   "data": [
+    {
+     "name": "ORDERS",
+     "cols": [
+      "order_id",
+      "customer",
+      "order_time",
+      "amount"
+     ],
+     "rows": [
+      [
+       "101",
+       "Neha",
+       "26-11-2026 23:50",
+       "320"
+      ],
+      [
+       "102",
+       "Imran",
+       "27-11-2026 00:15",
+       "450"
+      ],
+      [
+       "103",
+       "Pooja",
+       "27-11-2026 13:40",
+       "280"
+      ],
+      [
+       "104",
+       "Sameer",
+       "27-11-2026 21:05",
+       "610"
+      ],
+      [
+       "105",
+       "Tara",
+       "28-11-2026 00:05",
+       "199"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "orders",
+     "total_amount"
+    ],
+    "rows": [
+     [
+      "3",
+      "1340"
+     ]
+    ]
+   },
+   "output_note": "order_time = DATE '2026-11-27' only matches midnight exactly, so it returns 0 orders.",
+   "task": "Show how many orders were placed on 27-11-2026 and their total amount.",
+   "hint": "TRUNC on a DATE sets the time to midnight.",
+   "solution": "SELECT COUNT(*)    AS orders,\n       SUM(amount) AS total_amount\nFROM   orders\nWHERE  TRUNC(order_time) = DATE '2026-11-27';",
+   "simple": "Imagine a diary where every entry has the date and the exact time written. If you look only for entries written at exactly 12 midnight, you will find almost nothing. TRUNC rubs out the time and keeps just the date, so every order from that day matches.",
+   "remember": "DATE has a clock inside; TRUNC hides the clock.",
+   "why": "An Oracle DATE always stores hours, minutes and seconds, and DATE '2026-11-27' means midnight. TRUNC(order_time) returns the date at 00:00, so all rows of the day compare equal. On a big indexed table, order_time >= DATE '2026-11-27' AND order_time < DATE '2026-11-28' gives the same result and can use an index on order_time.",
+   "tip": "For one day of data I use a half-open range, >= the day and < the next day, so an index on the column can still be used.",
+   "steps": [
+    {
+     "say": "Step one. TRUNC removes the time, so every order from the twenty-seventh looks like midnight on that day.",
+     "find": "WHERE  TRUNC(order_time) = DATE '2026-11-27';"
+    },
+    {
+     "say": "Step two. Count the orders and add up the amounts. Neha before midnight and Tara after are left out.",
+     "find": "SELECT COUNT(*)    AS orders,",
+     "to": "SUM(amount) AS total_amount"
+    },
+    {
+     "say": "Finally, three orders worth one thousand three hundred forty rupees.",
+     "find": "FROM   orders"
+    }
+   ]
+  },
+  {
+   "id": "f20261128-3",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Rate effective on a date",
+   "domain": "Loans/Home loan",
+   "title": "Repo-linked home loan rate on reset",
+   "scenario": "A bank's home loans are linked to the RBI repo rate plus a fixed spread. On each loan's reset date, the rate must use the repo rate in force on that day. All rates are sample figures.",
+   "schema": "REPO_RATES(eff_date DATE,     -- repo rate applies from this date\n           repo_pct NUMBER)\nHOME_LOANS(loan_id    VARCHAR2(5),\n           borrower   VARCHAR2(20),\n           spread_pct NUMBER,   -- added on top of repo\n           reset_date DATE)",
+   "data": [
+    {
+     "name": "REPO_RATES",
+     "cols": [
+      "eff_date",
+      "repo_pct"
+     ],
+     "rows": [
+      [
+       "01-06-2026",
+       "5.5"
+      ],
+      [
+       "01-10-2026",
+       "5.25"
+      ],
+      [
+       "05-12-2026",
+       "5.75"
+      ]
+     ]
+    },
+    {
+     "name": "HOME_LOANS",
+     "cols": [
+      "loan_id",
+      "borrower",
+      "spread_pct",
+      "reset_date"
+     ],
+     "rows": [
+      [
+       "L1",
+       "Anil",
+       "2.5",
+       "15-09-2026"
+      ],
+      [
+       "L2",
+       "Bina",
+       "2.75",
+       "01-10-2026"
+      ],
+      [
+       "L3",
+       "Chirag",
+       "2.4",
+       "04-12-2026"
+      ],
+      [
+       "L4",
+       "Deepa",
+       "2.6",
+       "05-12-2026"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "loan_id",
+     "borrower",
+     "repo_pct",
+     "new_rate"
+    ],
+    "rows": [
+     [
+      "L1",
+      "Anil",
+      "5.5",
+      "8"
+     ],
+     [
+      "L2",
+      "Bina",
+      "5.25",
+      "8"
+     ],
+     [
+      "L3",
+      "Chirag",
+      "5.25",
+      "7.65"
+     ],
+     [
+      "L4",
+      "Deepa",
+      "5.75",
+      "8.35"
+     ]
+    ]
+   },
+   "output_note": "Bina and Deepa reset on the very day a new repo rate starts, so they get the new rate. Chirag resets one day too early.",
+   "task": "For each loan, show the repo rate in force on its reset date and the new rate (repo + spread).",
+   "hint": "The right repo row is the one with the latest eff_date that is on or before the reset date.",
+   "solution": "SELECT l.loan_id, l.borrower, r.repo_pct,\n       r.repo_pct + l.spread_pct AS new_rate\nFROM   home_loans l\nJOIN   repo_rates r\n  ON   r.eff_date = (SELECT MAX(r2.eff_date)\n                     FROM   repo_rates r2\n                     WHERE  r2.eff_date <= l.reset_date)\nORDER  BY l.loan_id;",
+   "simple": "Think of a school notice board where the canteen price list changes on certain days. To know what a samosa cost on your birthday, you look for the newest price list pinned on or before that day. The SQL finds that newest repo row for each loan and adds the loan's extra spread.",
+   "remember": "Rate on a day = latest change on or before that day.",
+   "why": "The correlated subquery finds MAX(eff_date) <= reset_date for each loan, which is the change in force on that day, and the join pulls that row's rate. Using <= means a change effective on the reset date itself applies. A plain join on eff_date = reset_date would miss loans whose reset falls between changes.",
+   "tip": "For effective-dated lookups I take the latest row with eff_date <= the as-of date, or use an end-date column built with LEAD.",
+   "steps": [
+    {
+     "say": "Step one. For each loan, find the latest repo change on or before its reset date.",
+     "find": "ON   r.eff_date = (SELECT MAX(r2.eff_date)",
+     "to": "WHERE  r2.eff_date <= l.reset_date)"
+    },
+    {
+     "say": "Step two. Less than or equal means Deepa, resetting on the fifth of December, gets the new five point seven five.",
+     "find": "WHERE  r2.eff_date <= l.reset_date)"
+    },
+    {
+     "say": "Finally, add the spread to the repo rate to get each borrower's new rate.",
+     "find": "r.repo_pct + l.spread_pct AS new_rate"
+    }
+   ],
+   "trend": {
+    "topic": "RBI Repo Rate Decision",
+    "hook": "RBI's December policy is coming. Which repo rate does your home loan pick on reset day?",
+    "hashtags": [
+     "rbi",
+     "reporate",
+     "rbipolicy",
+     "homeloan"
+    ]
+   }
+  },
+  {
+   "id": "f20261128-4",
+   "lvl": "M",
+   "kind": "sql",
+   "concept": "Running total reset per day",
+   "domain": "Ride-hailing/Trips",
+   "title": "Driver earnings running total each day",
+   "scenario": "A ride-hailing app shows drivers how much they have earned so far today after every trip. The total must start again from zero each new day.",
+   "schema": "TRIPS(trip_id   NUMBER,\n      driver    VARCHAR2(20),\n      trip_time DATE,       -- trip end date and time\n      fare      NUMBER)     -- rupees",
+   "data": [
+    {
+     "name": "TRIPS",
+     "cols": [
+      "trip_id",
+      "driver",
+      "trip_time",
+      "fare"
+     ],
+     "rows": [
+      [
+       "1",
+       "Ravi",
+       "27-11-2026 08:10",
+       "220"
+      ],
+      [
+       "2",
+       "Ravi",
+       "27-11-2026 11:30",
+       "180"
+      ],
+      [
+       "3",
+       "Ravi",
+       "28-11-2026 09:00",
+       "150"
+      ],
+      [
+       "4",
+       "Salma",
+       "27-11-2026 10:15",
+       "300"
+      ],
+      [
+       "5",
+       "Salma",
+       "27-11-2026 18:40",
+       "250"
+      ],
+      [
+       "6",
+       "Ravi",
+       "28-11-2026 12:20",
+       "200"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "driver",
+     "trip_time",
+     "fare",
+     "earned_today"
+    ],
+    "rows": [
+     [
+      "Ravi",
+      "27-11-2026 08:10",
+      "220",
+      "220"
+     ],
+     [
+      "Ravi",
+      "27-11-2026 11:30",
+      "180",
+      "400"
+     ],
+     [
+      "Ravi",
+      "28-11-2026 09:00",
+      "150",
+      "150"
+     ],
+     [
+      "Ravi",
+      "28-11-2026 12:20",
+      "200",
+      "350"
+     ],
+     [
+      "Salma",
+      "27-11-2026 10:15",
+      "300",
+      "300"
+     ],
+     [
+      "Salma",
+      "27-11-2026 18:40",
+      "250",
+      "550"
+     ]
+    ]
+   },
+   "task": "For every trip, show the driver, trip time, fare and the driver's running total of fares for that calendar day.",
+   "hint": "Partition by the driver and by TRUNC(trip_time).",
+   "solution": "SELECT driver, trip_time, fare,\n       SUM(fare) OVER (PARTITION BY driver, TRUNC(trip_time)\n                       ORDER BY trip_time) AS earned_today\nFROM   trips\nORDER  BY driver, trip_time;",
+   "simple": "Think of a piggy bank you empty every night. Each coin you drop in during the day adds to today's pile, but tomorrow you start from zero again. The SQL keeps a separate pile for each driver and each day, and adds every new fare to that day's pile.",
+   "remember": "Add TRUNC(date) to PARTITION BY to reset daily.",
+   "why": "SUM() OVER with ORDER BY gives a running total from the first row of the partition to the current row. Adding TRUNC(trip_time) to PARTITION BY starts a new partition, and so a new total, for each calendar day. Without it, Ravi's 28-11 trips would continue from 400.",
+   "tip": "Whatever should reset the running total goes into PARTITION BY; whatever decides the order goes into ORDER BY.",
+   "steps": [
+    {
+     "say": "Step one. Make a separate group for each driver on each calendar day.",
+     "find": "SUM(fare) OVER (PARTITION BY driver, TRUNC(trip_time)"
+    },
+    {
+     "say": "Step two. Inside each group, add the fares in time order to get a running total.",
+     "find": "ORDER BY trip_time) AS earned_today"
+    },
+    {
+     "say": "Finally, Ravi's total goes back to one hundred fifty on the twenty-eighth instead of continuing from four hundred.",
+     "find": "ORDER  BY driver, trip_time;"
+    }
+   ]
+  },
+  {
+   "id": "f20261128-5",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Rolling 3-day average with RANGE",
+   "domain": "Payments/UPI",
+   "title": "Rolling 3-day UPI average with gaps",
+   "scenario": "A bank's UPI dashboard shows a rolling 3-day average of daily transactions. The batch did not load 24-11-2026, and a 3-row window quietly reached back four calendar days.",
+   "schema": "DAILY_TXN(txn_day   DATE,    -- one row per loaded day\n          txn_count NUMBER)  -- UPI transactions that day",
+   "data": [
+    {
+     "name": "DAILY_TXN",
+     "cols": [
+      "txn_day",
+      "txn_count"
+     ],
+     "rows": [
+      [
+       "21-11-2026",
+       "100"
+      ],
+      [
+       "22-11-2026",
+       "130"
+      ],
+      [
+       "23-11-2026",
+       "160"
+      ],
+      [
+       "25-11-2026",
+       "220"
+      ],
+      [
+       "26-11-2026",
+       "190"
+      ],
+      [
+       "27-11-2026",
+       "250"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "txn_day",
+     "txn_count",
+     "avg_3d"
+    ],
+    "rows": [
+     [
+      "21-11-2026",
+      "100",
+      "100"
+     ],
+     [
+      "22-11-2026",
+      "130",
+      "115"
+     ],
+     [
+      "23-11-2026",
+      "160",
+      "130"
+     ],
+     [
+      "25-11-2026",
+      "220",
+      "190"
+     ],
+     [
+      "26-11-2026",
+      "190",
+      "205"
+     ],
+     [
+      "27-11-2026",
+      "250",
+      "220"
+     ]
+    ]
+   },
+   "output_note": "On 25-11 the window covers 23-11 to 25-11, so only 160 and 220 are averaged. ROWS BETWEEN 2 PRECEDING would wrongly give 170 by including 22-11.",
+   "task": "For each day, show the transaction count and the average over the current day and the 2 calendar days before it, rounded to 2 decimals.",
+   "hint": "RANGE with an INTERVAL counts calendar days; ROWS counts rows.",
+   "solution": "SELECT txn_day, txn_count,\n       ROUND(AVG(txn_count) OVER (\n               ORDER BY txn_day\n               RANGE BETWEEN INTERVAL '2' DAY PRECEDING AND CURRENT ROW), 2) AS avg_3d\nFROM   daily_txn\nORDER  BY txn_day;",
+   "simple": "Imagine a stopwatch that only remembers the last three days. If one day's page is missing from your diary, you should not borrow a page from four days ago to fill the gap. RANGE looks at real calendar days, so a missing day just means fewer numbers in the average.",
+   "remember": "ROWS counts rows; RANGE counts days.",
+   "why": "ROWS BETWEEN 2 PRECEDING takes the two previous physical rows, so after a missing date it averages data from outside the 3-day period. RANGE BETWEEN INTERVAL '2' DAY PRECEDING includes rows whose txn_day is within 2 days of the current one, so gaps shrink the window instead of stretching it. RANGE with an interval needs a single DATE or numeric ORDER BY key.",
+   "tip": "For time-based rolling metrics I use RANGE with an INTERVAL, or densify the dates with a calendar first, because ROWS breaks when days are missing.",
+   "steps": [
+    {
+     "say": "Step one. Order the days by date so the window moves through time.",
+     "find": "ORDER BY txn_day"
+    },
+    {
+     "say": "Step two. RANGE takes only rows within the last two calendar days, so the missing twenty-fourth is never filled with older data.",
+     "find": "RANGE BETWEEN INTERVAL '2' DAY PRECEDING AND CURRENT ROW), 2) AS avg_3d"
+    },
+    {
+     "say": "Finally, on the twenty-fifth the average is one ninety, from just two days, not one seventy.",
+     "find": "ROUND(AVG(txn_count) OVER ("
+    }
+   ],
+   "tech": {
+    "pattern": "Rolling 3-day average",
+    "company": "Twitter",
+    "source": "DataLemur",
+    "url": "https://datalemur.com/questions"
+   }
+  },
+  {
+   "id": "f20261128-6",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "BEFORE INSERT trigger sets :NEW",
+   "domain": "E-commerce/Returns",
+   "title": "Trigger fills refund amount and status",
+   "scenario": "An e-commerce site calculates refunds when a return is inserted. A ₹50 pickup fee applies when the customer simply changed their mind, and refunds above ₹1000 need manual review.",
+   "schema": "RETURN_REQUESTS(return_id VARCHAR2(5),\n                qty        NUMBER,\n                unit_price NUMBER,\n                reason     VARCHAR2(15))\nRETURNS(return_id  VARCHAR2(5),\n        qty        NUMBER,\n        unit_price NUMBER,\n        reason     VARCHAR2(15),\n        refund_amt NUMBER,        -- set by trigger\n        status     VARCHAR2(6))   -- AUTO or REVIEW, set by trigger",
+   "data": [
+    {
+     "name": "RETURN_REQUESTS",
+     "cols": [
+      "return_id",
+      "qty",
+      "unit_price",
+      "reason"
+     ],
+     "rows": [
+      [
+       "R1",
+       "1",
+       "799",
+       "DAMAGED"
+      ],
+      [
+       "R2",
+       "2",
+       "525",
+       "CHANGED_MIND"
+      ],
+      [
+       "R3",
+       "1",
+       "1499",
+       "WRONG_SIZE"
+      ],
+      [
+       "R4",
+       "3",
+       "300",
+       "CHANGED_MIND"
+      ]
+     ]
+    },
+    {
+     "name": "RETURNS",
+     "cols": [
+      "return_id",
+      "qty",
+      "unit_price",
+      "reason",
+      "refund_amt",
+      "status"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "return_id",
+     "qty",
+     "unit_price",
+     "reason",
+     "refund_amt",
+     "status"
+    ],
+    "rows": [
+     [
+      "R1",
+      "1",
+      "799",
+      "DAMAGED",
+      "799",
+      "AUTO"
+     ],
+     [
+      "R2",
+      "2",
+      "525",
+      "CHANGED_MIND",
+      "1000",
+      "AUTO"
+     ],
+     [
+      "R3",
+      "1",
+      "1499",
+      "WRONG_SIZE",
+      "1499",
+      "REVIEW"
+     ],
+     [
+      "R4",
+      "3",
+      "300",
+      "CHANGED_MIND",
+      "850",
+      "AUTO"
+     ]
+    ]
+   },
+   "output_note": "RETURNS after the INSERT. R2 is 1050 - 50 = 1000, exactly the limit, so it stays AUTO. Writing :NEW in an AFTER trigger would fail with ORA-04084.",
+   "task": "Create a row-level trigger that sets refund_amt (qty × unit_price, minus ₹50 for CHANGED_MIND) and status (AUTO up to ₹1000, else REVIEW) on every insert into RETURNS, then load all requests.",
+   "hint": "Only a BEFORE row trigger can assign values to :NEW.",
+   "solution": "CREATE OR REPLACE TRIGGER trg_returns_bi\nBEFORE INSERT ON returns\nFOR EACH ROW\nBEGIN\n  :NEW.refund_amt := :NEW.qty * :NEW.unit_price\n                     - CASE WHEN :NEW.reason = 'CHANGED_MIND' THEN 50 ELSE 0 END;\n  :NEW.status := CASE WHEN :NEW.refund_amt <= 1000 THEN 'AUTO' ELSE 'REVIEW' END;\nEND;\n/\n\nINSERT INTO returns (return_id, qty, unit_price, reason)\nSELECT return_id, qty, unit_price, reason\nFROM   return_requests;",
+   "simple": "Think of a shop counter where a helper checks every parcel just before it goes on the shelf. The helper writes the refund amount on the label and puts a sticker saying 'auto' or 'review'. A BEFORE INSERT trigger is that helper: it fills in the missing values on each row just before it is saved.",
+   "remember": "BEFORE trigger can change :NEW; AFTER trigger can only read it.",
+   "why": "In a BEFORE EACH ROW trigger, :NEW holds the row about to be written, so assignments to :NEW change what is stored. The second assignment can read :NEW.refund_amt because it was set one line earlier. In an AFTER row trigger the row is already written, and assigning to :NEW raises ORA-04084.",
+   "tip": "I use BEFORE row triggers only for deriving or defaulting columns on the same row, and keep cross-table business logic in packages.",
+   "steps": [
+    {
+     "say": "Step one. The trigger fires before each row is inserted into returns.",
+     "find": "BEFORE INSERT ON returns",
+     "to": "FOR EACH ROW"
+    },
+    {
+     "say": "Step two. Work out the refund: quantity times price, minus fifty rupees if the customer changed their mind.",
+     "find": ":NEW.refund_amt := :NEW.qty * :NEW.unit_price",
+     "to": "- CASE WHEN :NEW.reason = 'CHANGED_MIND' THEN 50 ELSE 0 END;"
+    },
+    {
+     "say": "Step three. Up to one thousand rupees is auto approved, anything more goes for review.",
+     "find": ":NEW.status := CASE WHEN :NEW.refund_amt <= 1000 THEN 'AUTO' ELSE 'REVIEW' END;"
+    },
+    {
+     "say": "Finally, the insert loads all four requests, and the trigger fills both columns on every row.",
+     "find": "INSERT INTO returns (return_id, qty, unit_price, reason)",
+     "to": "FROM   return_requests;"
+    }
+   ]
+  },
+  {
+   "id": "f20261128-7",
+   "lvl": "A",
+   "kind": "plsql",
+   "concept": "Autonomous log survives ROLLBACK",
+   "domain": "Streaming/Subscriptions",
+   "title": "Keep the error log after rollback",
+   "scenario": "A streaming app renews subscriptions from users' wallets in one batch. If any wallet is short, the whole batch is rolled back, but support still needs the error row in the log.",
+   "schema": "RENEWALS(user_id NUMBER,\n         wallet  NUMBER,         -- rupees in app wallet\n         price   NUMBER,         -- plan price\n         status  VARCHAR2(8))    -- PENDING or RENEWED\nRENEW_LOG(user_id NUMBER,\n          msg     VARCHAR2(40))  -- empty at start",
+   "data": [
+    {
+     "name": "RENEWALS",
+     "cols": [
+      "user_id",
+      "wallet",
+      "price",
+      "status"
+     ],
+     "rows": [
+      [
+       "1",
+       "499",
+       "199",
+       "PENDING"
+      ],
+      [
+       "2",
+       "300",
+       "299",
+       "PENDING"
+      ],
+      [
+       "3",
+       "100",
+       "149",
+       "PENDING"
+      ],
+      [
+       "4",
+       "900",
+       "499",
+       "PENDING"
+      ]
+     ]
+    },
+    {
+     "name": "RENEW_LOG",
+     "cols": [
+      "user_id",
+      "msg"
+     ],
+     "rows": []
+    }
+   ],
+   "output": {
+    "cols": [
+     "user_id",
+     "msg"
+    ],
+    "rows": [
+     [
+      "3",
+      "Low wallet balance"
+     ]
+    ]
+   },
+   "output_note": "RENEW_LOG after the block, which ends with ORA-20001: Batch stopped at user 3. The ROLLBACK undoes the updates for users 1 and 2, so all RENEWALS rows stay PENDING.",
+   "task": "Write a block that renews users in user_id order, logs 'Low wallet balance' and stops the batch with an error at the first short wallet, rolls back all renewals, but keeps the log row.",
+   "hint": "A procedure with PRAGMA AUTONOMOUS_TRANSACTION commits on its own, separate from the caller.",
+   "solution": "DECLARE\n  PROCEDURE log_msg(p_user NUMBER, p_msg VARCHAR2) IS\n    PRAGMA AUTONOMOUS_TRANSACTION;\n  BEGIN\n    INSERT INTO renew_log (user_id, msg) VALUES (p_user, p_msg);\n    COMMIT;\n  END;\nBEGIN\n  FOR r IN (SELECT user_id, wallet, price FROM renewals ORDER BY user_id) LOOP\n    IF r.wallet < r.price THEN\n      log_msg(r.user_id, 'Low wallet balance');\n      RAISE_APPLICATION_ERROR(-20001, 'Batch stopped at user ' || r.user_id);\n    END IF;\n    UPDATE renewals SET status = 'RENEWED' WHERE user_id = r.user_id;\n  END LOOP;\n  COMMIT;\nEXCEPTION\n  WHEN OTHERS THEN\n    ROLLBACK;\n    RAISE;\nEND;\n/",
+   "simple": "Imagine a shop that cancels your whole shopping trip if one item fails at the till. But the cashier writes the problem in a separate notebook that never gets torn up. The autonomous procedure is that separate notebook: its note is saved on its own, even when everything else is undone.",
+   "remember": "Autonomous transaction = a separate notebook that keeps its own COMMIT.",
+   "why": "PRAGMA AUTONOMOUS_TRANSACTION makes log_msg run in its own transaction, so its COMMIT saves only the log row and does not commit the caller's updates for users 1 and 2. The main block's ROLLBACK then undoes those updates but cannot touch the already committed log row. RAISE re-throws ORA-20001 so the caller still sees the failure.",
+   "tip": "I use autonomous transactions only for error logging and auditing, never to commit business data halfway through a batch.",
+   "steps": [
+    {
+     "say": "Step one. The logging procedure is autonomous, so its commit saves only the log row.",
+     "find": "PRAGMA AUTONOMOUS_TRANSACTION;",
+     "to": "COMMIT;"
+    },
+    {
+     "say": "Step two. At user three the wallet is short. Write the log, then stop the batch with an error.",
+     "find": "IF r.wallet < r.price THEN",
+     "to": "RAISE_APPLICATION_ERROR(-20001, 'Batch stopped at user ' || r.user_id);"
+    },
+    {
+     "say": "Step three. The handler rolls back the renewals for users one and two, then raises the error again.",
+     "find": "WHEN OTHERS THEN",
+     "to": "RAISE;"
+    },
+    {
+     "say": "Finally, every renewal is still pending, but the log row for user three survives.",
+     "find": "ROLLBACK;"
+    }
+   ]
+  },
+  {
+   "id": "f20261128-8",
+   "lvl": "A",
+   "kind": "sql",
+   "concept": "Calendar rows with CONNECT BY LEVEL",
+   "domain": "HR/Attendance",
+   "title": "Find days with no attendance punch",
+   "scenario": "An HR team checks attendance for the week of 23-11-2026 to 27-11-2026. A missing day has no row at all in PUNCHES, so the dates must be generated first.",
+   "schema": "EMPLOYEES(emp_id NUMBER,\n          name   VARCHAR2(20))\nPUNCHES(emp_id     NUMBER,\n        punch_time DATE)   -- one row per swipe, can be several per day",
+   "data": [
+    {
+     "name": "EMPLOYEES",
+     "cols": [
+      "emp_id",
+      "name"
+     ],
+     "rows": [
+      [
+       "1",
+       "Meera"
+      ],
+      [
+       "2",
+       "Farhan"
+      ],
+      [
+       "3",
+       "Gauri"
+      ]
+     ]
+    },
+    {
+     "name": "PUNCHES",
+     "cols": [
+      "emp_id",
+      "punch_time"
+     ],
+     "rows": [
+      [
+       "1",
+       "23-11-2026 09:00"
+      ],
+      [
+       "1",
+       "24-11-2026 09:10"
+      ],
+      [
+       "1",
+       "25-11-2026 08:55"
+      ],
+      [
+       "1",
+       "26-11-2026 09:20"
+      ],
+      [
+       "1",
+       "27-11-2026 09:05"
+      ],
+      [
+       "2",
+       "23-11-2026 10:00"
+      ],
+      [
+       "2",
+       "25-11-2026 09:05"
+      ],
+      [
+       "2",
+       "25-11-2026 18:10"
+      ],
+      [
+       "2",
+       "27-11-2026 09:30"
+      ],
+      [
+       "3",
+       "24-11-2026 09:00"
+      ],
+      [
+       "3",
+       "25-11-2026 09:15"
+      ],
+      [
+       "3",
+       "26-11-2026 09:40"
+      ],
+      [
+       "3",
+       "27-11-2026 09:00"
+      ]
+     ]
+    }
+   ],
+   "output": {
+    "cols": [
+     "name",
+     "work_day"
+    ],
+    "rows": [
+     [
+      "Farhan",
+      "24-11-2026"
+     ],
+     [
+      "Farhan",
+      "26-11-2026"
+     ],
+     [
+      "Gauri",
+      "23-11-2026"
+     ]
+    ]
+   },
+   "output_note": "Meera punched every day. Farhan's two swipes on 25-11 still count as one present day.",
+   "task": "List every employee and weekday from 23-11-2026 to 27-11-2026 on which the employee has no punch at all.",
+   "hint": "Generate the 5 dates with CONNECT BY LEVEL, cross join with employees, then LEFT JOIN punches and keep the non-matches.",
+   "solution": "WITH cal AS (\n  SELECT DATE '2026-11-23' + LEVEL - 1 AS work_day\n  FROM   dual\n  CONNECT BY LEVEL <= 5\n)\nSELECT e.name, c.work_day\nFROM   employees e\nCROSS  JOIN cal c\nLEFT   JOIN punches p\n       ON  p.emp_id = e.emp_id\n       AND TRUNC(p.punch_time) = c.work_day\nWHERE  p.emp_id IS NULL\nORDER  BY e.name, c.work_day;",
+   "simple": "Think of a school register with a box for every child and every day. You cannot spot an empty box if the box was never drawn. So first the SQL draws all the boxes, every employee times every day, then it ticks the boxes that have a swipe and shows the ones left empty.",
+   "remember": "You cannot find missing rows until you generate them.",
+   "why": "CONNECT BY LEVEL <= 5 on dual produces 5 rows, turned into consecutive dates by adding LEVEL - 1. The CROSS JOIN builds every employee-day pair, and the LEFT JOIN with WHERE p.emp_id IS NULL keeps pairs with no punch (an anti-join). TRUNC on punch_time matches swipes at any time of the day.",
+   "tip": "For gaps in daily data I generate a date spine with CONNECT BY LEVEL or a calendar table and outer join the facts to it.",
+   "steps": [
+    {
+     "say": "Step one. Generate the five working days from the twenty-third using CONNECT BY LEVEL.",
+     "find": "SELECT DATE '2026-11-23' + LEVEL - 1 AS work_day",
+     "to": "CONNECT BY LEVEL <= 5"
+    },
+    {
+     "say": "Step two. Pair every employee with every day, like drawing all the boxes in the register.",
+     "find": "CROSS  JOIN cal c"
+    },
+    {
+     "say": "Step three. Attach punches for the same employee and date, ignoring the time of the swipe.",
+     "find": "LEFT   JOIN punches p",
+     "to": "AND TRUNC(p.punch_time) = c.work_day"
+    },
+    {
+     "say": "Finally, keep only the empty boxes. Farhan missed two days and Gauri missed one.",
+     "find": "WHERE  p.emp_id IS NULL"
+    }
+   ]
   }
  ],
  "lessons": [
@@ -15141,6 +16075,17 @@
    "example": "WITH t AS (\n  SELECT 'Pune' AS city FROM dual UNION ALL\n  SELECT NULL         FROM dual\n)\nSELECT city,\n       DECODE(city, NULL, 'missing', 'ok')          AS via_decode,\n       CASE city WHEN NULL THEN 'missing' ELSE 'ok' END AS via_simple_case,\n       CASE WHEN city IS NULL THEN 'missing' ELSE 'ok' END AS via_searched_case\nFROM   t;",
    "gotcha": "CASE city WHEN NULL THEN ... never fires; the NULL row returns 'ok' in the simple CASE column.",
    "line": "I use searched CASE for readability and portability, and I remember that DECODE matches NULL to NULL while CASE needs IS NULL."
+  },
+  {
+   "id": "fl20261128",
+   "concept": "Filter in ON versus WHERE for LEFT JOIN",
+   "why": "Interviewers use it to check whether you really understand outer joins.",
+   "simple": "Imagine a class list on the left and a list of homework handed in on the right. A LEFT JOIN keeps every child, even those with no homework. If you add a rule in ON, it only decides which homework sheets get attached. If you add the same rule in WHERE, it throws away whole children, so the 'keep everyone' promise is broken.",
+   "remember": "ON chooses matches; WHERE throws away rows.",
+   "explain": "In a LEFT JOIN, conditions in the ON clause are applied while matching, so left rows with no match still appear with NULLs. Conditions on the right table placed in WHERE are applied after the join, and since NULL fails any comparison, the unmatched left rows are removed, turning it into an inner join. Put right-table filters in ON when you want to keep all left rows, and use WHERE right_col IS NULL only for anti-joins. Filters on the left table belong in WHERE.",
+   "example": "WITH emp AS (\n  SELECT 1 AS id, 'Asha' AS name FROM dual UNION ALL\n  SELECT 2, 'Bilal' FROM dual\n), leave_req AS (\n  SELECT 1 AS emp_id, 'APPROVED' AS status FROM dual UNION ALL\n  SELECT 2, 'REJECTED' FROM dual\n)\nSELECT e.name, l.status\nFROM   emp e\nLEFT   JOIN leave_req l\n       ON l.emp_id = e.id AND l.status = 'APPROVED';\n-- Moving l.status = 'APPROVED' to WHERE drops Bilal entirely",
+   "gotcha": "WHERE right_table.col = 'X' after a LEFT JOIN silently makes it an inner join.",
+   "line": "In a LEFT JOIN I put conditions on the optional table in ON, because the same condition in WHERE removes the unmatched rows."
   }
  ]
 }

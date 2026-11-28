@@ -168,6 +168,14 @@ f20261127-5|A|sql|Nth row per user with ROW_NUMBER|Cards/Card transactions TECH:
 f20261127-6|A|plsql|BULK COLLECT LIMIT last batch|Education/Exam results
 f20261127-7|A|plsql|CASE statement needs ELSE|Telecom/Plan migration
 f20261127-8|A|sql|Overlapping ranges with self-join|Airlines/Crew rostering
+f20261128-1|E|sql|Subquery with AVG in WHERE|Sports/Cricket ODI series TREND:India vs New Zealand ODI Series
+f20261128-2|E|sql|TRUNC to drop time part|Food delivery/Orders
+f20261128-3|M|sql|Rate effective on a date|Loans/Home loan TREND:RBI Repo Rate Decision
+f20261128-4|M|sql|Running total reset per day|Ride-hailing/Trips
+f20261128-5|A|sql|Rolling 3-day average with RANGE|Payments/UPI TECH:Rolling 3-day average
+f20261128-6|A|plsql|BEFORE INSERT trigger sets :NEW|E-commerce/Returns
+f20261128-7|A|plsql|Autonomous log survives ROLLBACK|Streaming/Subscriptions
+f20261128-8|A|sql|Calendar rows with CONNECT BY LEVEL|HR/Attendance
 l01|lesson|ROWS versus RANGE window frames
 l02|lesson|Partition pruning
 l03|lesson|SELECT FOR UPDATE SKIP LOCKED
@@ -192,3 +200,4 @@ fl20261124|lesson|UNION versus UNION ALL
 fl20261125|lesson|Correlated versus non-correlated subquery
 fl20261126|lesson|Implicit cursor attributes
 fl20261127|lesson|DECODE versus CASE
+fl20261128|lesson|Filter in ON versus WHERE for LEFT JOIN
